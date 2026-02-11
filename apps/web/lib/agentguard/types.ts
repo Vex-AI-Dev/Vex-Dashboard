@@ -26,6 +26,7 @@ export interface Execution {
   latency_ms: number | null;
   token_count: number | null;
   cost_estimate: number | null;
+  corrected: boolean;
   correction_layers_used: unknown[] | null;
   trace_payload_ref: string | null;
   status: string;
@@ -139,10 +140,10 @@ export interface SessionSummary {
  * A single correction attempt recorded during verification.
  */
 export interface CorrectionAttempt {
-  layer: string;
-  confidence_before: number;
-  confidence_after: number;
-  action: 'repair' | 'constrained_regen' | 'full_reprompt';
+  layer: number;
+  layer_name: 'repair' | 'constrained_regen' | 'full_reprompt';
+  confidence: number | null;
+  action: string;
   success: boolean;
   latency_ms: number;
   corrected_output: string | null;

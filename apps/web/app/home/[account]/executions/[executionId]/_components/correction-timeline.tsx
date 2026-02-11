@@ -62,8 +62,8 @@ export function CorrectionTimeline({ attempts }: CorrectionTimelineProps) {
 
           {attempts.map((attempt, index) => {
             const isExpanded = expandedIndex === index;
-            const actionKey =
-              ACTION_LABELS[attempt.action] ?? attempt.action;
+            const layerKey =
+              ACTION_LABELS[attempt.layer_name] ?? attempt.layer_name;
 
             return (
               <div key={index} className="relative pl-10">
@@ -87,9 +87,9 @@ export function CorrectionTimeline({ attempts }: CorrectionTimelineProps) {
                     {/* Layer badge */}
                     <Badge variant="secondary">{attempt.layer}</Badge>
 
-                    {/* Action badge */}
+                    {/* Layer name badge */}
                     <Badge variant="outline">
-                      <Trans i18nKey={actionKey} />
+                      <Trans i18nKey={layerKey} />
                     </Badge>
 
                     {/* Success/Failed indicator */}
@@ -114,9 +114,9 @@ export function CorrectionTimeline({ attempts }: CorrectionTimelineProps) {
                     <span>
                       <Trans i18nKey="agentguard:correction.confidence" />
                       {': '}
-                      {formatConfidence(attempt.confidence_before)}
-                      {' -> '}
-                      {formatConfidence(attempt.confidence_after)}
+                      {attempt.confidence != null
+                        ? formatConfidence(attempt.confidence)
+                        : 'N/A'}
                     </span>
                     <span>
                       <Trans i18nKey="agentguard:correction.latency" />
