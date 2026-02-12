@@ -136,7 +136,7 @@ export const loadExecutionsOverTime = cache(
       ),
       realtime AS (
         SELECT
-          time_bucket('1 hour', e.timestamp) AS bucket,
+          date_trunc('hour', e.timestamp) AS bucket,
           COUNT(*) FILTER (WHERE e.action = 'pass') AS pass_count,
           COUNT(*) FILTER (WHERE e.action = 'flag') AS flag_count,
           COUNT(*) FILTER (WHERE e.action = 'block') AS block_count

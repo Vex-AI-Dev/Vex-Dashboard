@@ -142,7 +142,7 @@ export const loadHomepageTrend = cache(
     }>(
       `
       SELECT
-        time_bucket('1 hour', timestamp) AS bucket,
+        date_trunc('hour', timestamp) AS bucket,
         COUNT(*) FILTER (WHERE action = 'pass') AS pass_count,
         COUNT(*) FILTER (WHERE action = 'flag') AS flag_count,
         COUNT(*) FILTER (WHERE action = 'block') AS block_count
