@@ -1,0 +1,203 @@
+import 'server-only';
+
+import { cache } from 'react';
+
+import { getAgentGuardPool } from '~/lib/agentguard/db';
+import type {
+  AgentHealthTile,
+  AlertSeveritySummary,
+  HomepageKpis,
+  HomepageTrendBucket,
+  RecentActivityItem,
+} from '~/lib/agentguard/types';
+
+/**
+ * Load value-oriented KPIs for the homepage (last 24 hours).
+ */
+export const loadHomepageKpis = cache(
+  async (orgId: string): Promise<HomepageKpis> => {
+    const pool = getAgentGuardPool();
+
+    const result = await pool.query<{
+      total_verifications: string;
+      avg_confidence: number | null;
+      issues_caught: string;
+      auto_corrected: string;
+    }>(
+      `
+      SELECT
+        COUNT(*) AS total_verifications,
+        AVG(confidence) AS avg_confidence,
+        COUNT(*) FILTER (WHERE action IN ('flag', 'block')) AS issues_caught,
+        COUNT(*) FILTER (WHERE corrected = TRUE) AS auto_corrected
+      FROM executions
+      WHERE org_id = $1
+        AND timestamp >= NOW() - INTERVAL '24 hours'
+      `,
+      [orgId],
+    );
+
+    const row = result.rows[0];
+
+    return {
+      total_verifications: parseInt(row?.total_verifications ?? '0', 10),
+      avg_confidence: row?.avg_confidence ?? null,
+      issues_caught: parseInt(row?.issues_caught ?? '0', 10),
+      auto_corrected: parseInt(row?.auto_corrected ?? '0', 10),
+    };
+  },
+);
+
+/**
+ * Load per-agent health summaries for the homepage tiles (last 24 hours).
+ */
+export const loadAgentHealth = cache(
+  async (orgId: string): Promise<AgentHealthTile[]> => {
+    const pool = getAgentGuardPool();
+
+    const result = await pool.query<{
+      agent_id: string;
+      name: string;
+      avg_confidence: number | null;
+      executions_24h: string;
+      last_active: string | null;
+    }>(
+      `
+      SELECT
+        a.agent_id,
+        a.name,
+        AVG(e.confidence) AS avg_confidence,
+        COUNT(e.execution_id) AS executions_24h,
+        MAX(e.timestamp) AS last_active
+      FROM agents a
+      LEFT JOIN executions e
+        ON a.agent_id = e.agent_id
+        AND e.timestamp >= NOW() - INTERVAL '24 hours'
+      WHERE a.org_id = $1
+      GROUP BY a.agent_id, a.name
+      ORDER BY COUNT(e.execution_id) DESC
+      `,
+      [orgId],
+    );
+
+    return result.rows.map((row) => ({
+      agent_id: row.agent_id,
+      name: row.name,
+      avg_confidence: row.avg_confidence,
+      executions_24h: parseInt(row.executions_24h, 10),
+      last_active: row.last_active,
+    }));
+  },
+);
+
+/**
+ * Load alert severity counts for the homepage summary (last 24 hours).
+ */
+export const loadAlertSummary = cache(
+  async (orgId: string): Promise<AlertSeveritySummary> => {
+    const pool = getAgentGuardPool();
+
+    const result = await pool.query<{
+      critical: string;
+      high: string;
+      medium: string;
+      low: string;
+    }>(
+      `
+      SELECT
+        COUNT(*) FILTER (WHERE severity = 'critical') AS critical,
+        COUNT(*) FILTER (WHERE severity = 'high') AS high,
+        COUNT(*) FILTER (WHERE severity = 'medium') AS medium,
+        COUNT(*) FILTER (WHERE severity = 'low') AS low
+      FROM alerts
+      WHERE org_id = $1
+        AND created_at >= NOW() - INTERVAL '24 hours'
+      `,
+      [orgId],
+    );
+
+    const row = result.rows[0];
+
+    return {
+      critical: parseInt(row?.critical ?? '0', 10),
+      high: parseInt(row?.high ?? '0', 10),
+      medium: parseInt(row?.medium ?? '0', 10),
+      low: parseInt(row?.low ?? '0', 10),
+    };
+  },
+);
+
+/**
+ * Load hourly execution trend for the homepage mini chart (last 24 hours).
+ */
+export const loadHomepageTrend = cache(
+  async (orgId: string): Promise<HomepageTrendBucket[]> => {
+    const pool = getAgentGuardPool();
+
+    const result = await pool.query<{
+      bucket: string;
+      pass_count: string;
+      flag_count: string;
+      block_count: string;
+    }>(
+      `
+      SELECT
+        time_bucket('1 hour', timestamp) AS bucket,
+        COUNT(*) FILTER (WHERE action = 'pass') AS pass_count,
+        COUNT(*) FILTER (WHERE action = 'flag') AS flag_count,
+        COUNT(*) FILTER (WHERE action = 'block') AS block_count
+      FROM executions
+      WHERE org_id = $1
+        AND timestamp >= NOW() - INTERVAL '24 hours'
+      GROUP BY bucket
+      ORDER BY bucket ASC
+      `,
+      [orgId],
+    );
+
+    return result.rows.map((row) => ({
+      bucket: row.bucket,
+      pass_count: parseInt(row.pass_count, 10),
+      flag_count: parseInt(row.flag_count, 10),
+      block_count: parseInt(row.block_count, 10),
+    }));
+  },
+);
+
+/**
+ * Load recent executions for the homepage activity feed (last 8).
+ */
+export const loadRecentActivity = cache(
+  async (orgId: string): Promise<RecentActivityItem[]> => {
+    const pool = getAgentGuardPool();
+
+    const result = await pool.query<{
+      execution_id: string;
+      agent_id: string;
+      agent_name: string;
+      action: 'pass' | 'flag' | 'block';
+      confidence: number | null;
+      task: string | null;
+      timestamp: string;
+    }>(
+      `
+      SELECT
+        e.execution_id,
+        e.agent_id,
+        a.name AS agent_name,
+        e.action,
+        e.confidence,
+        e.task,
+        e.timestamp
+      FROM executions e
+      INNER JOIN agents a ON e.agent_id = a.agent_id
+      WHERE e.org_id = $1
+      ORDER BY e.timestamp DESC
+      LIMIT 8
+      `,
+      [orgId],
+    );
+
+    return result.rows;
+  },
+);

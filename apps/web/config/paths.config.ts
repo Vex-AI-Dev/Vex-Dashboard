@@ -20,6 +20,13 @@ const PathsSchema = z.object({
     accountMembers: z.string().min(1),
     accountBillingReturn: z.string().min(1),
     joinTeam: z.string().min(1),
+    accountAgents: z.string().min(1),
+    accountAgentDetail: z.string().min(1),
+    accountExecutionDetail: z.string().min(1),
+    accountAlerts: z.string().min(1),
+    accountFailures: z.string().min(1),
+    accountApiKeys: z.string().min(1),
+    accountDocs: z.string().min(1),
   }),
 });
 
@@ -43,6 +50,13 @@ const pathsConfig = PathsSchema.parse({
     accountMembers: `/home/[account]/members`,
     accountBillingReturn: `/home/[account]/billing/return`,
     joinTeam: '/join',
+    accountAgents: '/home/[account]/agents',
+    accountAgentDetail: '/home/[account]/agents/[agentId]',
+    accountExecutionDetail: '/home/[account]/executions/[executionId]',
+    accountAlerts: '/home/[account]/alerts',
+    accountFailures: '/home/[account]/agents/failures',
+    accountApiKeys: '/home/[account]/settings/api-keys',
+    accountDocs: '/home/[account]/docs',
   },
 } satisfies z.infer<typeof PathsSchema>);
 

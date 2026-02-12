@@ -259,9 +259,7 @@ export default function ExecutionTraceCharts({
                           <div className="bg-muted h-2 w-24 overflow-hidden rounded-full">
                             <div
                               className={`h-full rounded-full ${
-                                check.passed
-                                  ? 'bg-green-500'
-                                  : 'bg-red-500'
+                                check.passed ? 'bg-green-500' : 'bg-red-500'
                               }`}
                               style={{
                                 width: `${Math.round(check.score * 100)}%`,
@@ -316,9 +314,7 @@ export default function ExecutionTraceCharts({
 
       {/* Correction Timeline */}
       {correctionMetadata && (
-        <CorrectionTimeline
-          attempts={correctionMetadata.correction_attempts}
-        />
+        <CorrectionTimeline attempts={correctionMetadata.correction_attempts} />
       )}
 
       {/* Output Diff */}
@@ -369,9 +365,7 @@ export default function ExecutionTraceCharts({
                     <TableCell className="max-w-xs truncate">
                       {review.notes ?? '—'}
                     </TableCell>
-                    <TableCell>
-                      {formatTimestamp(review.created_at)}
-                    </TableCell>
+                    <TableCell>{formatTimestamp(review.created_at)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -435,8 +429,7 @@ function ConfidenceBadge({ confidence }: { confidence: number }) {
     colorClass =
       'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
   } else {
-    colorClass =
-      'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+    colorClass = 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
   }
 
   return (

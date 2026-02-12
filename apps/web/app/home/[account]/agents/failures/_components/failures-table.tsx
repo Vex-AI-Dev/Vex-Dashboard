@@ -30,7 +30,6 @@ import {
 } from '~/lib/agentguard/formatters';
 
 import { ActionBadge } from '../../_components/action-badge';
-
 import type { FailureRow } from '../_lib/server/failures.loader';
 
 interface FailuresTableProps {
@@ -110,9 +109,7 @@ export default function FailuresTable({
                 onChange={(e) => updateFilter('action', e.target.value)}
                 className="border-input bg-background rounded-md border px-3 py-1.5 text-sm"
               >
-                <option value="">
-                  All Actions
-                </option>
+                <option value="">All Actions</option>
                 {ACTION_OPTIONS.map((a) => (
                   <option key={a.value} value={a.value}>
                     {a.label}
@@ -131,9 +128,7 @@ export default function FailuresTable({
                 onChange={(e) => updateFilter('agent', e.target.value)}
                 className="border-input bg-background rounded-md border px-3 py-1.5 text-sm"
               >
-                <option value="">
-                  All Agents
-                </option>
+                <option value="">All Agents</option>
                 {agents.map((a) => (
                   <option key={a.agent_id} value={a.agent_id}>
                     {a.name}
@@ -152,9 +147,7 @@ export default function FailuresTable({
                 onChange={(e) => updateFilter('timeRange', e.target.value)}
                 className="border-input bg-background rounded-md border px-3 py-1.5 text-sm"
               >
-                <option value="">
-                  All Time
-                </option>
+                <option value="">All Time</option>
                 {TIME_RANGE_OPTIONS.map((t) => (
                   <option key={t.value} value={t.value}>
                     {t.label}
@@ -173,9 +166,7 @@ export default function FailuresTable({
                 onChange={(e) => updateFilter('corrected', e.target.value)}
                 className="border-input bg-background rounded-md border px-3 py-1.5 text-sm"
               >
-                <option value="">
-                  All
-                </option>
+                <option value="">All</option>
                 {CORRECTION_STATUS_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
                     {opt.value === 'true' ? 'Corrected' : 'Uncorrected'}
@@ -257,9 +248,7 @@ export default function FailuresTable({
                     <TableCell>
                       <ActionBadge action={row.action} />
                     </TableCell>
-                    <TableCell>
-                      {formatConfidence(row.confidence)}
-                    </TableCell>
+                    <TableCell>{formatConfidence(row.confidence)}</TableCell>
                     <TableCell>
                       <CorrectionBadge corrected={row.corrected} />
                     </TableCell>

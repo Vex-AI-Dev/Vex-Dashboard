@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef } from 'react';
+
 import { useRouter } from 'next/navigation';
 
 const WS_URL = process.env.NEXT_PUBLIC_AGENTGUARD_WS_URL;

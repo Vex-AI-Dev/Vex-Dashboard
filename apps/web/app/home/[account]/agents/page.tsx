@@ -12,6 +12,7 @@ import {
   loadAgentFleetTable,
   loadExecutionsOverTime,
   loadFleetKpis,
+  loadFleetRecentSessions,
 } from './_lib/server/fleet-health.loader';
 
 interface FleetHealthPageProps {
@@ -31,10 +32,11 @@ async function FleetHealthPage({ params }: FleetHealthPageProps) {
   const { account } = await params;
   const orgId = await resolveOrgId(account);
 
-  const [kpis, agents, executionsOverTime] = await Promise.all([
+  const [kpis, agents, executionsOverTime, recentSessions] = await Promise.all([
     loadFleetKpis(orgId),
     loadAgentFleetTable(orgId),
     loadExecutionsOverTime(orgId),
+    loadFleetRecentSessions(orgId),
   ]);
 
   return (
@@ -50,6 +52,7 @@ async function FleetHealthPage({ params }: FleetHealthPageProps) {
           kpis={kpis}
           agents={agents}
           executionsOverTime={executionsOverTime}
+          recentSessions={recentSessions}
           accountSlug={account}
         />
       </PageBody>

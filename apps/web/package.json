@@ -31,6 +31,7 @@
     "supabase:db:dump:local": "supabase db dump --local --data-only"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.700.0",
     "@edge-csrf/nextjs": "2.5.3-cloudflare-rc1",
     "@hookform/resolvers": "^5.2.2",
     "@kit/accounts": "workspace:*",
@@ -64,6 +65,7 @@
     "next": "catalog:",
     "next-sitemap": "^4.2.3",
     "next-themes": "0.4.6",
+    "pg": "^8.13.1",
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-hook-form": "catalog:",
@@ -81,6 +83,7 @@
     "@next/bundle-analyzer": "catalog:",
     "@tailwindcss/postcss": "catalog:",
     "@types/node": "catalog:",
+    "@types/pg": "^8.11.10",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "babel-plugin-react-compiler": "1.0.0",

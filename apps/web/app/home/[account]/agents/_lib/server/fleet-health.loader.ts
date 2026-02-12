@@ -7,22 +7,24 @@ import type {
   AgentFleetRow,
   ExecutionsOverTime,
   FleetKpis,
+  FleetSessionSummary,
 } from '~/lib/agentguard/types';
 
 /**
  * Load fleet-level KPI aggregates for the last 24 hours.
  */
-export const loadFleetKpis = cache(async (orgId: string): Promise<FleetKpis> => {
-  const pool = getAgentGuardPool();
+export const loadFleetKpis = cache(
+  async (orgId: string): Promise<FleetKpis> => {
+    const pool = getAgentGuardPool();
 
-  const result = await pool.query<{
-    total_agents: string;
-    executions_24h: string;
-    avg_confidence: number | null;
-    pass_rate: number | null;
-    correction_rate: number | null;
-  }>(
-    `
+    const result = await pool.query<{
+      total_agents: string;
+      executions_24h: string;
+      avg_confidence: number | null;
+      pass_rate: number | null;
+      correction_rate: number | null;
+    }>(
+      `
     SELECT
       (SELECT COUNT(DISTINCT agent_id) FROM agents WHERE org_id = $1) AS total_agents,
       COUNT(*) AS executions_24h,
@@ -42,19 +44,20 @@ export const loadFleetKpis = cache(async (orgId: string): Promise<FleetKpis> => 
     WHERE org_id = $1
       AND timestamp >= NOW() - INTERVAL '24 hours'
     `,
-    [orgId],
-  );
+      [orgId],
+    );
 
-  const row = result.rows[0];
+    const row = result.rows[0];
 
-  return {
-    total_agents: parseInt(row?.total_agents ?? '0', 10),
-    executions_24h: parseInt(row?.executions_24h ?? '0', 10),
-    avg_confidence: row?.avg_confidence ?? null,
-    pass_rate: row?.pass_rate ?? null,
-    correction_rate: row?.correction_rate ?? null,
-  };
-});
+    return {
+      total_agents: parseInt(row?.total_agents ?? '0', 10),
+      executions_24h: parseInt(row?.executions_24h ?? '0', 10),
+      avg_confidence: row?.avg_confidence ?? null,
+      pass_rate: row?.pass_rate ?? null,
+      correction_rate: row?.correction_rate ?? null,
+    };
+  },
+);
 
 /**
  * Load per-agent stats for the fleet table (last 24 hours).
@@ -160,6 +163,56 @@ export const loadExecutionsOverTime = cache(
       pass_count: parseInt(row.pass_count, 10),
       flag_count: parseInt(row.flag_count, 10),
       block_count: parseInt(row.block_count, 10),
+    }));
+  },
+);
+
+/**
+ * Load the 3 most recent sessions per agent across the fleet (last 7 days).
+ */
+export const loadFleetRecentSessions = cache(
+  async (orgId: string): Promise<FleetSessionSummary[]> => {
+    const pool = getAgentGuardPool();
+
+    const result = await pool.query<{
+      session_id: string;
+      agent_id: string;
+      turn_count: string;
+      avg_confidence: number | null;
+      last_timestamp: string;
+    }>(
+      `
+      SELECT session_id, agent_id, turn_count, avg_confidence, last_timestamp
+      FROM (
+        SELECT
+          e.session_id,
+          e.agent_id,
+          COUNT(*) AS turn_count,
+          AVG(e.confidence) AS avg_confidence,
+          MAX(e.timestamp) AS last_timestamp,
+          ROW_NUMBER() OVER (
+            PARTITION BY e.agent_id
+            ORDER BY MAX(e.timestamp) DESC
+          ) AS rn
+        FROM executions e
+        INNER JOIN agents a ON e.agent_id = a.agent_id
+        WHERE a.org_id = $1
+          AND e.session_id IS NOT NULL
+          AND e.timestamp >= NOW() - INTERVAL '7 days'
+        GROUP BY e.session_id, e.agent_id
+      ) sub
+      WHERE rn <= 3
+      ORDER BY agent_id, last_timestamp DESC
+      `,
+      [orgId],
+    );
+
+    return result.rows.map((row) => ({
+      session_id: row.session_id,
+      agent_id: row.agent_id,
+      turn_count: parseInt(row.turn_count, 10),
+      avg_confidence: row.avg_confidence,
+      last_timestamp: row.last_timestamp,
     }));
   },
 );

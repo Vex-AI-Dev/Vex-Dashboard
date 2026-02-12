@@ -108,9 +108,7 @@ export const loadCorrectionMetadata = cache(
 
     const meta = row.metadata ?? {};
     const attempts = (
-      Array.isArray(meta.correction_attempts)
-        ? meta.correction_attempts
-        : []
+      Array.isArray(meta.correction_attempts) ? meta.correction_attempts : []
     ) as CorrectionAttempt[];
 
     return {

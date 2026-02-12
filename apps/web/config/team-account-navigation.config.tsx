@@ -1,4 +1,14 @@
-import { CreditCard, LayoutDashboard, Settings, Users } from 'lucide-react';
+import {
+  AlertTriangle,
+  BookOpen,
+  Bot,
+  CreditCard,
+  Key,
+  LayoutDashboard,
+  Settings,
+  ShieldAlert,
+  Users,
+} from 'lucide-react';
 
 import { NavigationConfigSchema } from '@kit/ui/navigation-schema';
 
@@ -20,6 +30,36 @@ const getRoutes = (account: string) => [
     ],
   },
   {
+    label: 'agentguard:nav.gettingStarted',
+    children: [
+      {
+        label: 'agentguard:nav.documentation',
+        path: createPath(pathsConfig.app.accountDocs, account),
+        Icon: <BookOpen className={iconClasses} />,
+      },
+    ],
+  },
+  {
+    label: 'agentguard:nav.monitoring',
+    children: [
+      {
+        label: 'agentguard:nav.agents',
+        path: createPath(pathsConfig.app.accountAgents, account),
+        Icon: <Bot className={iconClasses} />,
+      },
+      {
+        label: 'agentguard:nav.failures',
+        path: createPath(pathsConfig.app.accountFailures, account),
+        Icon: <ShieldAlert className={iconClasses} />,
+      },
+      {
+        label: 'agentguard:nav.alerts',
+        path: createPath(pathsConfig.app.accountAlerts, account),
+        Icon: <AlertTriangle className={iconClasses} />,
+      },
+    ],
+  },
+  {
     label: 'common:routes.settings',
     collapsible: false,
     children: [
@@ -32,6 +72,11 @@ const getRoutes = (account: string) => [
         label: 'common:routes.members',
         path: createPath(pathsConfig.app.accountMembers, account),
         Icon: <Users className={iconClasses} />,
+      },
+      {
+        label: 'agentguard:nav.apiKeys',
+        path: createPath(pathsConfig.app.accountApiKeys, account),
+        Icon: <Key className={iconClasses} />,
       },
       featureFlagsConfig.enableTeamAccountBilling
         ? {

@@ -1,14 +1,19 @@
-import { use } from 'react';
-
 import { AppBreadcrumbs } from '@kit/ui/app-breadcrumbs';
 import { PageBody } from '@kit/ui/page';
 import { Trans } from '@kit/ui/trans';
 
+import { resolveOrgId } from '~/lib/agentguard/resolve-org-id';
 import { createI18nServerInstance } from '~/lib/i18n/i18n.server';
 import { withI18n } from '~/lib/i18n/with-i18n';
 
-import { DashboardDemo } from './_components/dashboard-demo';
+import { HomepageDashboard } from './_components/homepage-dashboard';
 import { TeamAccountLayoutPageHeader } from './_components/team-account-layout-page-header';
+import {
+  loadAgentHealth,
+  loadAlertSummary,
+  loadHomepageKpis,
+  loadHomepageTrend,
+} from './_lib/server/homepage.loader';
 
 interface TeamAccountHomePageProps {
   params: Promise<{ account: string }>;
@@ -16,26 +21,40 @@ interface TeamAccountHomePageProps {
 
 export const generateMetadata = async () => {
   const i18n = await createI18nServerInstance();
-  const title = i18n.t('teams:home.pageTitle');
+  const title = i18n.t('agentguard:homepage.pageTitle');
 
   return {
     title,
   };
 };
 
-function TeamAccountHomePage({ params }: TeamAccountHomePageProps) {
-  const account = use(params).account;
+async function TeamAccountHomePage({ params }: TeamAccountHomePageProps) {
+  const { account } = await params;
+  const orgId = await resolveOrgId(account);
+
+  const [kpis, agentHealth, alertSummary, trend] = await Promise.all([
+    loadHomepageKpis(orgId),
+    loadAgentHealth(orgId),
+    loadAlertSummary(orgId),
+    loadHomepageTrend(orgId),
+  ]);
 
   return (
     <>
       <TeamAccountLayoutPageHeader
         account={account}
-        title={<Trans i18nKey={'common:routes.dashboard'} />}
+        title={<Trans i18nKey={'agentguard:homepage.pageTitle'} />}
         description={<AppBreadcrumbs />}
       />
 
       <PageBody>
-        <DashboardDemo />
+        <HomepageDashboard
+          kpis={kpis}
+          agentHealth={agentHealth}
+          alertSummary={alertSummary}
+          trend={trend}
+          accountSlug={account}
+        />
       </PageBody>
     </>
   );

@@ -69,7 +69,7 @@ export function CorrectionTimeline({ attempts }: CorrectionTimelineProps) {
               <div key={index} className="relative pl-10">
                 {/* Timeline dot */}
                 <div
-                  className={`absolute left-[9px] top-1.5 h-3 w-3 rounded-full border-2 border-white ${
+                  className={`absolute top-1.5 left-[9px] h-3 w-3 rounded-full border-2 border-white ${
                     attempt.success ? 'bg-green-500' : 'bg-red-500'
                   }`}
                 />

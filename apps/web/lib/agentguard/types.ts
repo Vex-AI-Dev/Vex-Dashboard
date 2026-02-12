@@ -158,3 +158,101 @@ export interface CorrectionMetadata {
   corrected_output: string | null;
   correction_attempts: CorrectionAttempt[];
 }
+
+/**
+ * A single API key entry stored in organizations.api_keys JSONB.
+ * The full plaintext key is never stored — only the SHA-256 hash.
+ */
+export interface ApiKeyEntry {
+  id: string;
+  prefix: string;
+  key_hash: string;
+  name: string;
+  scopes: string[];
+  rate_limit_rpm: number;
+  expires_at: string | null;
+  created_at: string;
+  created_by: string;
+  last_used_at: string | null;
+  revoked: boolean;
+}
+
+/**
+ * Per-agent recent session summary for the fleet page agent cards.
+ */
+export interface FleetSessionSummary {
+  session_id: string;
+  agent_id: string;
+  turn_count: number;
+  avg_confidence: number | null;
+  last_timestamp: string;
+}
+
+/**
+ * Homepage KPIs — value-oriented metrics for the dashboard overview.
+ */
+export interface HomepageKpis {
+  total_verifications: number;
+  avg_confidence: number | null;
+  issues_caught: number;
+  auto_corrected: number;
+}
+
+/**
+ * Per-agent health summary for homepage tiles.
+ */
+export interface AgentHealthTile {
+  agent_id: string;
+  name: string;
+  avg_confidence: number | null;
+  executions_24h: number;
+  last_active: string | null;
+}
+
+/**
+ * Alert severity counts for homepage summary pills.
+ */
+export interface AlertSeveritySummary {
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+}
+
+/**
+ * Hourly execution bucket for homepage 24h mini chart.
+ */
+export interface HomepageTrendBucket {
+  bucket: string;
+  pass_count: number;
+  flag_count: number;
+  block_count: number;
+}
+
+/**
+ * Recent execution for homepage activity feed.
+ */
+export interface RecentActivityItem {
+  execution_id: string;
+  agent_id: string;
+  agent_name: string;
+  action: 'pass' | 'flag' | 'block';
+  confidence: number | null;
+  task: string | null;
+  timestamp: string;
+}
+
+/**
+ * API key as displayed in the dashboard (no hash).
+ */
+export interface ApiKeyDisplay {
+  id: string;
+  prefix: string;
+  name: string;
+  scopes: string[];
+  rate_limit_rpm: number;
+  expires_at: string | null;
+  created_at: string;
+  last_used_at: string | null;
+  revoked: boolean;
+}
