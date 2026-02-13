@@ -282,6 +282,7 @@
     "placeholder": "e.g., Acme AI Ops",
     "continue": "Continue",
     "creating": "Creating...",
+    "errorDuplicate": "A workspace with this name already exists. Try a different name.",
     "errorGeneric": "Failed to create workspace. Please try again."
   },
   "common": {

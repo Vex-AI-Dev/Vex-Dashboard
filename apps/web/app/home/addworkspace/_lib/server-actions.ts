@@ -99,7 +99,7 @@ export const createWorkspaceAction = enhanceAction(
     if (error === 'duplicate_slug') {
       return {
         error: true,
-        message: 'teams:duplicateSlugError',
+        message: 'agentguard:addWorkspace.errorDuplicate',
       };
     }
 
