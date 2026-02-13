@@ -1,5 +1,7 @@
 'use server';
 
+import 'server-only';
+
 import { redirect } from 'next/navigation';
 
 import { z } from 'zod';
@@ -10,9 +12,25 @@ import { createAccountCreationPolicyEvaluator } from '@kit/team-accounts/policie
 import { TeamNameSchema } from '@kit/team-accounts/schema';
 import { createCreateTeamAccountService } from '@kit/team-accounts/services/create-team-account';
 
-const CreateWorkspaceSchema = z.object({
-  name: TeamNameSchema,
-});
+const CreateWorkspaceSchema = z
+  .object({
+    name: TeamNameSchema,
+  })
+  .refine(
+    (data) => {
+      const slug = data.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+
+      return slug.length >= 2;
+    },
+    {
+      message:
+        'Workspace name must contain at least 2 Latin alphanumeric characters',
+      path: ['name'],
+    },
+  );
 
 /**
  * Generate a URL-friendly slug from a workspace name.
