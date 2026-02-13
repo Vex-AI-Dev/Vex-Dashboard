@@ -40,7 +40,7 @@ export const loadFailures = cache(
 
     const conditions: string[] = [
       'e.org_id = $1',
-      "e.action IN ('flag', 'block')",
+      "(e.action IN ('flag', 'block') OR e.corrected = TRUE)",
     ];
     const params: unknown[] = [orgId];
     let paramIndex = 2;

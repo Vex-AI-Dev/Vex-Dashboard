@@ -10,7 +10,7 @@ import { getAgentGuardPool } from '~/lib/agentguard/db';
  * Lookup order:
  *  1. Match on `organizations.account_slug`
  *  2. Fallback: match on `organizations.org_id` directly
- *  3. Final fallback: return 'default'
+ *  3. Auto-provision: create a new organization for the account slug
  *
  * The result is memoised per request via React's `cache()`.
  */
@@ -38,6 +38,16 @@ export const resolveOrgId = cache(
       return fallback.rows[0]!.org_id;
     }
 
-    return 'default';
+    // Auto-provision: create a new organization for this account
+    const orgId = accountSlug;
+    const inserted = await pool.query<{ org_id: string }>(
+      `INSERT INTO organizations (org_id, name, api_keys, plan, account_slug)
+       VALUES ($1, $2, '[]'::jsonb, 'free', $3)
+       ON CONFLICT (org_id) DO UPDATE SET account_slug = EXCLUDED.account_slug
+       RETURNING org_id`,
+      [orgId, accountSlug, accountSlug],
+    );
+
+    return inserted.rows[0]!.org_id;
   },
 );

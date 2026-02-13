@@ -11,6 +11,7 @@ import { SidebarProvider } from '@kit/ui/shadcn-sidebar';
 
 import { AppLogo } from '~/components/app-logo';
 import { getTeamAccountSidebarConfig } from '~/config/team-account-navigation.config';
+import { loadOnboardingState } from '~/lib/agentguard/onboarding.loader';
 import { withI18n } from '~/lib/i18n/with-i18n';
 
 // local imports
@@ -25,6 +26,12 @@ type TeamWorkspaceLayoutProps = React.PropsWithChildren<{
 
 function TeamWorkspaceLayout({ children, params }: TeamWorkspaceLayoutProps) {
   const account = use(params).account;
+  const onboarding = use(checkOnboarding(account));
+
+  if (!onboarding.completed) {
+    redirect(`/onboarding?account=${account}`);
+  }
+
   const state = use(getLayoutState(account));
 
   if (state.style === 'sidebar') {
@@ -32,6 +39,10 @@ function TeamWorkspaceLayout({ children, params }: TeamWorkspaceLayoutProps) {
   }
 
   return <HeaderLayout account={account}>{children}</HeaderLayout>;
+}
+
+async function checkOnboarding(account: string) {
+  return loadOnboardingState(account);
 }
 
 async function SidebarLayout({

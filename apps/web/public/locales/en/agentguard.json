@@ -178,7 +178,7 @@
   },
   "failures": {
     "pageTitle": "Failures",
-    "pageDescription": "Flagged and blocked executions across all agents",
+    "pageDescription": "Flagged, blocked, and corrected executions across all agents",
     "filters": "Filters",
     "action": "Action",
     "agent": "Agent",
@@ -190,7 +190,7 @@
     "task": "Task",
     "confidence": "Confidence",
     "failureTypes": "Failure Types",
-    "noFailures": "No flagged or blocked executions found.",
+    "noFailures": "No flagged, blocked, or corrected executions found.",
     "corrected": "Corrected",
     "correctedFilter": "Correction Status",
     "allCorrectionStatuses": "All",

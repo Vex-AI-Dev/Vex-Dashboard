@@ -1,9 +1,9 @@
 {
-  "name": "Makerkit",
-  "short_name": "makerkit",
+  "name": "Vex",
+  "short_name": "Vex",
   "theme_color": "#fff",
   "background_color": "#fff",
-  "display": "fullscreen",
+  "display": "standalone",
   "orientation": "portrait",
   "scope": "/",
   "start_url": "/",
@@ -28,6 +28,5 @@
       "sizes": "512x512",
       "type": "image/png"
     }
-  ],
-  "display": "standalone"
+  ]
 }
