@@ -1,0 +1,106 @@
+'use client';
+
+import { useCallback, useState } from 'react';
+
+import { AnimatePresence, motion } from 'motion/react';
+
+import { updateOnboardingStepAction } from '../_lib/server-actions';
+import { StepApiKey } from './step-api-key';
+import { StepInstallSdk } from './step-install-sdk';
+import { StepInviteTeam } from './step-invite-team';
+import { StepVerifyConnection } from './step-verify-connection';
+import { StepWelcome } from './step-welcome';
+
+const TOTAL_STEPS = 5;
+
+interface OnboardingWizardProps {
+  accountSlug: string;
+  initialStep: number;
+}
+
+export function OnboardingWizard({
+  accountSlug,
+  initialStep,
+}: OnboardingWizardProps) {
+  const [currentStep, setCurrentStep] = useState(initialStep);
+  const [apiKey, setApiKey] = useState<string | null>(null);
+
+  const goNext = useCallback(async () => {
+    const nextStep = currentStep + 1;
+    setCurrentStep(nextStep);
+
+    if (nextStep < TOTAL_STEPS) {
+      await updateOnboardingStepAction({
+        accountSlug,
+        step: nextStep,
+      });
+    }
+  }, [currentStep, accountSlug]);
+
+  const goBack = useCallback(() => {
+    setCurrentStep((s) => Math.max(0, s - 1));
+  }, []);
+
+  const renderStep = () => {
+    switch (currentStep) {
+      case 0:
+        return <StepWelcome key="step-0" onNext={goNext} />;
+      case 1:
+        return (
+          <StepInviteTeam
+            key="step-1"
+            accountSlug={accountSlug}
+            onNext={goNext}
+            onBack={goBack}
+          />
+        );
+      case 2:
+        return (
+          <StepApiKey
+            key="step-2"
+            accountSlug={accountSlug}
+            onNext={goNext}
+            onBack={goBack}
+            onKeyCreated={setApiKey}
+          />
+        );
+      case 3:
+        return (
+          <StepInstallSdk
+            key="step-3"
+            apiKey={apiKey}
+            onNext={goNext}
+            onBack={goBack}
+          />
+        );
+      case 4:
+        return (
+          <StepVerifyConnection
+            key="step-4"
+            accountSlug={accountSlug}
+            onBack={goBack}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center px-4">
+      <div className="w-full max-w-xl">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentStep}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+            {renderStep()}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
