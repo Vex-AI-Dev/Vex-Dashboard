@@ -1,8 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import Link from 'next/link';
 
-import { CreateTeamAccountDialog } from '@kit/team-accounts/components';
 import { Button } from '@kit/ui/button';
 import {
   Tooltip,
@@ -21,42 +20,39 @@ interface HomeAddAccountButtonProps {
 }
 
 export function HomeAddAccountButton(props: HomeAddAccountButtonProps) {
-  const [isAddingAccount, setIsAddingAccount] = useState(false);
-
   const canCreate = props.canCreateTeamAccount?.allowed ?? true;
   const reason = props.canCreateTeamAccount?.reason;
 
   const button = (
     <Button
       className={props.className}
-      onClick={() => setIsAddingAccount(true)}
       disabled={!canCreate}
+      asChild={canCreate}
     >
-      <Trans i18nKey={'account:createTeamButtonLabel'} />
+      {canCreate ? (
+        <Link href="/home/addworkspace">
+          <Trans i18nKey={'account:createTeamButtonLabel'} />
+        </Link>
+      ) : (
+        <Trans i18nKey={'account:createTeamButtonLabel'} />
+      )}
     </Button>
   );
 
-  return (
-    <>
-      {!canCreate && reason ? (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="cursor-not-allowed">{button}</span>
-            </TooltipTrigger>
-            <TooltipContent>
-              <Trans i18nKey={reason} defaults={reason} />
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      ) : (
-        button
-      )}
+  if (!canCreate && reason) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="cursor-not-allowed">{button}</span>
+          </TooltipTrigger>
+          <TooltipContent>
+            <Trans i18nKey={reason} defaults={reason} />
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
 
-      <CreateTeamAccountDialog
-        isOpen={isAddingAccount}
-        setIsOpen={setIsAddingAccount}
-      />
-    </>
-  );
+  return button;
 }
