@@ -39,7 +39,7 @@
   },
   "docs": {
     "pageTitle": "Documentation",
-    "pageDescription": "Learn how to integrate AgentGuard into your AI agents",
+    "pageDescription": "Learn how to integrate Vex into your AI agents",
     "installation": "Installation",
     "quickStart": "Quick Start",
     "configuration": "Configuration",
@@ -199,7 +199,7 @@
   },
   "apiKeys": {
     "pageTitle": "API Keys",
-    "pageDescription": "Manage API keys for authenticating your agents with AgentGuard",
+    "pageDescription": "Manage API keys for authenticating your agents with Vex",
     "name": "Name",
     "key": "Key",
     "scopes": "Scopes",
@@ -237,7 +237,7 @@
     "revokeConfirmDescription": "Are you sure you want to revoke \"{{name}}\"? This will immediately prevent any agents using this key from authenticating. This action cannot be undone.",
     "revokeConfirm": "Revoke Key",
     "noKeys": "No API keys yet",
-    "noKeysDescription": "Create an API key to authenticate your agents with AgentGuard.",
+    "noKeysDescription": "Create an API key to authenticate your agents with Vex.",
     "maxKeysReached": "Maximum of 10 API keys reached",
     "rpm": "{{count}} rpm"
   },

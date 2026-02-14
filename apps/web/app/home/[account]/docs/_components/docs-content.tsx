@@ -56,15 +56,15 @@ export function DocsContent() {
           <CardTitle>{t('docs.installation')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <CodeBlock code="pip install agentx-sdk" />
+          <CodeBlock code="pip install vex-sdk" />
           <p className="text-muted-foreground text-sm">
             Requires Python 3.9+. The package is published on PyPI as{' '}
             <code className="bg-muted rounded px-1.5 py-0.5 text-xs">
-              agentx-sdk
+              vex-sdk
             </code>{' '}
             and imported as{' '}
             <code className="bg-muted rounded px-1.5 py-0.5 text-xs">
-              from agentguard import ...
+              from vex import ...
             </code>
           </p>
         </CardContent>
@@ -77,15 +77,15 @@ export function DocsContent() {
         </CardHeader>
         <CardContent>
           <CodeBlock
-            code={`from agentguard import AgentGuard
+            code={`from vex import Vex
 
-guard = AgentGuard(api_key="your-api-key")
+guard = Vex(api_key="your-api-key")
 
 @guard.watch(agent_id="my-agent", task="Answer questions")
 def my_agent(query: str) -> str:
     return llm.generate(query)
 
-result = my_agent("What is AgentGuard?")
+result = my_agent("What is Vex?")
 print(result.output)       # The agent's response
 print(result.confidence)   # Reliability score (0-1)
 print(result.action)       # "pass", "flag", or "block"`}
@@ -100,11 +100,11 @@ print(result.action)       # "pass", "flag", or "block"`}
         </CardHeader>
         <CardContent className="space-y-4">
           <CodeBlock
-            code={`from agentguard import AgentGuard, GuardConfig
+            code={`from vex import Vex, VexConfig
 
-guard = AgentGuard(
+guard = Vex(
     api_key="your-api-key",
-    config=GuardConfig(
+    config=VexConfig(
         mode="sync",              # "async" (default) or "sync"
         correction="cascade",     # "none" (default) or "cascade"
         transparency="transparent", # "opaque" (default) or "transparent"
@@ -159,7 +159,7 @@ guard = AgentGuard(
                     <code className="text-xs">&quot;opaque&quot;</code>
                   </td>
                   <td className="py-2">
-                    Expose correction metadata in GuardResult
+                    Expose correction metadata in VexResult
                   </td>
                 </tr>
                 <tr className="border-b">
@@ -398,11 +398,11 @@ for user_msg in messages:
             ))}
           </div>
           <CodeBlock
-            code={`from agentguard import AgentGuard, GuardConfig
+            code={`from vex import Vex, VexConfig
 
-guard = AgentGuard(
+guard = Vex(
     api_key="your-api-key",
-    config=GuardConfig(
+    config=VexConfig(
         mode="sync",                  # Required for inline correction
         correction="cascade",         # Enable 3-layer auto-correction
         transparency="transparent",   # Expose correction details
@@ -451,14 +451,14 @@ else:
         </CardHeader>
         <CardContent>
           <CodeBlock
-            code={`from agentguard import AgentGuard, AgentGuardBlockError
+            code={`from vex import Vex, VexBlockError
 
-guard = AgentGuard(api_key="your-key", config=GuardConfig(mode="sync"))
+guard = Vex(api_key="your-key", config=VexConfig(mode="sync"))
 
 try:
     result = guard.run(agent_id="my-agent", fn=generate)
     print(result.output)
-except AgentGuardBlockError as e:
+except VexBlockError as e:
     print(f"Blocked! Confidence: {e.result.confidence}")
     print(f"Checks: {e.result.verification}")
     # Handle blocked output — e.g., return a safe fallback`}
@@ -477,11 +477,11 @@ except AgentGuardBlockError as e:
             confidence score returned by verification.
           </p>
           <CodeBlock
-            code={`from agentguard import AgentGuard, GuardConfig
+            code={`from vex import Vex, VexConfig
 
-guard = AgentGuard(
+guard = Vex(
     api_key="your-key",
-    config=GuardConfig(
+    config=VexConfig(
         mode="sync",
         confidence_threshold={
             "pass_threshold": 0.9,    # Stricter pass
@@ -528,7 +528,7 @@ guard = AgentGuard(
                       Block
                     </Badge>
                   </td>
-                  <td className="py-2">AgentGuardBlockError raised</td>
+                  <td className="py-2">VexBlockError raised</td>
                 </tr>
               </tbody>
             </table>
@@ -548,11 +548,11 @@ guard = AgentGuard(
         <CardContent>
           <CodeBlock
             code={`import os
-from agentguard import AgentGuard, AgentGuardBlockError, GuardConfig
+from vex import Vex, VexBlockError, VexConfig
 
-guard = AgentGuard(
-    api_key=os.environ["AGENTGUARD_API_KEY"],
-    config=GuardConfig(
+guard = Vex(
+    api_key=os.environ["VEX_API_KEY"],
+    config=VexConfig(
         mode="sync",
         correction="cascade",
         transparency="transparent",
@@ -580,7 +580,7 @@ try:
     response, result = chat("What is the weather?")
     print(f"Response: {response}")
     print(f"Confidence: {result.confidence}")
-except AgentGuardBlockError as e:
+except VexBlockError as e:
     print(f"Output blocked: {e.result.confidence}")
 finally:
     guard.close()`}
