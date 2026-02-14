@@ -172,7 +172,7 @@ export default function AgentDetailCharts({
                   <ChartTooltip content={<ChartTooltipContent hideLabel />} />
                   <Line
                     dataKey="confidence"
-                    type="monotone"
+                    type="natural"
                     stroke="var(--color-confidence)"
                     strokeWidth={2}
                     dot={false}

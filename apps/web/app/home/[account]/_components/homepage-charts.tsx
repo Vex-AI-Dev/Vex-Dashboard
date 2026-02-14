@@ -127,7 +127,7 @@ export default function HomepageCharts({
                 <ChartTooltip content={<ChartTooltipContent />} />
                 <Area
                   dataKey="pass"
-                  type="monotone"
+                  type="natural"
                   fill="var(--color-pass)"
                   stroke="var(--color-pass)"
                   fillOpacity={0.4}
@@ -135,7 +135,7 @@ export default function HomepageCharts({
                 />
                 <Area
                   dataKey="flag"
-                  type="monotone"
+                  type="natural"
                   fill="var(--color-flag)"
                   stroke="var(--color-flag)"
                   fillOpacity={0.4}
@@ -143,7 +143,7 @@ export default function HomepageCharts({
                 />
                 <Area
                   dataKey="block"
-                  type="monotone"
+                  type="natural"
                   fill="var(--color-block)"
                   stroke="var(--color-block)"
                   fillOpacity={0.4}
