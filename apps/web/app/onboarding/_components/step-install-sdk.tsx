@@ -89,6 +89,26 @@ def your_agent(query: str) -> str:
     # Your existing agent code — no changes needed
     ...`;
 
+  const correctionCode = `from agentguard import AgentGuard, GuardConfig
+
+guard = AgentGuard(
+    api_key="${apiKey ?? 'your-api-key'}",
+    config=GuardConfig(
+        mode="sync",               # Verify inline before returning
+        correction="cascade",      # Auto-fix flagged outputs
+        transparency="transparent", # See what was corrected
+    ),
+)
+
+with guard.trace(agent_id="my-agent", task="Answer questions") as ctx:
+    response = llm.generate(query)
+    ctx.set_ground_truth(reference_data)  # Optional: improve accuracy
+    ctx.record(response)
+
+# If output was flagged, Vex auto-corrects through 3 layers:
+#   Layer 1: Repair → Layer 2: Regenerate → Layer 3: Re-prompt
+output = ctx.result.output  # Always the best available output`;
+
   return (
     <div className="space-y-8">
       {/* Heading + description centered */}
@@ -117,12 +137,18 @@ def your_agent(query: str) -> str:
         delay={0.3}
       />
 
+      <CodeBlock
+        title={t('onboarding.step4CorrectionTitle')}
+        code={correctionCode}
+        delay={0.4}
+      />
+
       {/* CTA + back */}
       <motion.div
         className="flex flex-col items-center gap-3"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
+        transition={{ delay: 0.5 }}
       >
         <Button onClick={onNext} className="rounded-lg px-8" size="lg">
           {t('onboarding.next')}

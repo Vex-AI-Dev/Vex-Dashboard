@@ -265,6 +265,7 @@
     "step4Description": "Two lines of code to add runtime reliability to your agent.",
     "step4InstallTitle": "Install",
     "step4InitTitle": "Initialize",
+    "step4CorrectionTitle": "Auto-Correct Flagged Outputs",
     "step5Title": "Go Live",
     "step5Description": "Run your agent. Vex will detect it automatically.",
     "step5Waiting": "Listening for your first event...",

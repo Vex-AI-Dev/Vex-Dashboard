@@ -398,12 +398,49 @@ for user_msg in messages:
             ))}
           </div>
           <CodeBlock
-            code={`# Access correction metadata with transparency="transparent"
+            code={`from agentguard import AgentGuard, GuardConfig
+
+guard = AgentGuard(
+    api_key="your-api-key",
+    config=GuardConfig(
+        mode="sync",                  # Required for inline correction
+        correction="cascade",         # Enable 3-layer auto-correction
+        transparency="transparent",   # Expose correction details
+    ),
+)
+
+# Your agent generates output as usual
+with guard.trace(
+    agent_id="support-bot",
+    task="Answer billing questions accurately",
+    input_data={"query": "What is the refund policy?"},
+) as ctx:
+    response = llm.generate("What is the refund policy?")
+    ctx.set_ground_truth("Refunds are available within 30 days of purchase.")
+    ctx.record(response)
+
+result = ctx.result
+
+# If the output was flagged, Vex auto-corrects it before returning
 if result.corrected:
-    print(result.output)           # Corrected output
-    print(result.original_output)  # Original (before correction)
-    print(result.corrections)      # List of correction attempts`}
+    print("Original:", result.original_output)  # What the LLM said
+    print("Corrected:", result.output)           # Fixed by Vex
+    print("Confidence:", result.confidence)      # Post-correction score
+
+    # Inspect which correction layers were used
+    for attempt in result.corrections:
+        print(f"  Layer {attempt['layer']} ({attempt['layer_name']})")
+        print(f"  Success: {attempt['success']}")
+        print(f"  Latency: {attempt['latency_ms']:.0f}ms")
+else:
+    print("Output passed verification:", result.output)`}
           />
+          <p className="text-muted-foreground mt-3 text-sm">
+            The cascade selects a starting layer based on failure severity. If
+            repair fails, it automatically escalates to the next layer (up to 2
+            attempts). Your code always receives the best available output — no
+            extra handling needed.
+          </p>
         </CardContent>
       </Card>
 
