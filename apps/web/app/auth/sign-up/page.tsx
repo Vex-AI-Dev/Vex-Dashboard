@@ -1,8 +1,6 @@
 import Link from 'next/link';
 
 import { SignUpMethodsContainer } from '@kit/auth/sign-up';
-import { Button } from '@kit/ui/button';
-import { Heading } from '@kit/ui/heading';
 import { Trans } from '@kit/ui/trans';
 
 import authConfig from '~/config/auth.config';
@@ -25,13 +23,13 @@ const paths = {
 
 async function SignUpPage() {
   return (
-    <>
-      <div className={'flex flex-col items-center gap-1'}>
-        <Heading level={4} className={'tracking-tight'}>
+    <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-3xl font-bold tracking-tight">
           <Trans i18nKey={'auth:signUpHeading'} />
-        </Heading>
+        </h1>
 
-        <p className={'text-muted-foreground text-sm'}>
+        <p className="text-muted-foreground text-sm">
           <Trans i18nKey={'auth:signUpSubheading'} />
         </p>
       </div>
@@ -43,14 +41,20 @@ async function SignUpPage() {
         captchaSiteKey={authConfig.captchaTokenSiteKey}
       />
 
-      <div className={'flex justify-center'}>
-        <Button asChild variant={'link'} size={'sm'}>
-          <Link href={pathsConfig.auth.signIn} prefetch={true}>
-            <Trans i18nKey={'auth:alreadyHaveAnAccount'} />
-          </Link>
-        </Button>
-      </div>
-    </>
+      <p className="text-muted-foreground text-sm">
+        <Trans
+          i18nKey={'auth:alreadyHaveAccount'}
+          defaults={'Already have an account?'}
+        />{' '}
+        <Link
+          href={pathsConfig.auth.signIn}
+          className="text-foreground font-medium underline underline-offset-4 hover:no-underline"
+          prefetch={true}
+        >
+          <Trans i18nKey={'auth:signIn'} defaults={'Sign in'} />
+        </Link>
+      </p>
+    </div>
   );
 }
 

@@ -4,13 +4,7 @@ import { useMemo } from 'react';
 
 import Link from 'next/link';
 
-import {
-  ChevronsUpDown,
-  Home,
-  LogOut,
-  MessageCircleQuestion,
-  Shield,
-} from 'lucide-react';
+import { ChevronsUpDown, LogOut, Shield } from 'lucide-react';
 
 import { JWTUserData } from '@kit/supabase/types';
 import {
@@ -21,7 +15,6 @@ import {
   DropdownMenuTrigger,
 } from '@kit/ui/dropdown-menu';
 import { If } from '@kit/ui/if';
-import { SubMenuModeToggle } from '@kit/ui/mode-toggle';
 import { ProfileAvatar } from '@kit/ui/profile-avatar';
 import { Trans } from '@kit/ui/trans';
 import { cn } from '@kit/ui/utils';
@@ -33,8 +26,8 @@ export function PersonalAccountDropdown({
   user,
   signOutRequested,
   showProfileName = true,
-  paths,
-  features,
+  paths: _paths,
+  features: _features,
   account,
 }: {
   user: JWTUserData;
@@ -149,36 +142,6 @@ export function PersonalAccountDropdown({
           </div>
         </DropdownMenuItem>
 
-        <DropdownMenuSeparator />
-
-        <DropdownMenuItem asChild>
-          <Link
-            className={'s-full flex cursor-pointer items-center space-x-2'}
-            href={paths.home}
-          >
-            <Home className={'h-5'} />
-
-            <span>
-              <Trans i18nKey={'common:routes.home'} />
-            </span>
-          </Link>
-        </DropdownMenuItem>
-
-        <DropdownMenuSeparator />
-
-        <DropdownMenuItem asChild>
-          <Link
-            className={'s-full flex cursor-pointer items-center space-x-2'}
-            href={'/docs'}
-          >
-            <MessageCircleQuestion className={'h-5'} />
-
-            <span>
-              <Trans i18nKey={'common:documentation'} />
-            </span>
-          </Link>
-        </DropdownMenuItem>
-
         <If condition={isSuperAdmin}>
           <DropdownMenuSeparator />
 
@@ -194,12 +157,6 @@ export function PersonalAccountDropdown({
               <span>Super Admin</span>
             </Link>
           </DropdownMenuItem>
-        </If>
-
-        <DropdownMenuSeparator />
-
-        <If condition={features.enableThemeToggle}>
-          <SubMenuModeToggle />
         </If>
 
         <DropdownMenuSeparator />

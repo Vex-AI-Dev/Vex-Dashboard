@@ -10,6 +10,7 @@ import { Page, PageMobileNavigation, PageNavigation } from '@kit/ui/page';
 import { SidebarProvider } from '@kit/ui/shadcn-sidebar';
 
 import { AppLogo } from '~/components/app-logo';
+import { FeaturebaseMessenger } from '~/components/featurebase-messenger';
 import { getTeamAccountSidebarConfig } from '~/config/team-account-navigation.config';
 import { loadOnboardingState } from '~/lib/agentguard/onboarding.loader';
 import { withI18n } from '~/lib/i18n/with-i18n';
@@ -18,6 +19,7 @@ import { withI18n } from '~/lib/i18n/with-i18n';
 import { TeamAccountLayoutMobileNavigation } from './_components/team-account-layout-mobile-navigation';
 import { TeamAccountLayoutSidebar } from './_components/team-account-layout-sidebar';
 import { TeamAccountNavigationMenu } from './_components/team-account-navigation-menu';
+import { PersistLastAccount } from './_components/persist-last-account';
 import { loadTeamWorkspace } from './_lib/server/team-account-workspace.loader';
 
 type TeamWorkspaceLayoutProps = React.PropsWithChildren<{
@@ -26,6 +28,7 @@ type TeamWorkspaceLayoutProps = React.PropsWithChildren<{
 
 function TeamWorkspaceLayout({ children, params }: TeamWorkspaceLayoutProps) {
   const account = use(params).account;
+
   const onboarding = use(checkOnboarding(account));
 
   if (!onboarding.completed) {
@@ -35,10 +38,20 @@ function TeamWorkspaceLayout({ children, params }: TeamWorkspaceLayoutProps) {
   const state = use(getLayoutState(account));
 
   if (state.style === 'sidebar') {
-    return <SidebarLayout account={account}>{children}</SidebarLayout>;
+    return (
+      <>
+        <PersistLastAccount account={account} />
+        <SidebarLayout account={account}>{children}</SidebarLayout>
+      </>
+    );
   }
 
-  return <HeaderLayout account={account}>{children}</HeaderLayout>;
+  return (
+    <>
+      <PersistLastAccount account={account} />
+      <HeaderLayout account={account}>{children}</HeaderLayout>
+    </>
+  );
 }
 
 async function checkOnboarding(account: string) {
@@ -93,6 +106,8 @@ async function SidebarLayout({
 
           {children}
         </Page>
+
+        <FeaturebaseMessenger />
       </SidebarProvider>
     </TeamAccountWorkspaceContextProvider>
   );

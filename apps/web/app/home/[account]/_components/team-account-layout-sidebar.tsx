@@ -10,6 +10,7 @@ import { ProfileAccountDropdownContainer } from '~/components//personal-account-
 import { getTeamAccountSidebarConfig } from '~/config/team-account-navigation.config';
 import { TeamAccountNotifications } from '~/home/[account]/_components/team-account-notifications';
 
+import { SidebarFooterLinks } from '../_components/sidebar-footer-links';
 import { TeamAccountAccountsSelector } from '../_components/team-account-accounts-selector';
 import { TeamAccountLayoutSidebarNavigation } from './team-account-layout-sidebar-navigation';
 
@@ -49,8 +50,8 @@ function SidebarContainer(props: {
 
   return (
     <Sidebar collapsible={collapsible}>
-      <SidebarHeader className={'h-16 justify-center'}>
-        <div className={'flex items-center justify-between gap-x-3'}>
+      <SidebarHeader>
+        <div className={'flex items-center justify-between gap-x-1'}>
           <TeamAccountAccountsSelector
             userId={userId}
             selectedAccount={account}
@@ -66,11 +67,13 @@ function SidebarContainer(props: {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className={`mt-5 h-[calc(100%-160px)] overflow-y-auto`}>
+      <SidebarContent className={'flex-1 overflow-y-auto'}>
         <TeamAccountLayoutSidebarNavigation config={config} />
       </SidebarContent>
 
       <SidebarFooter>
+        <SidebarFooterLinks />
+
         <SidebarContent>
           <ProfileAccountDropdownContainer user={props.user} />
         </SidebarContent>

@@ -1,13 +1,10 @@
 /*
 * makerkit.css
 *
-* Makerkit-specific global styles
-* Use this file to add any global styles that are specific to Makerkit's components
- */
+* Makerkit-specific global styles — dark-only (Sentrial design system)
+*/
 
-/*
-Optimize dropdowns for mobile
- */
+/* Optimize dropdowns for mobile */
 [data-radix-popper-content-wrapper] {
   @apply w-full md:w-auto;
 }
@@ -24,7 +21,7 @@ Optimize dropdowns for mobile
 .site-footer > .container:before {
   background: radial-gradient(
     62.87% 100% at 50% 100%,
-    var(--color-gray-200) 0%,
+    rgba(255, 255, 255, 0.1) 0%,
     rgba(255, 255, 255, 0) 100%
   );
 
@@ -34,15 +31,6 @@ Optimize dropdowns for mobile
   left: 0;
   position: absolute;
   width: 100%;
-}
-
-.dark .site-header > .container:before,
-.dark .site-footer > .container:before {
-  background: radial-gradient(
-    62.87% 100% at 50% 100%,
-    rgba(255, 255, 255, 0.1) 0%,
-    rgba(255, 255, 255, 0) 100%
-  );
 }
 
 .site-footer > .container:before {

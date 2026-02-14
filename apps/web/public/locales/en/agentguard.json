@@ -244,7 +244,7 @@
   "onboarding": {
     "pageTitle": "Get Started with Vex",
     "welcomeTitle": "Welcome to Vex",
-    "welcomeDescription": "Runtime reliability for your AI agents. Monitor, verify, and secure every agent output before it reaches your users.",
+    "welcomeDescription": "Observe, detect, and auto-correct hallucinations and drift in real time — before your agent makes a mistake that can't be taken back.",
     "getStarted": "Get Started",
     "step1Title": "Name Your Workspace",
     "step1Description": "Name the workspace where your team will monitor, verify, and secure your AI agents.",

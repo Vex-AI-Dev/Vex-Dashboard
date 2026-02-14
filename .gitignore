@@ -1,5 +1,11 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# Vercel env with real credentials
+.env.vercel
+
+# Playwright MCP artifacts
+.playwright-mcp/
+
 # dependencies
 node_modules
 .pnp

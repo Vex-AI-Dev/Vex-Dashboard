@@ -2,8 +2,6 @@ import Link from 'next/link';
 
 import { SignInMethodsContainer } from '@kit/auth/sign-in';
 import { getSafeRedirectPath } from '@kit/shared/utils';
-import { Button } from '@kit/ui/button';
-import { Heading } from '@kit/ui/heading';
 import { Trans } from '@kit/ui/trans';
 
 import authConfig from '~/config/auth.config';
@@ -35,13 +33,13 @@ async function SignInPage({ searchParams }: SignInPageProps) {
   };
 
   return (
-    <>
-      <div className={'flex flex-col items-center gap-1'}>
-        <Heading level={4} className={'tracking-tight'}>
+    <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-3xl font-bold tracking-tight">
           <Trans i18nKey={'auth:signInHeading'} />
-        </Heading>
+        </h1>
 
-        <p className={'text-muted-foreground text-sm'}>
+        <p className="text-muted-foreground text-sm">
           <Trans i18nKey={'auth:signInSubheading'} />
         </p>
       </div>
@@ -52,14 +50,20 @@ async function SignInPage({ searchParams }: SignInPageProps) {
         captchaSiteKey={authConfig.captchaTokenSiteKey}
       />
 
-      <div className={'flex justify-center'}>
-        <Button asChild variant={'link'} size={'sm'}>
-          <Link href={pathsConfig.auth.signUp} prefetch={true}>
-            <Trans i18nKey={'auth:doNotHaveAccountYet'} />
-          </Link>
-        </Button>
-      </div>
-    </>
+      <p className="text-muted-foreground text-sm">
+        <Trans i18nKey={'auth:newToVex'} defaults={'New to Vex?'} />{' '}
+        <Link
+          href={pathsConfig.auth.signUp}
+          className="text-foreground font-medium underline underline-offset-4 hover:no-underline"
+          prefetch={true}
+        >
+          <Trans
+            i18nKey={'auth:createAnAccount'}
+            defaults={'Create an account'}
+          />
+        </Link>
+      </p>
+    </div>
   );
 }
 

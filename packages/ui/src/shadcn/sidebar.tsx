@@ -34,7 +34,7 @@ import {
 
 const SIDEBAR_COOKIE_NAME = 'sidebar:state';
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
-const SIDEBAR_WIDTH = '16rem';
+const SIDEBAR_WIDTH = '14rem';
 const SIDEBAR_WIDTH_MOBILE = '18rem';
 const SIDEBAR_WIDTH_ICON = '4rem';
 const SIDEBAR_KEYBOARD_SHORTCUT = 'b';
@@ -393,7 +393,7 @@ const SidebarHeader: React.FC<React.ComponentPropsWithRef<'div'>> = ({
     <div
       data-sidebar="header"
       className={cn(
-        'flex flex-col gap-2 p-2 group-data-[state=collapsed]:group-data-[collapsible=offcanvas]:hidden',
+        'flex flex-col gap-1 px-3 py-2 group-data-[state=collapsed]:group-data-[collapsible=offcanvas]:hidden',
         className,
       )}
       {...props}
@@ -409,7 +409,7 @@ const SidebarFooter: React.FC<React.ComponentProps<'div'>> = ({
   return (
     <div
       data-sidebar="footer"
-      className={cn('flex flex-col gap-2 p-2', className)}
+      className={cn('flex flex-col gap-1 px-2 pb-2', className)}
       {...props}
     />
   );
@@ -438,7 +438,7 @@ const SidebarContent: React.FC<React.ComponentProps<'div'>> = ({
     <div
       data-sidebar="content"
       className={cn(
-        'flex min-h-0 flex-1 flex-col gap-2 overflow-auto group-data-[collapsible=icon]:overflow-hidden',
+        'flex min-h-0 flex-1 flex-col gap-0 overflow-auto group-data-[collapsible=icon]:overflow-hidden',
         className,
       )}
       {...props}
@@ -454,7 +454,10 @@ const SidebarGroup: React.FC<React.ComponentProps<'div'>> = ({
   return (
     <div
       data-sidebar="group"
-      className={cn('relative flex w-full min-w-0 flex-col p-2', className)}
+      className={cn(
+        'relative mb-2 flex w-full min-w-0 flex-col px-2',
+        className,
+      )}
       {...props}
     />
   );
@@ -470,8 +473,8 @@ const SidebarGroupLabel: React.FC<
     <Comp
       data-sidebar="group-label"
       className={cn(
-        'text-muted-foreground ring-sidebar-ring flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium outline-hidden transition-[margin,opa] duration-200 ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0',
-        'group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0',
+        'ring-sidebar-ring flex shrink-0 items-center px-2 py-1 text-[11px] font-medium tracking-wider text-white/70 uppercase outline-hidden transition-[margin,opa] duration-200 ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0',
+        'group-data-[collapsible=icon]:-mt-6 group-data-[collapsible=icon]:opacity-0',
         className,
       )}
       {...props}
@@ -520,7 +523,7 @@ const SidebarMenu: React.FC<React.ComponentProps<'ul'>> = ({
   <ul
     data-sidebar="menu"
     className={cn(
-      'flex w-full min-w-0 flex-col gap-1 group-data-[minimized=true]/sidebar:items-center',
+      'flex w-full min-w-0 flex-col gap-px group-data-[minimized=true]/sidebar:items-center',
       className,
     )}
     {...props}
@@ -544,18 +547,18 @@ const SidebarMenuItem: React.FC<React.ComponentProps<'li'>> = ({
 SidebarMenuItem.displayName = 'SidebarMenuItem';
 
 const sidebarMenuButtonVariants = cva(
-  'peer/menu-button ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus:ring-primary active:bg-sidebar-accent active:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-hidden transition-[width,height,padding] group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:font-medium [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0',
+  'peer/menu-button ring-sidebar-ring focus:ring-primary active:bg-sidebar-accent data-[active=true]:bg-sidebar-accent data-[state=open]:hover:bg-sidebar-accent flex w-full items-center gap-2 overflow-hidden rounded px-2 py-1 text-left text-[13px] text-white/80 outline-hidden transition-colors group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! hover:bg-[hsl(210_10%_65%/0.08)] hover:text-white focus-visible:ring-2 active:text-white disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:font-medium data-[active=true]:text-white data-[state=open]:hover:text-white [&>span:last-child]:truncate [&>svg]:size-[15px] [&>svg]:shrink-0',
   {
     variants: {
       variant: {
-        default: 'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+        default: 'hover:bg-[hsl(210_10%_65%/0.08)] hover:text-white',
         outline:
-          'bg-background hover:bg-sidebar-accent hover:text-sidebar-accent-foreground shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))]',
+          'bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-[hsl(210_10%_65%/0.08)] hover:text-white hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))]',
       },
       size: {
-        default: 'h-8 text-sm',
-        sm: 'h-7 text-xs',
-        lg: 'h-12 text-sm group-data-[collapsible=icon]:p-0!',
+        default: 'text-[13px]',
+        sm: 'text-xs',
+        lg: 'py-2 text-sm group-data-[collapsible=icon]:p-0!',
       },
     },
     defaultVariants: {
@@ -803,20 +806,25 @@ export function SidebarNavigation({
           return (
             <Container key={`collapsible-${index}`}>
               <SidebarGroup key={item.label}>
-                <If
-                  condition={item.collapsible}
-                  fallback={
-                    <SidebarGroupLabel className={cn({ hidden: !open })}>
-                      <Trans i18nKey={item.label} defaults={item.label} />
+                <If condition={item.label}>
+                  <If
+                    condition={item.collapsible}
+                    fallback={
+                      <SidebarGroupLabel className={cn({ hidden: !open })}>
+                        <Trans i18nKey={item.label} defaults={item.label} />
+                      </SidebarGroupLabel>
+                    }
+                  >
+                    <SidebarGroupLabel
+                      className={cn({ hidden: !open })}
+                      asChild
+                    >
+                      <CollapsibleTrigger>
+                        <Trans i18nKey={item.label} defaults={item.label} />
+                        <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                      </CollapsibleTrigger>
                     </SidebarGroupLabel>
-                  }
-                >
-                  <SidebarGroupLabel className={cn({ hidden: !open })} asChild>
-                    <CollapsibleTrigger>
-                      <Trans i18nKey={item.label} defaults={item.label} />
-                      <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                    </CollapsibleTrigger>
-                  </SidebarGroupLabel>
+                  </If>
                 </If>
 
                 <If condition={item.renderAction}>

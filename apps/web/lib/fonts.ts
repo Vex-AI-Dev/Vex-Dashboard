@@ -1,13 +1,16 @@
-import { Inter as SansFont } from 'next/font/google';
+import {
+  JetBrains_Mono,
+  Playfair_Display,
+  Space_Grotesk,
+} from 'next/font/google';
 
 import { cn } from '@kit/ui/utils';
 
 /**
  * @sans
- * @description Define here the sans font.
- * By default, it uses the Inter font from Google Fonts.
+ * @description Space Grotesk — product UI (Sentrial design system)
  */
-const sans = SansFont({
+const sans = Space_Grotesk({
   subsets: ['latin'],
   variable: '--font-sans-fallback',
   fallback: ['system-ui', 'Helvetica Neue', 'Helvetica', 'Arial'],
@@ -17,33 +20,43 @@ const sans = SansFont({
 
 /**
  * @heading
- * @description Define here the heading font.
+ * @description Playfair Display — marketing/display headings (Sentrial design system)
  */
-const heading = sans;
+const heading = Playfair_Display({
+  subsets: ['latin'],
+  variable: '--font-heading',
+  fallback: ['Georgia', 'serif'],
+  preload: true,
+  weight: ['400', '500', '600', '700'],
+  style: ['normal', 'italic'],
+});
+
+/**
+ * @mono
+ * @description JetBrains Mono — code blocks (Sentrial design system)
+ */
+const mono = JetBrains_Mono({
+  subsets: ['latin'],
+  variable: '--font-mono',
+  fallback: ['Fira Code', 'Cascadia Code', 'monospace'],
+  preload: true,
+  weight: ['400', '500'],
+});
 
 // we export these fonts into the root layout
-export { sans, heading };
+export { sans, heading, mono };
 
 /**
  * @name getFontsClassName
- * @description Get the class name for the root layout.
- * @param theme
+ * @description Get the class name for the root layout — always dark mode.
  */
-export function getFontsClassName(theme?: string) {
-  const dark = theme === 'dark';
-  const light = !dark;
+export function getFontsClassName(_theme?: string) {
+  const font = [sans.variable, heading.variable, mono.variable].reduce<
+    string[]
+  >((acc, curr) => {
+    if (acc.includes(curr)) return acc;
+    return [...acc, curr];
+  }, []);
 
-  const font = [sans.variable, heading.variable].reduce<string[]>(
-    (acc, curr) => {
-      if (acc.includes(curr)) return acc;
-
-      return [...acc, curr];
-    },
-    [],
-  );
-
-  return cn(...font, {
-    dark,
-    light,
-  });
+  return cn(...font, 'dark');
 }

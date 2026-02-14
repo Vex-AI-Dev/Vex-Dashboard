@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from 'react';
 
+import Link from 'next/link';
+
 import { CaretSortIcon, PersonIcon } from '@radix-ui/react-icons';
 import { CheckCircle, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -14,7 +16,6 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-  CommandSeparator,
 } from '@kit/ui/command';
 import { If } from '@kit/ui/if';
 import { Popover, PopoverContent, PopoverTrigger } from '@kit/ui/popover';
@@ -22,7 +23,6 @@ import { Separator } from '@kit/ui/separator';
 import { Trans } from '@kit/ui/trans';
 import { cn } from '@kit/ui/utils';
 
-import { CreateTeamAccountDialog } from '../../../team-accounts/src/components/create-team-account-dialog';
 import { usePersonalAccountData } from '../hooks/use-personal-account-data';
 
 interface AccountSelectorProps {
@@ -60,7 +60,6 @@ export function AccountSelector({
   collisionPadding = 20,
 }: React.PropsWithChildren<AccountSelectorProps>) {
   const [open, setOpen] = useState<boolean>(false);
-  const [isCreatingAccount, setIsCreatingAccount] = useState<boolean>(false);
   const { t } = useTranslation('teams');
   const personalData = usePersonalAccountData(userId);
 
@@ -156,33 +155,8 @@ export function AccountSelector({
             <CommandInput placeholder={t('searchAccount')} className="h-9" />
 
             <CommandList>
-              <CommandGroup>
-                <CommandItem
-                  className="shadow-none"
-                  onSelect={() => onAccountChange(undefined)}
-                  value={PERSONAL_ACCOUNT_SLUG}
-                >
-                  <PersonalAccountAvatar />
-
-                  <span className={'ml-2'}>
-                    <Trans i18nKey={'teams:personalAccount'} />
-                  </span>
-
-                  <Icon selected={value === PERSONAL_ACCOUNT_SLUG} />
-                </CommandItem>
-              </CommandGroup>
-
-              <CommandSeparator />
-
               <If condition={accounts.length > 0}>
-                <CommandGroup
-                  heading={
-                    <Trans
-                      i18nKey={'teams:yourTeams'}
-                      values={{ teamsCount: accounts.length }}
-                    />
-                  }
-                >
+                <CommandGroup>
                   {(accounts ?? []).map((account) => (
                     <CommandItem
                       data-test={'account-selector-team'}
@@ -241,28 +215,20 @@ export function AccountSelector({
                 variant="ghost"
                 size={'sm'}
                 className="w-full justify-start text-sm font-normal"
-                onClick={() => {
-                  setIsCreatingAccount(true);
-                  setOpen(false);
-                }}
+                asChild
               >
-                <Plus className="mr-3 h-4 w-4" />
+                <Link href="/home/addworkspace" onClick={() => setOpen(false)}>
+                  <Plus className="mr-3 h-4 w-4" />
 
-                <span>
-                  <Trans i18nKey={'teams:createTeam'} />
-                </span>
+                  <span>
+                    <Trans i18nKey={'teams:createTeam'} />
+                  </span>
+                </Link>
               </Button>
             </div>
           </If>
         </PopoverContent>
       </Popover>
-
-      <If condition={features.enableTeamCreation}>
-        <CreateTeamAccountDialog
-          isOpen={isCreatingAccount}
-          setIsOpen={setIsCreatingAccount}
-        />
-      </If>
     </>
   );
 }

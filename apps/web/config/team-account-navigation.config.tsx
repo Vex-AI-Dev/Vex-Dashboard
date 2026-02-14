@@ -1,6 +1,5 @@
 import {
   AlertTriangle,
-  BookOpen,
   Bot,
   CreditCard,
   Key,
@@ -19,7 +18,7 @@ const iconClasses = 'w-4';
 
 const getRoutes = (account: string) => [
   {
-    label: 'common:routes.application',
+    label: '',
     children: [
       {
         label: 'common:routes.dashboard',
@@ -29,16 +28,16 @@ const getRoutes = (account: string) => [
       },
     ],
   },
-  {
-    label: 'agentguard:nav.gettingStarted',
-    children: [
-      {
-        label: 'agentguard:nav.documentation',
-        path: createPath(pathsConfig.app.accountDocs, account),
-        Icon: <BookOpen className={iconClasses} />,
-      },
-    ],
-  },
+  // {
+  //   label: 'agentguard:nav.gettingStarted',
+  //   children: [
+  //     {
+  //       label: 'agentguard:nav.documentation',
+  //       path: createPath(pathsConfig.app.accountDocs, account),
+  //       Icon: <BookOpen className={iconClasses} />,
+  //     },
+  //   ],
+  // },
   {
     label: 'agentguard:nav.monitoring',
     children: [
@@ -46,6 +45,7 @@ const getRoutes = (account: string) => [
         label: 'agentguard:nav.agents',
         path: createPath(pathsConfig.app.accountAgents, account),
         Icon: <Bot className={iconClasses} />,
+        end: true,
       },
       {
         label: 'agentguard:nav.failures',

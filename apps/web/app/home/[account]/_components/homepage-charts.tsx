@@ -47,9 +47,9 @@ interface HomepageChartsProps {
 }
 
 const trendChartConfig = {
-  pass: { label: 'Pass', color: 'var(--chart-1)' },
-  flag: { label: 'Flag', color: 'var(--chart-3)' },
-  block: { label: 'Block', color: 'var(--chart-5)' },
+  pass: { label: 'Pass', color: '#34C78E' },
+  flag: { label: 'Flag', color: 'hsl(210, 10%, 65%)' },
+  block: { label: 'Block', color: '#F87171' },
 } satisfies ChartConfig;
 
 export default function HomepageCharts({
@@ -81,32 +81,19 @@ export default function HomepageCharts({
           titleKey="agentguard:homepage.verifications"
           subtitleKey="agentguard:homepage.verificationsSubtitle"
           value={kpis.total_verifications.toLocaleString()}
-          icon={<Zap className="h-4 w-4 text-blue-500" />}
-          accentClass="border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/20"
+          icon={<Zap className="h-4 w-4 text-[#8C8C8C]" />}
         />
         <KpiCard
           titleKey="agentguard:homepage.issuesCaught"
           subtitleKey="agentguard:homepage.issuesCaughtSubtitle"
           value={kpis.issues_caught.toLocaleString()}
-          icon={<ShieldAlert className="h-4 w-4 text-amber-500" />}
-          accentClass="border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20"
-          valueClass={
-            kpis.issues_caught > 0
-              ? 'text-amber-600 dark:text-amber-400'
-              : undefined
-          }
+          icon={<ShieldAlert className="h-4 w-4 text-[#8C8C8C]" />}
         />
         <KpiCard
           titleKey="agentguard:homepage.autoCorrected"
           subtitleKey="agentguard:homepage.autoCorrectedSubtitle"
           value={kpis.auto_corrected.toLocaleString()}
-          icon={<Wrench className="h-4 w-4 text-emerald-500" />}
-          accentClass="border-l-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20"
-          valueClass={
-            kpis.auto_corrected > 0
-              ? 'text-emerald-600 dark:text-emerald-400'
-              : undefined
-          }
+          icon={<Wrench className="h-4 w-4 text-[#8C8C8C]" />}
         />
       </div>
 
@@ -231,32 +218,21 @@ function ReliabilityGaugeCard({ confidence }: { confidence: number | null }) {
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - value * circumference;
 
-  let strokeColor = '#9ca3af'; // gray
-  let bgGradient =
-    'from-gray-50 to-gray-100 dark:from-gray-900/30 dark:to-gray-800/30';
+  let strokeColor = '#8C8C8C';
 
   if (confidence != null) {
     if (confidence >= 0.8) {
-      strokeColor = '#22c55e';
-      bgGradient =
-        'from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30';
+      strokeColor = '#34C78E';
     } else if (confidence >= 0.5) {
-      strokeColor = '#eab308';
-      bgGradient =
-        'from-yellow-50 to-amber-50 dark:from-yellow-950/30 dark:to-amber-950/30';
+      strokeColor = '#F97316';
     } else {
-      strokeColor = '#ef4444';
-      bgGradient =
-        'from-red-50 to-rose-50 dark:from-red-950/30 dark:to-rose-950/30';
+      strokeColor = '#F87171';
     }
   }
 
   return (
-    <Card
-      className={`border-l-4 border-l-transparent bg-gradient-to-br ${bgGradient}`}
-    >
+    <Card className="border-border bg-card">
       <CardContent className="flex items-center gap-4 pt-6">
-        {/* SVG Gauge */}
         <div className="relative flex-shrink-0">
           <svg
             viewBox="0 0 100 100"
@@ -268,9 +244,8 @@ function ReliabilityGaugeCard({ confidence }: { confidence: number | null }) {
               cy="50"
               r={radius}
               fill="none"
-              stroke="currentColor"
+              stroke="#222222"
               strokeWidth="7"
-              className="text-gray-200 dark:text-gray-700"
             />
             <circle
               cx="50"
@@ -293,18 +268,17 @@ function ReliabilityGaugeCard({ confidence }: { confidence: number | null }) {
           </div>
         </div>
 
-        {/* Text */}
         <div className="flex flex-col">
-          <p className="text-muted-foreground text-xs font-medium">
+          <p className="text-[11px] font-semibold tracking-wide text-[#8C8C8C] uppercase">
             <Trans i18nKey="agentguard:homepage.reliabilityScore" />
           </p>
           <span
-            className="text-3xl font-bold tracking-tight"
+            className="text-4xl font-semibold tracking-tight"
             style={{ color: strokeColor }}
           >
             {formatConfidence(confidence)}
           </span>
-          <p className="text-muted-foreground text-xs">
+          <p className="text-[11px] text-[#8C8C8C]">
             <Trans i18nKey="agentguard:homepage.reliabilityScoreSubtitle" />
           </p>
         </div>
@@ -322,29 +296,27 @@ function KpiCard({
   subtitleKey,
   value,
   icon,
-  accentClass,
-  valueClass,
 }: {
   titleKey: string;
   subtitleKey: string;
   value: string;
   icon: React.ReactNode;
-  accentClass: string;
-  valueClass?: string;
 }) {
   return (
-    <Card className={`border-l-4 ${accentClass}`}>
+    <Card className="border-border bg-card">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardDescription className="font-medium">
+        <span className="text-base font-medium text-[#F0F0F0]">
           <Trans i18nKey={titleKey} />
-        </CardDescription>
+        </span>
         {icon}
       </CardHeader>
       <CardContent>
-        <div className={`text-2xl font-bold ${valueClass ?? ''}`}>{value}</div>
-        <p className="text-muted-foreground text-xs">
+        <div className="text-sm text-[#8C8C8C]">
           <Trans i18nKey={subtitleKey} />
-        </p>
+        </div>
+        <div className="mt-3 text-4xl font-semibold text-[#F0F0F0]">
+          {value}
+        </div>
       </CardContent>
     </Card>
   );
@@ -364,55 +336,56 @@ function AgentTile({
   const hasData = agent.executions_24h > 0;
   const confidence = agent.avg_confidence ?? 0;
 
-  let barColor = 'bg-gray-300 dark:bg-gray-600';
-  let dotColor = 'bg-gray-400';
+  let barColor = 'bg-[#8C8C8C]';
+  let dotColor = 'bg-[#8C8C8C]';
 
   if (hasData && agent.avg_confidence != null) {
     if (agent.avg_confidence >= 0.8) {
-      barColor = 'bg-green-500';
-      dotColor = 'bg-green-500';
+      barColor = 'bg-[#34C78E]';
+      dotColor = 'bg-[#34C78E]';
     } else if (agent.avg_confidence >= 0.5) {
-      barColor = 'bg-yellow-500';
-      dotColor = 'bg-yellow-500';
+      barColor = 'bg-[#F97316]';
+      dotColor = 'bg-[#F97316]';
     } else {
-      barColor = 'bg-red-500';
-      dotColor = 'bg-red-500';
+      barColor = 'bg-[#F87171]';
+      dotColor = 'bg-[#F87171]';
     }
   }
 
   return (
     <Link
       href={`/home/${accountSlug}/agents/${agent.agent_id}`}
-      className="hover:bg-accent border-border group flex flex-col gap-2 rounded-lg border p-3 transition-colors"
+      className="group border-border bg-card flex flex-col gap-2 rounded-lg border p-3 transition-colors hover:bg-[rgba(255,255,255,0.04)]"
     >
       <div className="flex items-center gap-2">
         <span
           className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${dotColor}`}
         />
-        <p className="truncate text-sm font-medium">{agent.name}</p>
+        <p className="truncate text-sm font-medium text-[#F0F0F0]">
+          {agent.name}
+        </p>
       </div>
 
       {hasData ? (
         <>
-          {/* Confidence bar */}
-          <div className="bg-muted h-1.5 w-full overflow-hidden rounded-full">
+          <div className="bg-border h-1.5 w-full overflow-hidden rounded-full">
             <div
               className={`h-full rounded-full transition-all ${barColor}`}
               style={{ width: `${confidence * 100}%` }}
             />
           </div>
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="text-[#8C8C8C]">
               {formatConfidence(agent.avg_confidence)}
             </span>
-            <span className="text-muted-foreground">
+            <span className="text-[#8C8C8C]">
               {agent.executions_24h.toLocaleString()}{' '}
               <Trans i18nKey="agentguard:homepage.runs" />
             </span>
           </div>
         </>
       ) : (
-        <p className="text-muted-foreground text-xs">
+        <p className="text-[11px] text-[#8C8C8C]">
           <Trans i18nKey="agentguard:homepage.noData" />
         </p>
       )}
@@ -436,7 +409,7 @@ function AlertSummaryPanel({
   if (total === 0) {
     return (
       <div className="flex flex-col items-center gap-2 py-4">
-        <CheckCircle2 className="h-8 w-8 text-green-500" />
+        <CheckCircle2 className="h-8 w-8 text-[#34C78E]" />
         <p className="text-muted-foreground text-sm">
           <Trans i18nKey="agentguard:homepage.allClear" />
         </p>
@@ -447,7 +420,7 @@ function AlertSummaryPanel({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
-        <AlertTriangle className="h-5 w-5 text-yellow-500" />
+        <AlertTriangle className="h-5 w-5 text-[#F97316]" />
         <span className="text-sm font-medium">
           {total} <Trans i18nKey="agentguard:homepage.activeAlerts" />
         </span>
@@ -475,11 +448,10 @@ function AlertSummaryPanel({
 }
 
 const severityStyles = {
-  critical: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-  high: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
-  medium:
-    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-  low: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+  critical: 'bg-[#F87171]/15 text-[#F87171] border-[#F87171]/30',
+  high: 'bg-[#F97316]/15 text-[#F97316] border-[#F97316]/30',
+  medium: 'bg-[#FBBF24]/15 text-[#FBBF24] border-[#FBBF24]/30',
+  low: 'bg-[#8C8C8C]/15 text-[#8C8C8C] border-[#8C8C8C]/30',
 } as const;
 
 function SeverityPill({
@@ -496,7 +468,11 @@ function SeverityPill({
   return (
     <Badge
       variant="outline"
-      className={`${dimmed ? 'bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-600' : severityStyles[variant]}`}
+      className={
+        dimmed
+          ? 'border-border bg-border/50 text-muted-foreground/50'
+          : severityStyles[variant]
+      }
     >
       {count} {label}
     </Badge>
