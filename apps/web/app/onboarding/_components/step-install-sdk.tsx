@@ -6,6 +6,13 @@ import { Check, Copy } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@kit/ui/accordion';
+import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 
 interface StepInstallSdkProps {
@@ -14,15 +21,7 @@ interface StepInstallSdkProps {
   onBack: () => void;
 }
 
-function CodeBlock({
-  title,
-  code,
-  delay = 0,
-}: {
-  title: string;
-  code: string;
-  delay?: number;
-}) {
+function CodeBlock({ code }: { code: string }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -32,41 +31,23 @@ function CodeBlock({
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay }}
-    >
-      <div className="border-border/50 overflow-hidden rounded-xl border">
-        <div className="bg-card/50 flex items-center justify-between px-4 py-2">
-          <span className="text-muted-foreground text-xs font-medium">
-            {title}
-          </span>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleCopy}
-            className="h-7 gap-1 px-2 text-xs"
-          >
-            {copied ? (
-              <>
-                <Check className="h-3 w-3 text-green-500" />
-                Copied!
-              </>
-            ) : (
-              <>
-                <Copy className="h-3 w-3" />
-                Copy
-              </>
-            )}
-          </Button>
-        </div>
-        <pre className="overflow-x-auto bg-zinc-950 p-4 text-sm text-zinc-100 dark:bg-zinc-900">
-          <code>{code}</code>
-        </pre>
-      </div>
-    </motion.div>
+    <div className="group relative">
+      <button
+        type="button"
+        onClick={handleCopy}
+        className="absolute top-2 right-2 rounded-md p-1.5 text-zinc-400 opacity-0 transition-opacity group-hover:opacity-100 hover:text-zinc-200"
+        aria-label="Copy code"
+      >
+        {copied ? (
+          <Check className="h-3.5 w-3.5 text-green-400" />
+        ) : (
+          <Copy className="h-3.5 w-3.5" />
+        )}
+      </button>
+      <pre className="overflow-x-auto rounded-lg bg-zinc-950 p-4 text-sm text-zinc-100 dark:bg-zinc-900">
+        <code>{code}</code>
+      </pre>
+    </div>
   );
 }
 
@@ -83,7 +64,6 @@ export function StepInstallSdk({
 
 guard = AgentGuard(api_key="${apiKey ?? 'your-api-key'}")
 
-# Add this decorator to any agent function
 @guard.watch(agent_id="my-agent", task="Describe the task")
 def your_agent(query: str) -> str:
     # Your existing agent code — no changes needed
@@ -111,7 +91,6 @@ output = ctx.result.output  # Always the best available output`;
 
   return (
     <div className="space-y-8">
-      {/* Heading + description centered */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -125,30 +104,93 @@ output = ctx.result.output  # Always the best available output`;
         </p>
       </motion.div>
 
-      <CodeBlock
-        title={t('onboarding.step4InstallTitle')}
-        code={installCode}
-        delay={0.2}
-      />
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+      >
+        <Accordion type="single" collapsible defaultValue="install">
+          <AccordionItem value="install" className="border-border/50">
+            <AccordionTrigger className="hover:no-underline">
+              <div className="flex items-center gap-3">
+                <Badge
+                  variant="outline"
+                  className="h-6 w-6 shrink-0 items-center justify-center rounded-full p-0 text-xs"
+                >
+                  1
+                </Badge>
+                <span className="font-semibold">
+                  {t('onboarding.step4InstallTitle')}
+                </span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pl-9">
+              <CodeBlock code={installCode} />
+              <p className="text-muted-foreground mt-2 text-xs">
+                Requires Python 3.9+. Import as{' '}
+                <code className="bg-muted rounded px-1 py-0.5">
+                  from agentguard import ...
+                </code>
+              </p>
+            </AccordionContent>
+          </AccordionItem>
 
-      <CodeBlock
-        title={t('onboarding.step4InitTitle')}
-        code={initCode}
-        delay={0.3}
-      />
+          <AccordionItem value="init" className="border-border/50">
+            <AccordionTrigger className="hover:no-underline">
+              <div className="flex items-center gap-3">
+                <Badge
+                  variant="outline"
+                  className="h-6 w-6 shrink-0 items-center justify-center rounded-full p-0 text-xs"
+                >
+                  2
+                </Badge>
+                <span className="font-semibold">
+                  {t('onboarding.step4InitTitle')}
+                </span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pl-9">
+              <CodeBlock code={initCode} />
+              <p className="text-muted-foreground mt-2 text-xs">
+                Wrap any function with{' '}
+                <code className="bg-muted rounded px-1 py-0.5">
+                  @guard.watch
+                </code>{' '}
+                to start monitoring.
+              </p>
+            </AccordionContent>
+          </AccordionItem>
 
-      <CodeBlock
-        title={t('onboarding.step4CorrectionTitle')}
-        code={correctionCode}
-        delay={0.4}
-      />
+          <AccordionItem value="correction" className="border-border/50">
+            <AccordionTrigger className="hover:no-underline">
+              <div className="flex items-center gap-3">
+                <Badge
+                  variant="outline"
+                  className="h-6 w-6 shrink-0 items-center justify-center rounded-full p-0 text-xs"
+                >
+                  3
+                </Badge>
+                <span className="font-semibold">
+                  {t('onboarding.step4CorrectionTitle')}
+                </span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pl-9">
+              <CodeBlock code={correctionCode} />
+              <p className="text-muted-foreground mt-2 text-xs">
+                Flagged outputs are automatically corrected through 3 graduated
+                layers before reaching your users.
+              </p>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </motion.div>
 
-      {/* CTA + back */}
       <motion.div
         className="flex flex-col items-center gap-3"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
+        transition={{ delay: 0.3 }}
       >
         <Button onClick={onNext} className="rounded-lg px-8" size="lg">
           {t('onboarding.next')}
