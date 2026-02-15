@@ -322,7 +322,7 @@ function SessionRow({
 
   return (
     <Link
-      href={`/home/${accountSlug}/agents/${session.agent_id}`}
+      href={`/home/${accountSlug}/sessions/${session.session_id}`}
       className="bg-muted/50 hover:bg-muted flex items-center justify-between rounded-md px-3 py-2 text-xs transition-colors"
     >
       <span className="flex items-center gap-2">
