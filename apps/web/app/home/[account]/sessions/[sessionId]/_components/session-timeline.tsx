@@ -62,13 +62,7 @@ function ActionBadge({ action }: { action: string }) {
   );
 }
 
-function StatPill({
-  label,
-  value,
-}: {
-  label: React.ReactNode;
-  value: string;
-}) {
+function StatPill({ label, value }: { label: React.ReactNode; value: string }) {
   return (
     <div className="bg-muted/50 flex flex-col gap-1 rounded-md px-3 py-2">
       <span className="text-muted-foreground text-xs">{label}</span>

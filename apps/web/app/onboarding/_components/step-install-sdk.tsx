@@ -14,6 +14,7 @@ import {
 } from '@kit/ui/accordion';
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
+import { Tabs, TabsList, TabsTrigger } from '@kit/ui/tabs';
 
 interface StepInstallSdkProps {
   apiKey: string | null;
@@ -58,19 +59,11 @@ export function StepInstallSdk({
 }: StepInstallSdkProps) {
   const { t } = useTranslation('agentguard');
   const [agentCopied, setAgentCopied] = useState(false);
+  const [lang, setLang] = useState<'python' | 'typescript'>('python');
 
-  const installCode = 'pip install vex-sdk';
+  const key = apiKey ?? 'your-api-key';
 
-  const initCode = `from vex import Vex
-
-guard = Vex(api_key="${apiKey ?? 'your-api-key'}")
-
-@guard.watch(agent_id="my-agent", task="Describe the task")
-def your_agent(query: str) -> str:
-    # Your existing agent code — no changes needed
-    ...`;
-
-  const agentInstructions = `# Vex Integration Instructions
+  const pythonAgentInstructions = `# Vex Integration Instructions (Python)
 
 ## Installation
 pip install vex-sdk
@@ -146,46 +139,98 @@ except VexBlockError as e:
 # 0.4 <= confidence < 0.7 → flag (warning)
 # confidence < 0.4 → block (raises VexBlockError)
 
-# Custom thresholds:
-guard = Vex(
-    api_key="${apiKey ?? 'YOUR_API_KEY'}",
-    config=VexConfig(
-        block_threshold=0.3,
-        flag_threshold=0.6,
-    ),
-)
-
 ## Requirements
 # Python 3.9+
 # pip install vex-sdk
 # Import as: from vex import Vex, VexConfig, VexBlockError
 `;
 
+  const typescriptAgentInstructions = `// Vex Integration Instructions (TypeScript)
+
+// Installation
+// npm install @vex_dev/sdk
+
+// Quick Start
+import { Vex, VexBlockError } from '@vex_dev/sdk';
+
+const vex = new Vex({ apiKey: '${apiKey ?? 'YOUR_API_KEY'}' });
+
+// Async trace (fire-and-forget telemetry)
+const result = await vex.trace(
+  { agentId: 'my-agent', task: 'Describe what the agent does' },
+  (ctx) => {
+    ctx.record(agentOutput);
+  },
+);
+
+// Sync verification (inline scoring)
+const vexSync = new Vex({
+  apiKey: '${apiKey ?? 'YOUR_API_KEY'}',
+  config: { mode: 'sync' },
+});
+
+try {
+  const result = await vexSync.trace(
+    { agentId: 'my-agent', task: 'Answer questions' },
+    (ctx) => {
+      ctx.setGroundTruth(referenceData);
+      ctx.record(response);
+    },
+  );
+  console.log(result.action);      // 'pass' | 'flag' | 'block'
+  console.log(result.confidence);   // 0.0 - 1.0
+  console.log(result.output);       // The verified (or corrected) output
+} catch (err) {
+  if (err instanceof VexBlockError) {
+    console.log('Blocked:', err.result.confidence);
+  }
+}
+
+// Auto-Correction (Cascade)
+const guard = new Vex({
+  apiKey: '${apiKey ?? 'YOUR_API_KEY'}',
+  config: {
+    mode: 'sync',
+    correction: 'cascade',
+    transparency: 'transparent',
+  },
+});
+
+// Flagged outputs are automatically corrected through 3 layers:
+//   Layer 1: Repair (fast, minor fixes)
+//   Layer 2: Constrained Regeneration (re-generate with constraints)
+//   Layer 3: Full Re-prompt (complete regeneration)
+
+// Multi-Turn Sessions
+import { Session } from '@vex_dev/sdk';
+
+const session = new Session(vexSync, 'my-agent');
+
+await session.trace({ task: 'First question', input: 'What is X?' }, (ctx) => {
+  ctx.record('X is ...');
+});
+
+await session.trace({ task: 'Follow-up', input: 'Tell me more' }, (ctx) => {
+  ctx.record('More about X ...');
+  // Vex automatically checks for contradictions and drift across turns
+});
+
+await vexSync.close();
+
+// Requirements
+// Node.js 18+ / Deno / Bun
+// npm install @vex_dev/sdk
+// Import: import { Vex, VexBlockError, Session } from '@vex_dev/sdk'
+`;
+
   const handleCopyAgentInstructions = async () => {
-    await navigator.clipboard.writeText(agentInstructions);
+    const instructions =
+      lang === 'python' ? pythonAgentInstructions : typescriptAgentInstructions;
+
+    await navigator.clipboard.writeText(instructions);
     setAgentCopied(true);
     setTimeout(() => setAgentCopied(false), 2000);
   };
-
-  const correctionCode = `from vex import Vex, VexConfig
-
-guard = Vex(
-    api_key="${apiKey ?? 'your-api-key'}",
-    config=VexConfig(
-        mode="sync",               # Verify inline before returning
-        correction="cascade",      # Auto-fix flagged outputs
-        transparency="transparent", # See what was corrected
-    ),
-)
-
-with guard.trace(agent_id="my-agent", task="Answer questions") as ctx:
-    response = llm.generate(query)
-    ctx.set_ground_truth(reference_data)  # Optional: improve accuracy
-    ctx.record(response)
-
-# If output was flagged, Vex auto-corrects through 3 layers:
-#   Layer 1: Repair → Layer 2: Regenerate → Layer 3: Re-prompt
-output = ctx.result.output  # Always the best available output`;
 
   return (
     <div className="space-y-8">
@@ -207,23 +252,35 @@ output = ctx.result.output  # Always the best available output`;
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
       >
-        <button
-          type="button"
-          onClick={handleCopyAgentInstructions}
-          className="border-border/50 text-muted-foreground hover:text-foreground hover:border-border mb-4 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed py-2.5 text-sm transition-colors"
-        >
-          {agentCopied ? (
-            <>
-              <Check className="h-4 w-4 text-green-400" />
-              <span className="text-green-400">Copied!</span>
-            </>
-          ) : (
-            <>
-              <Copy className="h-4 w-4" />
-              <span>Copy setup instructions for your AI coding agent</span>
-            </>
-          )}
-        </button>
+        <div className="mb-4 flex items-center justify-between">
+          <Tabs
+            value={lang}
+            onValueChange={(v) => setLang(v as 'python' | 'typescript')}
+          >
+            <TabsList>
+              <TabsTrigger value="python">Python</TabsTrigger>
+              <TabsTrigger value="typescript">TypeScript</TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          <button
+            type="button"
+            onClick={handleCopyAgentInstructions}
+            className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 text-sm transition-colors"
+          >
+            {agentCopied ? (
+              <>
+                <Check className="h-4 w-4 text-green-400" />
+                <span className="text-green-400">Copied!</span>
+              </>
+            ) : (
+              <>
+                <Copy className="h-4 w-4" />
+                <span>Copy instructions for AI agent</span>
+              </>
+            )}
+          </button>
+        </div>
 
         <Accordion type="single" collapsible defaultValue="install">
           <AccordionItem value="install" className="border-border/50">
@@ -241,13 +298,28 @@ output = ctx.result.output  # Always the best available output`;
               </div>
             </AccordionTrigger>
             <AccordionContent className="pl-9">
-              <CodeBlock code={installCode} />
-              <p className="text-muted-foreground mt-2 text-xs">
-                Requires Python 3.9+. Import as{' '}
-                <code className="bg-muted rounded px-1 py-0.5">
-                  from vex import ...
-                </code>
-              </p>
+              {lang === 'python' ? (
+                <>
+                  <CodeBlock code="pip install vex-sdk" />
+                  <p className="text-muted-foreground mt-2 text-xs">
+                    Requires Python 3.9+. Import as{' '}
+                    <code className="bg-muted rounded px-1 py-0.5">
+                      from vex import ...
+                    </code>
+                  </p>
+                </>
+              ) : (
+                <>
+                  <CodeBlock code="npm install @vex_dev/sdk" />
+                  <p className="text-muted-foreground mt-2 text-xs">
+                    Requires Node.js 18+. Also works with Deno and Bun. Import
+                    as{' '}
+                    <code className="bg-muted rounded px-1 py-0.5">
+                      {"import { Vex } from '@vex_dev/sdk'"}
+                    </code>
+                  </p>
+                </>
+              )}
             </AccordionContent>
           </AccordionItem>
 
@@ -266,14 +338,52 @@ output = ctx.result.output  # Always the best available output`;
               </div>
             </AccordionTrigger>
             <AccordionContent className="pl-9">
-              <CodeBlock code={initCode} />
-              <p className="text-muted-foreground mt-2 text-xs">
-                Wrap any function with{' '}
-                <code className="bg-muted rounded px-1 py-0.5">
-                  @guard.watch
-                </code>{' '}
-                to start monitoring.
-              </p>
+              {lang === 'python' ? (
+                <>
+                  <CodeBlock
+                    code={`from vex import Vex
+
+guard = Vex(api_key="${key}")
+
+@guard.watch(agent_id="my-agent", task="Describe the task")
+def your_agent(query: str) -> str:
+    # Your existing agent code — no changes needed
+    ...`}
+                  />
+                  <p className="text-muted-foreground mt-2 text-xs">
+                    Wrap any function with{' '}
+                    <code className="bg-muted rounded px-1 py-0.5">
+                      @guard.watch
+                    </code>{' '}
+                    to start monitoring.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <CodeBlock
+                    code={`import { Vex } from '@vex_dev/sdk';
+
+const vex = new Vex({ apiKey: '${key}' });
+
+const result = await vex.trace(
+  { agentId: 'my-agent', task: 'Describe the task' },
+  (ctx) => {
+    const output = yourAgent(query);
+    ctx.record(output);
+  },
+);
+
+await vex.close();`}
+                  />
+                  <p className="text-muted-foreground mt-2 text-xs">
+                    Use{' '}
+                    <code className="bg-muted rounded px-1 py-0.5">
+                      vex.trace()
+                    </code>{' '}
+                    with a callback to capture agent output.
+                  </p>
+                </>
+              )}
             </AccordionContent>
           </AccordionItem>
 
@@ -292,7 +402,57 @@ output = ctx.result.output  # Always the best available output`;
               </div>
             </AccordionTrigger>
             <AccordionContent className="pl-9">
-              <CodeBlock code={correctionCode} />
+              {lang === 'python' ? (
+                <CodeBlock
+                  code={`from vex import Vex, VexConfig
+
+guard = Vex(
+    api_key="${key}",
+    config=VexConfig(
+        mode="sync",               # Verify inline before returning
+        correction="cascade",      # Auto-fix flagged outputs
+        transparency="transparent", # See what was corrected
+    ),
+)
+
+with guard.trace(agent_id="my-agent", task="Answer questions") as ctx:
+    response = llm.generate(query)
+    ctx.set_ground_truth(reference_data)  # Optional: improve accuracy
+    ctx.record(response)
+
+# If output was flagged, Vex auto-corrects through 3 layers:
+#   Layer 1: Repair → Layer 2: Regenerate → Layer 3: Re-prompt
+output = ctx.result.output  # Always the best available output`}
+                />
+              ) : (
+                <CodeBlock
+                  code={`import { Vex, VexBlockError } from '@vex_dev/sdk';
+
+const vex = new Vex({
+  apiKey: '${key}',
+  config: {
+    mode: 'sync',                // Verify inline before returning
+    correction: 'cascade',      // Auto-fix flagged outputs
+    transparency: 'transparent', // See what was corrected
+  },
+});
+
+const result = await vex.trace(
+  { agentId: 'my-agent', task: 'Answer questions' },
+  (ctx) => {
+    ctx.setGroundTruth(referenceData);
+    ctx.record(response);
+  },
+);
+
+// If output was flagged, Vex auto-corrects through 3 layers:
+//   Layer 1: Repair → Layer 2: Regenerate → Layer 3: Re-prompt
+console.log(result.output);     // Always the best available output
+console.log(result.corrected);  // true if correction was applied
+
+await vex.close();`}
+                />
+              )}
               <p className="text-muted-foreground mt-2 text-xs">
                 Flagged outputs are automatically corrected through 3 graduated
                 layers before reaching your users.

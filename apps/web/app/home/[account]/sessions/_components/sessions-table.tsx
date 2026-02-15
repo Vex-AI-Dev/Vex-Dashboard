@@ -57,7 +57,9 @@ function StatusBadge({ status }: { status: 'healthy' | 'degraded' | 'risky' }) {
 
   return (
     <Badge variant="outline" className={styles[status]}>
-      <Trans i18nKey={`agentguard:sessions.status${status.charAt(0).toUpperCase() + status.slice(1)}`} />
+      <Trans
+        i18nKey={`agentguard:sessions.status${status.charAt(0).toUpperCase() + status.slice(1)}`}
+      />
     </Badge>
   );
 }
@@ -221,11 +223,9 @@ export default function SessionsTable({
 
                   if (confidenceValue != null) {
                     if (confidenceValue >= 0.8) {
-                      confidenceColor =
-                        'text-green-600 dark:text-green-400';
+                      confidenceColor = 'text-green-600 dark:text-green-400';
                     } else if (confidenceValue >= 0.5) {
-                      confidenceColor =
-                        'text-yellow-600 dark:text-yellow-400';
+                      confidenceColor = 'text-yellow-600 dark:text-yellow-400';
                     } else {
                       confidenceColor = 'text-red-600 dark:text-red-400';
                     }

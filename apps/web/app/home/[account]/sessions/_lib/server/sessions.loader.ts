@@ -3,7 +3,11 @@ import 'server-only';
 import { cache } from 'react';
 
 import { getAgentGuardPool } from '~/lib/agentguard/db';
-import type { SessionDetailHeader, SessionListRow, SessionTurn } from '~/lib/agentguard/types';
+import type {
+  SessionDetailHeader,
+  SessionListRow,
+  SessionTurn,
+} from '~/lib/agentguard/types';
 
 export interface SessionFilters {
   agentId?: string;
@@ -21,7 +25,10 @@ const TIME_RANGE_INTERVALS: Record<string, string> = {
  * Load paginated session list for an organization with optional filters.
  */
 export const loadSessionList = cache(
-  async (orgId: string, filters?: SessionFilters): Promise<SessionListRow[]> => {
+  async (
+    orgId: string,
+    filters?: SessionFilters,
+  ): Promise<SessionListRow[]> => {
     const pool = getAgentGuardPool();
 
     const conditions: string[] = ['e.org_id = $1', 'e.session_id IS NOT NULL'];
@@ -47,13 +54,13 @@ export const loadSessionList = cache(
     let statusFilter = '';
 
     if (filters?.status === 'risky') {
-      statusFilter = 'HAVING BOOL_OR(e.action = \'block\') = TRUE';
+      statusFilter = "HAVING BOOL_OR(e.action = 'block') = TRUE";
     } else if (filters?.status === 'degraded') {
       statusFilter =
-        'HAVING BOOL_OR(e.action = \'block\') = FALSE AND BOOL_OR(e.action = \'flag\') = TRUE';
+        "HAVING BOOL_OR(e.action = 'block') = FALSE AND BOOL_OR(e.action = 'flag') = TRUE";
     } else if (filters?.status === 'healthy') {
       statusFilter =
-        'HAVING BOOL_OR(e.action = \'block\') = FALSE AND BOOL_OR(e.action = \'flag\') = FALSE';
+        "HAVING BOOL_OR(e.action = 'block') = FALSE AND BOOL_OR(e.action = 'flag') = FALSE";
     }
 
     const result = await pool.query<{
