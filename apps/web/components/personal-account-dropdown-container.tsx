@@ -25,6 +25,12 @@ export function ProfileAccountDropdownContainer(props: {
     name: string | null;
     picture_url: string | null;
   };
+
+  links?: Array<{
+    label: string;
+    href: string;
+    icon: string;
+  }>;
 }) {
   const signOut = useSignOut();
   const user = useUser(props.user);
@@ -43,6 +49,7 @@ export function ProfileAccountDropdownContainer(props: {
       account={props.account}
       signOutRequested={() => signOut.mutateAsync()}
       showProfileName={props.showProfileName}
+      links={props.links}
     />
   );
 }

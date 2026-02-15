@@ -1,12 +1,18 @@
 'use client';
 
+import { useState } from 'react';
+
 import Link from 'next/link';
 
 import { formatDistanceStrict } from 'date-fns';
 import {
   AlertTriangle,
+  Bot,
   CheckCircle2,
+  ChevronDown,
+  ChevronRight,
   Clock,
+  User,
   Wrench,
   XCircle,
 } from 'lucide-react';
@@ -28,11 +34,16 @@ import {
   formatTimestamp,
   formatTokens,
 } from '~/lib/agentguard/formatters';
-import type { SessionDetailHeader, SessionTurn } from '~/lib/agentguard/types';
+import type {
+  SessionDetailHeader,
+  SessionTurn,
+  TracePayload,
+} from '~/lib/agentguard/types';
 
 interface SessionTimelineProps {
   header: SessionDetailHeader;
   turns: SessionTurn[];
+  tracePayloads?: Record<string, TracePayload>;
   accountSlug: string;
 }
 
@@ -71,15 +82,273 @@ function StatPill({ label, value }: { label: React.ReactNode; value: string }) {
   );
 }
 
+function formatPayloadContent(value: unknown): string {
+  if (value === null || value === undefined) return '';
+
+  if (typeof value === 'string') return value;
+
+  return JSON.stringify(value, null, 2);
+}
+
+function ContentBubble({
+  children,
+  variant,
+}: {
+  children: React.ReactNode;
+  variant: 'user' | 'agent';
+}) {
+  const isUser = variant === 'user';
+
+  return (
+    <div className={`flex gap-3 ${isUser ? '' : 'flex-row-reverse'}`}>
+      <div
+        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+          isUser
+            ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+            : 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300'
+        }`}
+      >
+        {isUser ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+      </div>
+      <div
+        className={`max-w-[80%] rounded-lg px-4 py-3 ${
+          isUser
+            ? 'bg-blue-50 dark:bg-blue-950/50'
+            : 'bg-purple-50 dark:bg-purple-950/50'
+        }`}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function ToolCallCard({
+  step,
+}: {
+  step: { step_name: string; input: string; output: string };
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="border-muted mx-11 rounded-md border">
+      <button
+        type="button"
+        className="text-muted-foreground flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-muted/50"
+        onClick={() => setExpanded(!expanded)}
+      >
+        {expanded ? (
+          <ChevronDown className="h-3 w-3 shrink-0" />
+        ) : (
+          <ChevronRight className="h-3 w-3 shrink-0" />
+        )}
+        <Wrench className="h-3 w-3 shrink-0" />
+        <span className="font-mono font-medium">{step.step_name}</span>
+      </button>
+      {expanded && (
+        <div className="border-muted space-y-2 border-t px-3 py-2">
+          {step.input && (
+            <div>
+              <span className="text-muted-foreground text-xs font-medium">
+                Input
+              </span>
+              <pre className="bg-muted/50 mt-1 max-h-40 overflow-auto rounded p-2 text-xs">
+                {step.input}
+              </pre>
+            </div>
+          )}
+          {step.output && (
+            <div>
+              <span className="text-muted-foreground text-xs font-medium">
+                Output
+              </span>
+              <pre className="bg-muted/50 mt-1 max-h-40 overflow-auto rounded p-2 text-xs">
+                {step.output}
+              </pre>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function VerificationBar({
+  turn,
+  accountSlug,
+}: {
+  turn: SessionTurn;
+  accountSlug: string;
+}) {
+  return (
+    <div className="bg-muted/30 mx-11 flex items-center justify-between rounded-md px-3 py-2">
+      <div className="flex items-center gap-2">
+        <ActionIcon action={turn.action} />
+        <Link
+          href={`/home/${accountSlug}/executions/${turn.execution_id}`}
+          className="text-primary text-xs font-medium hover:underline"
+        >
+          Turn {turn.sequence_number ?? 0}
+        </Link>
+        <ActionBadge action={turn.action} />
+        {turn.corrected && (
+          <Badge
+            variant="outline"
+            className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+          >
+            <Wrench className="mr-1 h-3 w-3" />
+            <Trans i18nKey="agentguard:sessions.corrected" />
+          </Badge>
+        )}
+      </div>
+      <div className="flex items-center gap-3">
+        <span
+          className={`text-sm font-semibold ${
+            turn.confidence != null
+              ? turn.confidence >= 0.8
+                ? 'text-green-600 dark:text-green-400'
+                : turn.confidence >= 0.5
+                  ? 'text-yellow-600 dark:text-yellow-400'
+                  : 'text-red-600 dark:text-red-400'
+              : 'text-muted-foreground'
+          }`}
+        >
+          {formatConfidence(turn.confidence)}
+        </span>
+        <span className="text-muted-foreground flex items-center gap-1 text-xs">
+          <Clock className="h-3 w-3" />
+          {formatLatency(turn.latency_ms)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function ConversationTurnView({
+  turn,
+  payload,
+  accountSlug,
+}: {
+  turn: SessionTurn;
+  payload: TracePayload;
+  accountSlug: string;
+}) {
+  const inputText = formatPayloadContent(payload.input);
+  const outputText = formatPayloadContent(payload.output);
+  const toolCalls = (payload.steps ?? []).filter(
+    (s) => s.step_type === 'tool_call',
+  );
+
+  return (
+    <div className="space-y-3">
+      {/* User input */}
+      {inputText && (
+        <ContentBubble variant="user">
+          <p className="text-sm whitespace-pre-wrap">{inputText}</p>
+        </ContentBubble>
+      )}
+
+      {/* Tool calls */}
+      {toolCalls.map((step, i) => (
+        <ToolCallCard key={`${turn.execution_id}-tool-${i}`} step={step} />
+      ))}
+
+      {/* Agent response */}
+      {outputText && (
+        <ContentBubble variant="agent">
+          <p className="text-sm whitespace-pre-wrap">{outputText}</p>
+        </ContentBubble>
+      )}
+
+      {/* Verification bar */}
+      <VerificationBar turn={turn} accountSlug={accountSlug} />
+    </div>
+  );
+}
+
+function FallbackTurnView({
+  turn,
+  index,
+  accountSlug,
+}: {
+  turn: SessionTurn;
+  index: number;
+  accountSlug: string;
+}) {
+  return (
+    <div className="relative flex gap-4">
+      <div className="z-10 mt-1 shrink-0">
+        <ActionIcon action={turn.action} />
+      </div>
+      <div className="mb-6 flex-1 rounded-lg border p-4">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/home/${accountSlug}/executions/${turn.execution_id}`}
+                className="text-primary text-sm font-medium hover:underline"
+              >
+                Turn {turn.sequence_number ?? index}
+              </Link>
+              <ActionBadge action={turn.action} />
+              {turn.corrected && (
+                <Badge
+                  variant="outline"
+                  className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                >
+                  <Wrench className="mr-1 h-3 w-3" />
+                  <Trans i18nKey="agentguard:sessions.corrected" />
+                </Badge>
+              )}
+            </div>
+            {turn.task && (
+              <p className="text-muted-foreground text-sm">{turn.task}</p>
+            )}
+          </div>
+          <span
+            className={`text-sm font-semibold ${
+              turn.confidence != null
+                ? turn.confidence >= 0.8
+                  ? 'text-green-600 dark:text-green-400'
+                  : turn.confidence >= 0.5
+                    ? 'text-yellow-600 dark:text-yellow-400'
+                    : 'text-red-600 dark:text-red-400'
+                : 'text-muted-foreground'
+            }`}
+          >
+            {formatConfidence(turn.confidence)}
+          </span>
+        </div>
+        <div className="text-muted-foreground mt-3 flex flex-wrap gap-4 text-xs">
+          <span className="flex items-center gap-1">
+            <Clock className="h-3 w-3" />
+            {formatLatency(turn.latency_ms)}
+          </span>
+          {turn.token_count != null && (
+            <span>{formatTokens(turn.token_count)} tokens</span>
+          )}
+          {turn.cost_estimate != null && (
+            <span>{formatCost(turn.cost_estimate)}</span>
+          )}
+          <span>{formatTimestamp(turn.timestamp)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SessionTimeline({
   header,
   turns,
+  tracePayloads = {},
   accountSlug,
 }: SessionTimelineProps) {
   const duration = formatDistanceStrict(
     new Date(header.first_timestamp),
     new Date(header.last_timestamp),
   );
+
+  const hasAnyPayloads = Object.keys(tracePayloads).length > 0;
 
   return (
     <div
@@ -134,7 +403,7 @@ export default function SessionTimeline({
         </CardContent>
       </Card>
 
-      {/* Turn Timeline */}
+      {/* Conversation / Timeline */}
       <Card>
         <CardHeader>
           <CardTitle>
@@ -145,80 +414,48 @@ export default function SessionTimeline({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="relative space-y-0">
-            {turns.map((turn, index) => (
-              <div key={turn.execution_id} className="relative flex gap-4">
-                {/* Timeline line */}
-                {index < turns.length - 1 && (
-                  <div className="bg-border absolute top-10 left-[11px] h-[calc(100%-16px)] w-px" />
-                )}
+          {hasAnyPayloads ? (
+            <div className="space-y-6">
+              {turns.map((turn, index) => {
+                const payload = tracePayloads[turn.execution_id];
 
-                {/* Icon */}
-                <div className="z-10 mt-1 shrink-0">
-                  <ActionIcon action={turn.action} />
+                if (payload) {
+                  return (
+                    <ConversationTurnView
+                      key={turn.execution_id}
+                      turn={turn}
+                      payload={payload}
+                      accountSlug={accountSlug}
+                    />
+                  );
+                }
+
+                return (
+                  <FallbackTurnView
+                    key={turn.execution_id}
+                    turn={turn}
+                    index={index}
+                    accountSlug={accountSlug}
+                  />
+                );
+              })}
+            </div>
+          ) : (
+            <div className="relative space-y-0">
+              {turns.map((turn, index) => (
+                <div key={turn.execution_id} className="relative">
+                  {index < turns.length - 1 && (
+                    <div className="bg-border absolute top-10 left-[11px] h-[calc(100%-16px)] w-px" />
+                  )}
+                  <FallbackTurnView
+                    turn={turn}
+                    index={index}
+                    accountSlug={accountSlug}
+                  />
                 </div>
-
-                {/* Content */}
-                <div className="mb-6 flex-1 rounded-lg border p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2">
-                        <Link
-                          href={`/home/${accountSlug}/executions/${turn.execution_id}`}
-                          className="text-primary text-sm font-medium hover:underline"
-                        >
-                          Turn {turn.sequence_number ?? index}
-                        </Link>
-                        <ActionBadge action={turn.action} />
-                        {turn.corrected && (
-                          <Badge
-                            variant="outline"
-                            className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-                          >
-                            <Wrench className="mr-1 h-3 w-3" />
-                            <Trans i18nKey="agentguard:sessions.corrected" />
-                          </Badge>
-                        )}
-                      </div>
-                      {turn.task && (
-                        <p className="text-muted-foreground text-sm">
-                          {turn.task}
-                        </p>
-                      )}
-                    </div>
-                    <span
-                      className={`text-sm font-semibold ${
-                        turn.confidence != null
-                          ? turn.confidence >= 0.8
-                            ? 'text-green-600 dark:text-green-400'
-                            : turn.confidence >= 0.5
-                              ? 'text-yellow-600 dark:text-yellow-400'
-                              : 'text-red-600 dark:text-red-400'
-                          : 'text-muted-foreground'
-                      }`}
-                    >
-                      {formatConfidence(turn.confidence)}
-                    </span>
-                  </div>
-
-                  {/* Meta row */}
-                  <div className="text-muted-foreground mt-3 flex flex-wrap gap-4 text-xs">
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {formatLatency(turn.latency_ms)}
-                    </span>
-                    {turn.token_count != null && (
-                      <span>{formatTokens(turn.token_count)} tokens</span>
-                    )}
-                    {turn.cost_estimate != null && (
-                      <span>{formatCost(turn.cost_estimate)}</span>
-                    )}
-                    <span>{formatTimestamp(turn.timestamp)}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

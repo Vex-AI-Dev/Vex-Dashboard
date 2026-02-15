@@ -9,6 +9,7 @@ import { withI18n } from '~/lib/i18n/with-i18n';
 import { TeamAccountLayoutPageHeader } from '../../_components/team-account-layout-page-header';
 import {
   loadSessionDetail,
+  loadSessionTracePayloads,
   loadSessionTurns,
 } from '../_lib/server/sessions.loader';
 import { SessionDetailDashboard } from './_components/session-detail-dashboard';
@@ -34,6 +35,10 @@ async function SessionDetailPage({ params }: SessionDetailPageProps) {
     loadSessionDetail(sessionId, orgId),
     loadSessionTurns(sessionId, orgId),
   ]);
+
+  const tracePayloads = turns.length > 0
+    ? await loadSessionTracePayloads(turns)
+    : {};
 
   if (!header) {
     return (
@@ -65,6 +70,7 @@ async function SessionDetailPage({ params }: SessionDetailPageProps) {
         <SessionDetailDashboard
           header={header}
           turns={turns}
+          tracePayloads={tracePayloads}
           accountSlug={account}
         />
       </PageBody>

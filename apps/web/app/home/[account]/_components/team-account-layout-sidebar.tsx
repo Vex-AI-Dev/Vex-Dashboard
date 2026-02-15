@@ -7,6 +7,8 @@ import {
 } from '@kit/ui/shadcn-sidebar';
 
 import { ProfileAccountDropdownContainer } from '~/components//personal-account-dropdown-container';
+import featureFlagsConfig from '~/config/feature-flags.config';
+import pathsConfig from '~/config/paths.config';
 import { getTeamAccountSidebarConfig } from '~/config/team-account-navigation.config';
 import { TeamAccountNotifications } from '~/home/[account]/_components/team-account-notifications';
 
@@ -36,6 +38,36 @@ export function TeamAccountLayoutSidebar(props: {
   );
 }
 
+function getDropdownLinks(account: string) {
+  const links: Array<{ label: string; href: string; icon: string }> = [
+    {
+      label: 'common:routes.settings',
+      href: pathsConfig.app.accountSettings.replace('[account]', account),
+      icon: 'settings',
+    },
+    {
+      label: 'common:routes.members',
+      href: pathsConfig.app.accountMembers.replace('[account]', account),
+      icon: 'users',
+    },
+    {
+      label: 'agentguard:nav.apiKeys',
+      href: pathsConfig.app.accountApiKeys.replace('[account]', account),
+      icon: 'key',
+    },
+  ];
+
+  if (featureFlagsConfig.enableTeamAccountBilling) {
+    links.push({
+      label: 'common:routes.billing',
+      href: pathsConfig.app.accountBilling.replace('[account]', account),
+      icon: 'credit-card',
+    });
+  }
+
+  return links;
+}
+
 function SidebarContainer(props: {
   account: string;
   accountId: string;
@@ -47,6 +79,7 @@ function SidebarContainer(props: {
 
   const config = getTeamAccountSidebarConfig(account);
   const collapsible = config.sidebarCollapsedStyle;
+  const dropdownLinks = getDropdownLinks(account);
 
   return (
     <Sidebar collapsible={collapsible}>
@@ -58,12 +91,12 @@ function SidebarContainer(props: {
             accounts={accounts}
           />
 
-          <div className={'group-data-[minimized=true]/sidebar:hidden'}>
+          {/* <div className={'group-data-[minimized=true]/sidebar:hidden'}>
             <TeamAccountNotifications
               userId={userId}
               accountId={props.accountId}
             />
-          </div>
+          </div> */}
         </div>
       </SidebarHeader>
 
@@ -75,7 +108,7 @@ function SidebarContainer(props: {
         <SidebarFooterLinks />
 
         <SidebarContent>
-          <ProfileAccountDropdownContainer user={props.user} />
+          <ProfileAccountDropdownContainer user={props.user} links={dropdownLinks} />
         </SidebarContent>
       </SidebarFooter>
     </Sidebar>

@@ -1,18 +1,13 @@
 import {
+  Activity,
   AlertTriangle,
-  Bot,
-  CreditCard,
-  Key,
-  LayoutDashboard,
-  MessageSquare,
-  Settings,
+  Hexagon,
   ShieldAlert,
-  Users,
+  Sparkles,
 } from 'lucide-react';
 
 import { NavigationConfigSchema } from '@kit/ui/navigation-schema';
 
-import featureFlagsConfig from '~/config/feature-flags.config';
 import pathsConfig from '~/config/paths.config';
 
 const iconClasses = 'w-4';
@@ -24,7 +19,7 @@ const getRoutes = (account: string) => [
       {
         label: 'common:routes.dashboard',
         path: pathsConfig.app.accountHome.replace('[account]', account),
-        Icon: <LayoutDashboard className={iconClasses} />,
+        Icon: <Hexagon className={iconClasses} />,
         end: true,
       },
     ],
@@ -45,13 +40,13 @@ const getRoutes = (account: string) => [
       {
         label: 'agentguard:nav.agents',
         path: createPath(pathsConfig.app.accountAgents, account),
-        Icon: <Bot className={iconClasses} />,
+        Icon: <Sparkles className={iconClasses} />,
         end: true,
       },
       {
         label: 'agentguard:nav.sessions',
         path: createPath(pathsConfig.app.accountSessions, account),
-        Icon: <MessageSquare className={iconClasses} />,
+        Icon: <Activity className={iconClasses} />,
       },
       {
         label: 'agentguard:nav.failures',
@@ -64,34 +59,6 @@ const getRoutes = (account: string) => [
         Icon: <AlertTriangle className={iconClasses} />,
       },
     ],
-  },
-  {
-    label: 'common:routes.settings',
-    collapsible: false,
-    children: [
-      {
-        label: 'common:routes.settings',
-        path: createPath(pathsConfig.app.accountSettings, account),
-        Icon: <Settings className={iconClasses} />,
-      },
-      {
-        label: 'common:routes.members',
-        path: createPath(pathsConfig.app.accountMembers, account),
-        Icon: <Users className={iconClasses} />,
-      },
-      {
-        label: 'agentguard:nav.apiKeys',
-        path: createPath(pathsConfig.app.accountApiKeys, account),
-        Icon: <Key className={iconClasses} />,
-      },
-      featureFlagsConfig.enableTeamAccountBilling
-        ? {
-            label: 'common:routes.billing',
-            path: createPath(pathsConfig.app.accountBilling, account),
-            Icon: <CreditCard className={iconClasses} />,
-          }
-        : undefined,
-    ].filter(Boolean),
   },
 ];
 

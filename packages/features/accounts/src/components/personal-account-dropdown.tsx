@@ -4,7 +4,16 @@ import { useMemo } from 'react';
 
 import Link from 'next/link';
 
-import { ChevronsUpDown, LogOut, Shield } from 'lucide-react';
+import {
+  ChevronsUpDown,
+  CreditCard,
+  Key,
+  LogOut,
+  Settings,
+  Shield,
+  Users,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 import { JWTUserData } from '@kit/supabase/types';
 import {
@@ -21,6 +30,13 @@ import { cn } from '@kit/ui/utils';
 
 import { usePersonalAccountData } from '../hooks/use-personal-account-data';
 
+const ICON_MAP: Record<string, LucideIcon> = {
+  settings: Settings,
+  users: Users,
+  key: Key,
+  'credit-card': CreditCard,
+};
+
 export function PersonalAccountDropdown({
   className,
   user,
@@ -29,6 +45,7 @@ export function PersonalAccountDropdown({
   paths: _paths,
   features: _features,
   account,
+  links,
 }: {
   user: JWTUserData;
 
@@ -49,6 +66,12 @@ export function PersonalAccountDropdown({
   };
 
   showProfileName?: boolean;
+
+  links?: Array<{
+    label: string;
+    href: string;
+    icon: string;
+  }>;
 
   className?: string;
 }) {
@@ -157,6 +180,28 @@ export function PersonalAccountDropdown({
               <span>Super Admin</span>
             </Link>
           </DropdownMenuItem>
+        </If>
+
+        <If condition={links && links.length > 0}>
+          <DropdownMenuSeparator />
+
+          {links?.map((link) => {
+            const IconComponent = ICON_MAP[link.icon];
+
+            return (
+              <DropdownMenuItem key={link.href} asChild>
+                <Link
+                  className={'flex w-full cursor-pointer items-center space-x-2'}
+                  href={link.href}
+                >
+                  {IconComponent && <IconComponent className={'h-5'} />}
+                  <span>
+                    <Trans i18nKey={link.label} />
+                  </span>
+                </Link>
+              </DropdownMenuItem>
+            );
+          })}
         </If>
 
         <DropdownMenuSeparator />

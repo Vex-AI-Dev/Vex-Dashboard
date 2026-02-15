@@ -287,6 +287,23 @@ export interface SessionTurn {
   token_count: number | null;
   cost_estimate: number | null;
   metadata: Record<string, unknown>;
+  trace_payload_ref: string | null;
+}
+
+/**
+ * Trace payload stored in S3 for a single execution.
+ */
+export interface TracePayload {
+  input: unknown;
+  output: unknown;
+  ground_truth?: unknown;
+  steps: Array<{
+    step_type: string;
+    step_name: string;
+    input: string;
+    output: string;
+    timestamp: string;
+  }>;
 }
 
 /**

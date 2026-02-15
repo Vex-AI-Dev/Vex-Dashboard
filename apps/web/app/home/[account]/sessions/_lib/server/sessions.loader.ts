@@ -2,11 +2,14 @@ import 'server-only';
 
 import { cache } from 'react';
 
+import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+
 import { getAgentGuardPool } from '~/lib/agentguard/db';
 import type {
   SessionDetailHeader,
   SessionListRow,
   SessionTurn,
+  TracePayload,
 } from '~/lib/agentguard/types';
 
 export interface SessionFilters {
@@ -188,7 +191,8 @@ export const loadSessionTurns = cache(
         e.corrected,
         e.token_count,
         e.cost_estimate,
-        e.metadata
+        e.metadata,
+        e.trace_payload_ref
       FROM executions e
       WHERE e.session_id = $1 AND e.org_id = $2
       ORDER BY e.sequence_number ASC, e.timestamp ASC
@@ -199,3 +203,73 @@ export const loadSessionTurns = cache(
     return result.rows;
   },
 );
+
+function getS3Client(): S3Client {
+  return new S3Client({
+    endpoint: process.env.AGENTGUARD_S3_ENDPOINT,
+    region: process.env.AGENTGUARD_S3_REGION ?? 'us-east-1',
+    credentials: {
+      accessKeyId: process.env.AGENTGUARD_S3_ACCESS_KEY_ID ?? '',
+      secretAccessKey: process.env.AGENTGUARD_S3_SECRET_ACCESS_KEY ?? '',
+    },
+    forcePathStyle: true,
+  });
+}
+
+function extractS3Key(ref: string): string {
+  if (ref.startsWith('s3://')) {
+    const withoutProtocol = ref.slice(5);
+    const slashIndex = withoutProtocol.indexOf('/');
+
+    if (slashIndex !== -1) {
+      return withoutProtocol.slice(slashIndex + 1);
+    }
+  }
+
+  return ref;
+}
+
+/**
+ * Load trace payloads from S3 for all turns that have a trace_payload_ref.
+ * Returns a map of execution_id → TracePayload.
+ * Failures are silently skipped (the UI falls back to the minimal view).
+ */
+export async function loadSessionTracePayloads(
+  turns: SessionTurn[],
+): Promise<Record<string, TracePayload>> {
+  const turnsWithRefs = turns.filter((t) => t.trace_payload_ref);
+
+  if (turnsWithRefs.length === 0) return {};
+
+  const bucket = process.env.AGENTGUARD_S3_BUCKET ?? 'agentguard-traces';
+  const s3 = getS3Client();
+
+  const results = await Promise.allSettled(
+    turnsWithRefs.map(async (turn) => {
+      const key = extractS3Key(turn.trace_payload_ref!);
+
+      const response = await s3.send(
+        new GetObjectCommand({ Bucket: bucket, Key: key }),
+      );
+
+      const body = await response.Body?.transformToString();
+
+      if (!body) return null;
+
+      return {
+        executionId: turn.execution_id,
+        payload: JSON.parse(body) as TracePayload,
+      };
+    }),
+  );
+
+  const payloads: Record<string, TracePayload> = {};
+
+  for (const result of results) {
+    if (result.status === 'fulfilled' && result.value) {
+      payloads[result.value.executionId] = result.value.payload;
+    }
+  }
+
+  return payloads;
+}
