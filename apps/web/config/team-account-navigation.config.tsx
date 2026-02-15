@@ -4,6 +4,7 @@ import {
   CreditCard,
   Key,
   LayoutDashboard,
+  MessageSquare,
   Settings,
   ShieldAlert,
   Users,
@@ -46,6 +47,11 @@ const getRoutes = (account: string) => [
         path: createPath(pathsConfig.app.accountAgents, account),
         Icon: <Bot className={iconClasses} />,
         end: true,
+      },
+      {
+        label: 'agentguard:nav.sessions',
+        path: createPath(pathsConfig.app.accountSessions, account),
+        Icon: <MessageSquare className={iconClasses} />,
       },
       {
         label: 'agentguard:nav.failures',

@@ -28,6 +28,8 @@ const PathsSchema = z.object({
     accountApiKeys: z.string().min(1),
     accountDocs: z.string().min(1),
     accountOnboarding: z.string().min(1),
+    accountSessions: z.string().min(1),
+    accountSessionDetail: z.string().min(1),
   }),
 });
 
@@ -59,6 +61,8 @@ const pathsConfig = PathsSchema.parse({
     accountApiKeys: '/home/[account]/settings/api-keys',
     accountDocs: '/home/[account]/docs',
     accountOnboarding: '/onboarding',
+    accountSessions: '/home/[account]/sessions',
+    accountSessionDetail: '/home/[account]/sessions/[sessionId]',
   },
 } satisfies z.infer<typeof PathsSchema>);
 

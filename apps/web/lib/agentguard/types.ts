@@ -256,3 +256,50 @@ export interface ApiKeyDisplay {
   last_used_at: string | null;
   revoked: boolean;
 }
+
+/**
+ * A session row for the sessions list page.
+ */
+export interface SessionListRow {
+  session_id: string;
+  agent_id: string;
+  agent_name: string;
+  turn_count: number;
+  avg_confidence: number | null;
+  first_timestamp: string;
+  last_timestamp: string;
+  has_block: boolean;
+  has_flag: boolean;
+}
+
+/**
+ * A single turn (execution) in a session detail view.
+ */
+export interface SessionTurn {
+  execution_id: string;
+  sequence_number: number | null;
+  task: string | null;
+  confidence: number | null;
+  action: 'pass' | 'flag' | 'block';
+  latency_ms: number | null;
+  timestamp: string;
+  corrected: boolean;
+  token_count: number | null;
+  cost_estimate: number | null;
+  metadata: Record<string, unknown>;
+}
+
+/**
+ * Session detail header aggregates.
+ */
+export interface SessionDetailHeader {
+  session_id: string;
+  agent_id: string;
+  agent_name: string;
+  turn_count: number;
+  avg_confidence: number | null;
+  first_timestamp: string;
+  last_timestamp: string;
+  total_tokens: number | null;
+  total_cost: number | null;
+}
