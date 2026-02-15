@@ -15,11 +15,11 @@ import { getTeamAccountSidebarConfig } from '~/config/team-account-navigation.co
 import { loadOnboardingState } from '~/lib/agentguard/onboarding.loader';
 import { withI18n } from '~/lib/i18n/with-i18n';
 
+import { PersistLastAccount } from './_components/persist-last-account';
 // local imports
 import { TeamAccountLayoutMobileNavigation } from './_components/team-account-layout-mobile-navigation';
 import { TeamAccountLayoutSidebar } from './_components/team-account-layout-sidebar';
 import { TeamAccountNavigationMenu } from './_components/team-account-navigation-menu';
-import { PersistLastAccount } from './_components/persist-last-account';
 import { loadTeamWorkspace } from './_lib/server/team-account-workspace.loader';
 
 type TeamWorkspaceLayoutProps = React.PropsWithChildren<{

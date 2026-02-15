@@ -45,19 +45,19 @@ export function AuthCarousel() {
       <div className="min-h-[160px]">
         <p
           key={`muted-${active}`}
-          className="text-muted-foreground animate-in fade-in duration-500 text-3xl font-light leading-snug"
+          className="text-muted-foreground animate-in fade-in text-3xl leading-snug font-light duration-500"
         >
           {slide.muted}
         </p>
         <p
           key={`bold-${active}`}
-          className="text-foreground animate-in fade-in duration-500 mt-1 text-3xl font-semibold leading-snug"
+          className="text-foreground animate-in fade-in mt-1 text-3xl leading-snug font-semibold duration-500"
         >
           {slide.bold}
         </p>
         <p
           key={`desc-${active}`}
-          className="text-muted-foreground animate-in fade-in duration-500 mt-6 text-base leading-relaxed"
+          className="text-muted-foreground animate-in fade-in mt-6 text-base leading-relaxed duration-500"
         >
           {slide.description}
         </p>

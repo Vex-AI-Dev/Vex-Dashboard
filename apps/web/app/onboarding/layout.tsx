@@ -37,7 +37,7 @@ export default function OnboardingLayout({
       {/* Subtle accent glow behind center content */}
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+        className="pointer-events-none fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
         style={{
           width: '700px',
           height: '500px',
