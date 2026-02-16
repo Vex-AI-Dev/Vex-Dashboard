@@ -65,20 +65,33 @@ export const loadAlerts = cache(
     const result = await pool.query<Alert & { total_count: string }>(
       `
       SELECT
-        al.*,
+        al.alert_id,
+        al.execution_id,
+        al.agent_id,
+        al.org_id,
+        al.alert_type,
+        al.severity,
+        al.delivered,
+        al.webhook_response,
+        al.webhook_url,
+        al.delivery_attempts,
+        al.last_attempt_at,
+        al.response_status,
+        al.created_at,
         ag.name AS agent_name,
         COUNT(*) OVER() AS total_count
       FROM alerts al
       LEFT JOIN agents ag ON al.agent_id = ag.agent_id
       WHERE ${whereClause}
       ORDER BY al.created_at DESC
-      LIMIT ${ALERTS_PAGE_SIZE} OFFSET ${offset}
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
       `,
-      params,
+      [...params, ALERTS_PAGE_SIZE, offset],
     );
 
     const totalCount = parseInt(result.rows[0]?.total_count ?? '0', 10);
-    const pageCount = Math.max(1, Math.ceil(totalCount / ALERTS_PAGE_SIZE));
+    const pageCount =
+      totalCount === 0 ? 0 : Math.ceil(totalCount / ALERTS_PAGE_SIZE);
 
     return {
       rows: result.rows,

@@ -109,13 +109,14 @@ export const loadSessionList = cache(
       SELECT *, COUNT(*) OVER() AS total_count
       FROM filtered
       ORDER BY last_timestamp DESC
-      LIMIT ${SESSIONS_PAGE_SIZE} OFFSET ${offset}
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
       `,
-      params,
+      [...params, SESSIONS_PAGE_SIZE, offset],
     );
 
     const totalCount = parseInt(result.rows[0]?.total_count ?? '0', 10);
-    const pageCount = Math.max(1, Math.ceil(totalCount / SESSIONS_PAGE_SIZE));
+    const pageCount =
+      totalCount === 0 ? 0 : Math.ceil(totalCount / SESSIONS_PAGE_SIZE);
 
     return {
       rows: result.rows.map((row) => ({

@@ -116,13 +116,14 @@ export const loadFailures = cache(
       LEFT JOIN agents ag ON e.agent_id = ag.agent_id
       WHERE ${whereClause}
       ORDER BY e.timestamp DESC
-      LIMIT ${FAILURES_PAGE_SIZE} OFFSET ${offset}
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
       `,
-      params,
+      [...params, FAILURES_PAGE_SIZE, offset],
     );
 
     const totalCount = parseInt(result.rows[0]?.total_count ?? '0', 10);
-    const pageCount = Math.max(1, Math.ceil(totalCount / FAILURES_PAGE_SIZE));
+    const pageCount =
+      totalCount === 0 ? 0 : Math.ceil(totalCount / FAILURES_PAGE_SIZE);
 
     return {
       rows: result.rows.map((row) => ({

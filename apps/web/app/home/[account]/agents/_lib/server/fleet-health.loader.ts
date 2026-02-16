@@ -104,13 +104,14 @@ export const loadAgentFleetTable = cache(
       WHERE a.org_id = $1
       GROUP BY a.agent_id, a.name
       ORDER BY COUNT(e.execution_id) DESC
-      LIMIT ${AGENTS_PAGE_SIZE} OFFSET ${offset}
+      LIMIT $2 OFFSET $3
       `,
-      [orgId],
+      [orgId, AGENTS_PAGE_SIZE, offset],
     );
 
     const totalCount = parseInt(result.rows[0]?.total_count ?? '0', 10);
-    const pageCount = Math.max(1, Math.ceil(totalCount / AGENTS_PAGE_SIZE));
+    const pageCount =
+      totalCount === 0 ? 0 : Math.ceil(totalCount / AGENTS_PAGE_SIZE);
 
     return {
       rows: result.rows.map((row) => ({
