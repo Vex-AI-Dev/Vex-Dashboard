@@ -1,3 +1,5 @@
+import { MessageSquareHeart } from 'lucide-react';
+
 import { JWTUserData } from '@kit/supabase/types';
 import {
   Sidebar,
@@ -7,12 +9,13 @@ import {
 } from '@kit/ui/shadcn-sidebar';
 
 import { ProfileAccountDropdownContainer } from '~/components//personal-account-dropdown-container';
+import { FeaturebaseMessenger } from '~/components/featurebase-messenger';
+import { LiveSupportButton } from '~/components/live-support-button';
 import featureFlagsConfig from '~/config/feature-flags.config';
 import pathsConfig from '~/config/paths.config';
 import { getTeamAccountSidebarConfig } from '~/config/team-account-navigation.config';
 import { TeamAccountNotifications } from '~/home/[account]/_components/team-account-notifications';
 
-import { SidebarFooterLinks } from '../_components/sidebar-footer-links';
 import { TeamAccountAccountsSelector } from '../_components/team-account-accounts-selector';
 import { TeamAccountLayoutSidebarNavigation } from './team-account-layout-sidebar-navigation';
 
@@ -105,9 +108,29 @@ function SidebarContainer(props: {
       </SidebarContent>
 
       <SidebarFooter>
-        <SidebarFooterLinks />
-
         <SidebarContent>
+          <FeaturebaseMessenger
+            email={user.email}
+            userId={userId}
+            userName={
+              (user.user_metadata?.display_name as string) ?? user.email
+            }
+          />
+
+          <LiveSupportButton />
+
+          <a
+            href="https://vex.featurebase.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-muted-foreground hover:bg-secondary hover:text-foreground flex items-center gap-2 rounded-md px-2 py-2 text-sm transition-colors group-data-[minimized=true]/sidebar:justify-center"
+          >
+            <MessageSquareHeart className="h-5 w-5" />
+            <span className="group-data-[minimized=true]/sidebar:hidden">
+              Feedback
+            </span>
+          </a>
+
           <ProfileAccountDropdownContainer user={props.user} links={dropdownLinks} />
         </SidebarContent>
       </SidebarFooter>

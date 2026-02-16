@@ -32,23 +32,17 @@ async function UserHomePage() {
     redirect('/home/addworkspace');
   }
 
-  // Redirect to last-visited account
+  // Redirect to last-visited account, or first account as fallback
   const lastAccount = cookieStore.get('last-account')?.value;
+  const targetAccount =
+    lastAccount ?? workspace.accounts[0]?.value ?? workspace.accounts[0]?.label;
 
-  if (lastAccount) {
-    redirect(pathsConfig.app.accountHome.replace('[account]', lastAccount));
+  if (targetAccount) {
+    redirect(pathsConfig.app.accountHome.replace('[account]', targetAccount));
   }
 
-  return (
-    <>
-      <HomeLayoutPageHeader
-        title={<Trans i18nKey={'common:routes.home'} />}
-        description={<Trans i18nKey={'common:homeTabDescription'} />}
-      />
-
-      <PageBody></PageBody>
-    </>
-  );
+  // Should never reach here, but just in case
+  redirect('/home/addworkspace');
 }
 
 export default withI18n(UserHomePage);

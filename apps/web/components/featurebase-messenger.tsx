@@ -4,41 +4,46 @@ import { useEffect } from 'react';
 
 import Script from 'next/script';
 
-import { useUser } from '@kit/supabase/hooks/use-user';
-
 declare global {
   interface Window {
-    Featurebase: {
-      (...args: unknown[]): void;
-      q?: unknown[];
-    };
+    Featurebase: ((...args: unknown[]) => void) & { q?: unknown[] };
   }
 }
 
-const FEATUREBASE_APP_ID = '6990d53c69987751d9a17203';
+interface FeaturebaseMessengerProps {
+  email?: string;
+  userId?: string;
+  userName?: string;
+}
 
-export function FeaturebaseMessenger() {
-  const user = useUser();
-  const userData = user.data;
-
+export function FeaturebaseMessenger({
+  email,
+  userId,
+  userName,
+}: FeaturebaseMessengerProps) {
   useEffect(() => {
     const win = window;
 
+    // Initialize Featurebase if it doesn't exist
     if (typeof win.Featurebase !== 'function') {
       win.Featurebase = function (...args: unknown[]) {
         (win.Featurebase.q = win.Featurebase.q || []).push(args);
       };
     }
 
-    win.Featurebase('boot', {
-      appId: FEATUREBASE_APP_ID,
-      ...(userData?.email ? { email: userData.email } : {}),
-      ...(userData?.id ? { userId: userData.id } : {}),
+    // Boot Featurebase messenger with configuration
+    const config: Record<string, unknown> = {
+      appId: '6990d53c69987751d9a17203',
       theme: 'dark',
-      language: 'en',
       hideDefaultLauncher: true,
-    });
-  }, [userData]);
+    };
+
+    if (email) config.email = email;
+    if (userId) config.userId = userId;
+    if (userName) config.name = userName;
+
+    win.Featurebase('boot', config);
+  }, [email, userId, userName]);
 
   return (
     <Script
@@ -47,4 +52,11 @@ export function FeaturebaseMessenger() {
       strategy="afterInteractive"
     />
   );
+}
+
+// Function to open the messenger programmatically
+export function openFeaturebaseMessenger() {
+  if (typeof window !== 'undefined' && window.Featurebase) {
+    window.Featurebase('show');
+  }
 }

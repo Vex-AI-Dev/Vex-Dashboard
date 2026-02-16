@@ -10,7 +10,6 @@ import { Page, PageMobileNavigation, PageNavigation } from '@kit/ui/page';
 import { SidebarProvider } from '@kit/ui/shadcn-sidebar';
 
 import { AppLogo } from '~/components/app-logo';
-import { FeaturebaseMessenger } from '~/components/featurebase-messenger';
 import { getTeamAccountSidebarConfig } from '~/config/team-account-navigation.config';
 import { loadOnboardingState } from '~/lib/agentguard/onboarding.loader';
 import { withI18n } from '~/lib/i18n/with-i18n';
@@ -107,7 +106,6 @@ async function SidebarLayout({
           {children}
         </Page>
 
-        <FeaturebaseMessenger />
       </SidebarProvider>
     </TeamAccountWorkspaceContextProvider>
   );
