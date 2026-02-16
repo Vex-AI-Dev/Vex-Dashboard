@@ -2,15 +2,15 @@
 
 import Link from 'next/link';
 
-import { format } from 'date-fns';
 import {
   AlertTriangle,
   CheckCircle2,
   ShieldAlert,
-  ShieldCheck,
+  Hexagon,
   Wrench,
   Zap,
 } from 'lucide-react';
+import { format } from 'date-fns';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 
 import { Badge } from '@kit/ui/badge';
@@ -124,7 +124,9 @@ export default function HomepageCharts({
                   tickMargin={8}
                   allowDecimals={false}
                 />
-                <ChartTooltip content={<ChartTooltipContent />} />
+                <ChartTooltip
+                  content={<ChartTooltipContent indicator="dot" />}
+                />
                 <Area
                   dataKey="pass"
                   type="natural"
@@ -212,23 +214,51 @@ export default function HomepageCharts({
 /* Reliability Gauge Card                                              */
 /* ------------------------------------------------------------------ */
 
+const gaugeThemes = {
+  good: {
+    from: '#34C78E',
+    to: '#2DD4BF',
+    glow: 'rgba(52, 199, 142, 0.35)',
+  },
+  warning: {
+    from: '#F97316',
+    to: '#FBBF24',
+    glow: 'rgba(249, 115, 22, 0.3)',
+  },
+  critical: {
+    from: '#F87171',
+    to: '#FB923C',
+    glow: 'rgba(248, 113, 113, 0.3)',
+  },
+  neutral: {
+    from: '#8C8C8C',
+    to: '#8C8C8C',
+    glow: 'transparent',
+  },
+} as const;
+
+type GaugeTheme = { from: string; to: string; glow: string };
+
 function ReliabilityGaugeCard({ confidence }: { confidence: number | null }) {
   const value = confidence ?? 0;
   const radius = 42;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - value * circumference;
 
-  let strokeColor = '#8C8C8C';
+  let theme: GaugeTheme = gaugeThemes.neutral;
 
   if (confidence != null) {
     if (confidence >= 0.8) {
-      strokeColor = '#34C78E';
+      theme = gaugeThemes.good;
     } else if (confidence >= 0.5) {
-      strokeColor = '#F97316';
+      theme = gaugeThemes.warning;
     } else {
-      strokeColor = '#F87171';
+      theme = gaugeThemes.critical;
     }
   }
+
+  const gradientId = 'gauge-gradient';
+  const glowId = 'gauge-glow';
 
   return (
     <Card className="border-border bg-card">
@@ -239,12 +269,25 @@ function ReliabilityGaugeCard({ confidence }: { confidence: number | null }) {
             className="h-20 w-20"
             style={{ transform: 'rotate(-90deg)' }}
           >
+            <defs>
+              <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor={theme.from} />
+                <stop offset="100%" stopColor={theme.to} />
+              </linearGradient>
+              <filter id={glowId}>
+                <feGaussianBlur stdDeviation="2.5" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
             <circle
               cx="50"
               cy="50"
               r={radius}
               fill="none"
-              stroke="#222222"
+              stroke="#1A1A1A"
               strokeWidth="7"
             />
             <circle
@@ -252,18 +295,19 @@ function ReliabilityGaugeCard({ confidence }: { confidence: number | null }) {
               cy="50"
               r={radius}
               fill="none"
-              stroke={strokeColor}
+              stroke={`url(#${gradientId})`}
               strokeWidth="7"
               strokeDasharray={circumference}
               strokeDashoffset={offset}
               strokeLinecap="round"
+              filter={`url(#${glowId})`}
               className="transition-all duration-1000 ease-out"
             />
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
-            <ShieldCheck
+            <Hexagon
               className="h-6 w-6"
-              style={{ color: strokeColor, transform: 'rotate(90deg)' }}
+              style={{ color: theme.from, opacity: 0.85 }}
             />
           </div>
         </div>
@@ -274,7 +318,7 @@ function ReliabilityGaugeCard({ confidence }: { confidence: number | null }) {
           </p>
           <span
             className="text-4xl font-semibold tracking-tight"
-            style={{ color: strokeColor }}
+            style={{ color: theme.from }}
           >
             {formatConfidence(confidence)}
           </span>
@@ -478,3 +522,4 @@ function SeverityPill({
     </Badge>
   );
 }
+
