@@ -126,7 +126,7 @@ function ContentBubble({
 function ToolCallCard({
   step,
 }: {
-  step: { step_name: string; input: unknown; output: unknown };
+  step: { name: string; input: unknown; output: unknown };
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -143,7 +143,7 @@ function ToolCallCard({
           <ChevronRight className="h-3 w-3 shrink-0" />
         )}
         <Wrench className="h-3 w-3 shrink-0" />
-        <span className="font-mono font-medium">{step.step_name}</span>
+        <span className="font-mono font-medium">{step.name}</span>
       </button>
       {expanded && (
         <div className="border-muted space-y-2 border-t px-3 py-2">

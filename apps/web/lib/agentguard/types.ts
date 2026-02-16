@@ -299,9 +299,11 @@ export interface TracePayload {
   ground_truth?: unknown;
   steps: Array<{
     step_type: string;
-    step_name: string;
-    input: string;
-    output: string;
+    /** Tool/step name — the actual S3 payload uses `name`, not `step_name`. */
+    name: string;
+    input: unknown;
+    output: unknown;
+    duration_ms?: number;
     timestamp: string;
   }>;
 }
