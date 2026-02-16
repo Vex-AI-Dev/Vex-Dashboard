@@ -23,6 +23,7 @@ import {
 } from '@kit/ui/table';
 import { Trans } from '@kit/ui/trans';
 
+import { PaginationBar } from '~/components/pagination-bar';
 import { formatTimestamp, truncateId } from '~/lib/agentguard/formatters';
 import type { Alert } from '~/lib/agentguard/types';
 
@@ -32,6 +33,8 @@ interface AlertsChartsProps {
   alerts: Alert[];
   accountSlug: string;
   agents: Array<{ agent_id: string; name: string }>;
+  page: number;
+  pageCount: number;
 }
 
 const SEVERITY_OPTIONS = ['critical', 'high', 'medium', 'low'];
@@ -46,6 +49,8 @@ export default function AlertsCharts({
   alerts,
   accountSlug,
   agents,
+  page,
+  pageCount,
 }: AlertsChartsProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -65,6 +70,7 @@ export default function AlertsCharts({
         params.delete(key);
       }
 
+      params.delete('page');
       router.push(`${pathname}?${params.toString()}`);
     },
     [router, pathname, searchParams],
@@ -237,6 +243,8 @@ export default function AlertsCharts({
               </TableBody>
             </Table>
           )}
+
+          <PaginationBar page={page} pageCount={pageCount} />
         </CardContent>
       </Card>
     </div>

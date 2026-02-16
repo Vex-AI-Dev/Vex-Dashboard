@@ -17,6 +17,7 @@ import {
 
 interface FleetHealthPageProps {
   params: Promise<{ account: string }>;
+  searchParams: Promise<{ page?: string }>;
 }
 
 export const generateMetadata = async () => {
@@ -28,16 +29,19 @@ export const generateMetadata = async () => {
   };
 };
 
-async function FleetHealthPage({ params }: FleetHealthPageProps) {
+async function FleetHealthPage({ params, searchParams }: FleetHealthPageProps) {
   const { account } = await params;
+  const filters = await searchParams;
   const orgId = await resolveOrgId(account);
+  const page = Math.max(1, parseInt(filters.page ?? '1', 10) || 1);
 
-  const [kpis, agents, executionsOverTime, recentSessions] = await Promise.all([
-    loadFleetKpis(orgId),
-    loadAgentFleetTable(orgId),
-    loadExecutionsOverTime(orgId),
-    loadFleetRecentSessions(orgId),
-  ]);
+  const [kpis, agentsResult, executionsOverTime, recentSessions] =
+    await Promise.all([
+      loadFleetKpis(orgId),
+      loadAgentFleetTable(orgId, page),
+      loadExecutionsOverTime(orgId),
+      loadFleetRecentSessions(orgId),
+    ]);
 
   return (
     <>
@@ -50,10 +54,12 @@ async function FleetHealthPage({ params }: FleetHealthPageProps) {
       <PageBody>
         <FleetHealthDashboard
           kpis={kpis}
-          agents={agents}
+          agents={agentsResult.rows}
           executionsOverTime={executionsOverTime}
           recentSessions={recentSessions}
           accountSlug={account}
+          page={page}
+          pageCount={agentsResult.pageCount}
         />
       </PageBody>
     </>

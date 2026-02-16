@@ -23,6 +23,7 @@ import {
 } from '@kit/ui/table';
 import { Trans } from '@kit/ui/trans';
 
+import { PaginationBar } from '~/components/pagination-bar';
 import {
   formatConfidence,
   formatTimestamp,
@@ -36,6 +37,8 @@ interface FailuresTableProps {
   failures: FailureRow[];
   accountSlug: string;
   agents: Array<{ agent_id: string; name: string }>;
+  page: number;
+  pageCount: number;
 }
 
 const TIME_RANGE_OPTIONS = [
@@ -59,6 +62,8 @@ export default function FailuresTable({
   failures,
   accountSlug,
   agents,
+  page,
+  pageCount,
 }: FailuresTableProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -79,6 +84,7 @@ export default function FailuresTable({
         params.delete(key);
       }
 
+      params.delete('page');
       router.push(`${pathname}?${params.toString()}`);
     },
     [router, pathname, searchParams],
@@ -273,6 +279,8 @@ export default function FailuresTable({
               </TableBody>
             </Table>
           )}
+
+          <PaginationBar page={page} pageCount={pageCount} />
         </CardContent>
       </Card>
     </div>

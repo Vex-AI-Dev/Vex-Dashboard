@@ -10,6 +10,8 @@ import type {
   FleetSessionSummary,
 } from '~/lib/agentguard/types';
 
+export const AGENTS_PAGE_SIZE = 25;
+
 /**
  * Load fleet-level KPI aggregates for the last 24 hours.
  */
@@ -62,9 +64,16 @@ export const loadFleetKpis = cache(
 /**
  * Load per-agent stats for the fleet table (last 24 hours).
  */
+export interface AgentFleetResult {
+  rows: AgentFleetRow[];
+  pageCount: number;
+}
+
 export const loadAgentFleetTable = cache(
-  async (orgId: string): Promise<AgentFleetRow[]> => {
+  async (orgId: string, page = 1): Promise<AgentFleetResult> => {
     const pool = getAgentGuardPool();
+    const safePage = Math.max(1, page);
+    const offset = (safePage - 1) * AGENTS_PAGE_SIZE;
 
     const result = await pool.query<{
       agent_id: string;
@@ -73,6 +82,7 @@ export const loadAgentFleetTable = cache(
       avg_confidence: number | null;
       pass_rate: number | null;
       last_active: string | null;
+      total_count: string;
     }>(
       `
       SELECT
@@ -85,7 +95,8 @@ export const loadAgentFleetTable = cache(
           THEN COUNT(e.execution_id) FILTER (WHERE e.action = 'pass')::float / COUNT(e.execution_id)
           ELSE NULL
         END AS pass_rate,
-        MAX(e.timestamp) AS last_active
+        MAX(e.timestamp) AS last_active,
+        COUNT(*) OVER() AS total_count
       FROM agents a
       LEFT JOIN executions e
         ON a.agent_id = e.agent_id
@@ -93,18 +104,25 @@ export const loadAgentFleetTable = cache(
       WHERE a.org_id = $1
       GROUP BY a.agent_id, a.name
       ORDER BY COUNT(e.execution_id) DESC
+      LIMIT ${AGENTS_PAGE_SIZE} OFFSET ${offset}
       `,
       [orgId],
     );
 
-    return result.rows.map((row) => ({
-      agent_id: row.agent_id,
-      name: row.name,
-      executions_24h: parseInt(row.executions_24h, 10),
-      avg_confidence: row.avg_confidence,
-      pass_rate: row.pass_rate,
-      last_active: row.last_active,
-    }));
+    const totalCount = parseInt(result.rows[0]?.total_count ?? '0', 10);
+    const pageCount = Math.max(1, Math.ceil(totalCount / AGENTS_PAGE_SIZE));
+
+    return {
+      rows: result.rows.map((row) => ({
+        agent_id: row.agent_id,
+        name: row.name,
+        executions_24h: parseInt(row.executions_24h, 10),
+        avg_confidence: row.avg_confidence,
+        pass_rate: row.pass_rate,
+        last_active: row.last_active,
+      })),
+      pageCount,
+    };
   },
 );
 

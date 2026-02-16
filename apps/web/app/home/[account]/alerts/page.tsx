@@ -17,6 +17,7 @@ interface AlertsPageProps {
     severity?: string;
     agent?: string;
     timeRange?: string;
+    page?: string;
   }>;
 }
 
@@ -34,11 +35,14 @@ async function AlertsPage({ params, searchParams }: AlertsPageProps) {
   const filters = await searchParams;
   const orgId = await resolveOrgId(account);
 
-  const [alerts, agentsResult] = await Promise.all([
+  const page = Math.max(1, parseInt(filters.page ?? '1', 10) || 1);
+
+  const [alertsResult, agentsResult] = await Promise.all([
     loadAlerts(orgId, {
       severity: filters.severity,
       agentId: filters.agent,
       timeRange: filters.timeRange as '1h' | '24h' | '7d' | '30d' | undefined,
+      page,
     }),
     getAgentGuardPool().query<{ agent_id: string; name: string }>(
       'SELECT agent_id, name FROM agents WHERE org_id = $1 ORDER BY name',
@@ -56,9 +60,11 @@ async function AlertsPage({ params, searchParams }: AlertsPageProps) {
 
       <PageBody>
         <AlertsDashboard
-          alerts={alerts}
+          alerts={alertsResult.rows}
           accountSlug={account}
           agents={agentsResult.rows}
+          page={page}
+          pageCount={alertsResult.pageCount}
         />
       </PageBody>
     </>

@@ -30,6 +30,7 @@ import {
 } from '@kit/ui/chart';
 import { Trans } from '@kit/ui/trans';
 
+import { PaginationBar } from '~/components/pagination-bar';
 import { formatConfidence } from '~/lib/agentguard/formatters';
 import type {
   AgentFleetRow,
@@ -45,6 +46,8 @@ interface FleetHealthChartsProps {
   executionsOverTime: ExecutionsOverTime[];
   recentSessions: FleetSessionSummary[];
   accountSlug: string;
+  page: number;
+  pageCount: number;
 }
 
 const executionsChartConfig = {
@@ -68,6 +71,8 @@ export default function FleetHealthCharts({
   executionsOverTime,
   recentSessions,
   accountSlug,
+  page,
+  pageCount,
 }: FleetHealthChartsProps) {
   useAgentGuardUpdates();
 
@@ -196,16 +201,20 @@ export default function FleetHealthCharts({
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            {agents.map((agent) => (
-              <AgentCard
-                key={agent.agent_id}
-                agent={agent}
-                sessions={sessionsByAgent.get(agent.agent_id) ?? []}
-                accountSlug={accountSlug}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              {agents.map((agent) => (
+                <AgentCard
+                  key={agent.agent_id}
+                  agent={agent}
+                  sessions={sessionsByAgent.get(agent.agent_id) ?? []}
+                  accountSlug={accountSlug}
+                />
+              ))}
+            </div>
+
+            <PaginationBar page={page} pageCount={pageCount} />
+          </>
         )}
       </div>
     </div>

@@ -18,6 +18,7 @@ interface FailuresPageProps {
     agent?: string;
     timeRange?: string;
     corrected?: string;
+    page?: string;
   }>;
 }
 
@@ -35,12 +36,15 @@ async function FailuresPage({ params, searchParams }: FailuresPageProps) {
   const filters = await searchParams;
   const orgId = await resolveOrgId(account);
 
-  const [failures, agentsResult] = await Promise.all([
+  const page = Math.max(1, parseInt(filters.page ?? '1', 10) || 1);
+
+  const [failuresResult, agentsResult] = await Promise.all([
     loadFailures(orgId, {
       action: filters.action,
       agentId: filters.agent,
       timeRange: filters.timeRange as '1h' | '24h' | '7d' | '30d' | undefined,
       corrected: filters.corrected as 'true' | 'false' | undefined,
+      page,
     }),
     getAgentGuardPool().query<{ agent_id: string; name: string }>(
       'SELECT agent_id, name FROM agents WHERE org_id = $1 ORDER BY name',
@@ -58,9 +62,11 @@ async function FailuresPage({ params, searchParams }: FailuresPageProps) {
 
       <PageBody>
         <FailuresDashboard
-          failures={failures}
+          failures={failuresResult.rows}
           accountSlug={account}
           agents={agentsResult.rows}
+          page={page}
+          pageCount={failuresResult.pageCount}
         />
       </PageBody>
     </>

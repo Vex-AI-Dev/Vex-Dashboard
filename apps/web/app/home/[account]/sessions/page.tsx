@@ -17,6 +17,7 @@ interface SessionsPageProps {
     agent?: string;
     status?: string;
     timeRange?: string;
+    page?: string;
   }>;
 }
 
@@ -34,11 +35,14 @@ async function SessionsPage({ params, searchParams }: SessionsPageProps) {
   const filters = await searchParams;
   const orgId = await resolveOrgId(account);
 
-  const [sessions, agentsResult] = await Promise.all([
+  const page = Math.max(1, parseInt(filters.page ?? '1', 10) || 1);
+
+  const [sessionsResult, agentsResult] = await Promise.all([
     loadSessionList(orgId, {
       agentId: filters.agent,
       status: filters.status as 'healthy' | 'degraded' | 'risky' | undefined,
       timeRange: filters.timeRange as '24h' | '7d' | '30d' | undefined,
+      page,
     }),
     getAgentGuardPool().query<{ agent_id: string; name: string }>(
       'SELECT agent_id, name FROM agents WHERE org_id = $1 ORDER BY name',
@@ -56,9 +60,11 @@ async function SessionsPage({ params, searchParams }: SessionsPageProps) {
 
       <PageBody>
         <SessionsDashboard
-          sessions={sessions}
+          sessions={sessionsResult.rows}
           accountSlug={account}
           agents={agentsResult.rows}
+          page={page}
+          pageCount={sessionsResult.pageCount}
         />
       </PageBody>
     </>

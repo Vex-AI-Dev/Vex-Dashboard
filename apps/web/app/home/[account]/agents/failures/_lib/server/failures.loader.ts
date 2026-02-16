@@ -16,11 +16,14 @@ export interface FailureRow {
   timestamp: string;
 }
 
+export const FAILURES_PAGE_SIZE = 25;
+
 export interface FailureFilters {
   agentId?: string;
   action?: string;
   timeRange?: '1h' | '24h' | '7d' | '30d';
   corrected?: 'true' | 'false';
+  page?: number;
 }
 
 const TIME_RANGE_INTERVALS: Record<string, string> = {
@@ -34,9 +37,16 @@ const TIME_RANGE_INTERVALS: Record<string, string> = {
  * Load flagged and blocked executions for an organization with optional filters.
  * Joins with agents table for names and check_results for failure types.
  */
+export interface FailuresResult {
+  rows: FailureRow[];
+  pageCount: number;
+}
+
 export const loadFailures = cache(
-  async (orgId: string, filters?: FailureFilters): Promise<FailureRow[]> => {
+  async (orgId: string, filters?: FailureFilters): Promise<FailuresResult> => {
     const pool = getAgentGuardPool();
+    const page = Math.max(1, filters?.page ?? 1);
+    const offset = (page - 1) * FAILURES_PAGE_SIZE;
 
     const conditions: string[] = [
       'e.org_id = $1',
@@ -83,6 +93,7 @@ export const loadFailures = cache(
       failure_types: string[] | null;
       corrected: boolean | null;
       timestamp: string;
+      total_count: string;
     }>(
       `
       SELECT
@@ -99,26 +110,33 @@ export const loadFailures = cache(
           WHERE cr.execution_id = e.execution_id
             AND cr.passed = FALSE
         ) AS failure_types,
-        e.timestamp
+        e.timestamp,
+        COUNT(*) OVER() AS total_count
       FROM executions e
       LEFT JOIN agents ag ON e.agent_id = ag.agent_id
       WHERE ${whereClause}
       ORDER BY e.timestamp DESC
-      LIMIT 200
+      LIMIT ${FAILURES_PAGE_SIZE} OFFSET ${offset}
       `,
       params,
     );
 
-    return result.rows.map((row) => ({
-      execution_id: row.execution_id,
-      agent_id: row.agent_id,
-      agent_name: row.agent_name,
-      task: row.task,
-      action: row.action,
-      confidence: row.confidence,
-      failure_types: row.failure_types ?? [],
-      corrected: row.corrected ?? false,
-      timestamp: row.timestamp,
-    }));
+    const totalCount = parseInt(result.rows[0]?.total_count ?? '0', 10);
+    const pageCount = Math.max(1, Math.ceil(totalCount / FAILURES_PAGE_SIZE));
+
+    return {
+      rows: result.rows.map((row) => ({
+        execution_id: row.execution_id,
+        agent_id: row.agent_id,
+        agent_name: row.agent_name,
+        task: row.task,
+        action: row.action,
+        confidence: row.confidence,
+        failure_types: row.failure_types ?? [],
+        corrected: row.corrected ?? false,
+        timestamp: row.timestamp,
+      })),
+      pageCount,
+    };
   },
 );

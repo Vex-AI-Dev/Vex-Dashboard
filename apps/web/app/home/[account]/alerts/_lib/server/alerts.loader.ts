@@ -5,10 +5,13 @@ import { cache } from 'react';
 import { getAgentGuardPool } from '~/lib/agentguard/db';
 import type { Alert } from '~/lib/agentguard/types';
 
+export const ALERTS_PAGE_SIZE = 25;
+
 export interface AlertFilters {
   severity?: string;
   agentId?: string;
   timeRange?: '1h' | '24h' | '7d' | '30d';
+  page?: number;
 }
 
 const TIME_RANGE_INTERVALS: Record<string, string> = {
@@ -22,9 +25,16 @@ const TIME_RANGE_INTERVALS: Record<string, string> = {
  * Load alerts for an organization with optional filters.
  * Joins with agents table to include agent names.
  */
+export interface AlertsResult {
+  rows: Alert[];
+  pageCount: number;
+}
+
 export const loadAlerts = cache(
-  async (orgId: string, filters?: AlertFilters): Promise<Alert[]> => {
+  async (orgId: string, filters?: AlertFilters): Promise<AlertsResult> => {
     const pool = getAgentGuardPool();
+    const page = Math.max(1, filters?.page ?? 1);
+    const offset = (page - 1) * ALERTS_PAGE_SIZE;
 
     const conditions: string[] = ['al.org_id = $1'];
     const params: unknown[] = [orgId];
@@ -52,20 +62,27 @@ export const loadAlerts = cache(
 
     const whereClause = conditions.join(' AND ');
 
-    const result = await pool.query<Alert>(
+    const result = await pool.query<Alert & { total_count: string }>(
       `
       SELECT
         al.*,
-        ag.name AS agent_name
+        ag.name AS agent_name,
+        COUNT(*) OVER() AS total_count
       FROM alerts al
       LEFT JOIN agents ag ON al.agent_id = ag.agent_id
       WHERE ${whereClause}
       ORDER BY al.created_at DESC
-      LIMIT 200
+      LIMIT ${ALERTS_PAGE_SIZE} OFFSET ${offset}
       `,
       params,
     );
 
-    return result.rows;
+    const totalCount = parseInt(result.rows[0]?.total_count ?? '0', 10);
+    const pageCount = Math.max(1, Math.ceil(totalCount / ALERTS_PAGE_SIZE));
+
+    return {
+      rows: result.rows,
+      pageCount,
+    };
   },
 );

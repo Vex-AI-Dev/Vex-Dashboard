@@ -12,10 +12,13 @@ import type {
   TracePayload,
 } from '~/lib/agentguard/types';
 
+export const SESSIONS_PAGE_SIZE = 25;
+
 export interface SessionFilters {
   agentId?: string;
   status?: 'healthy' | 'degraded' | 'risky';
   timeRange?: '24h' | '7d' | '30d';
+  page?: number;
 }
 
 const TIME_RANGE_INTERVALS: Record<string, string> = {
@@ -27,12 +30,19 @@ const TIME_RANGE_INTERVALS: Record<string, string> = {
 /**
  * Load paginated session list for an organization with optional filters.
  */
+export interface SessionListResult {
+  rows: SessionListRow[];
+  pageCount: number;
+}
+
 export const loadSessionList = cache(
   async (
     orgId: string,
     filters?: SessionFilters,
-  ): Promise<SessionListRow[]> => {
+  ): Promise<SessionListResult> => {
     const pool = getAgentGuardPool();
+    const page = Math.max(1, filters?.page ?? 1);
+    const offset = (page - 1) * SESSIONS_PAGE_SIZE;
 
     const conditions: string[] = ['e.org_id = $1', 'e.session_id IS NOT NULL'];
     const params: unknown[] = [orgId];
@@ -76,40 +86,51 @@ export const loadSessionList = cache(
       last_timestamp: string;
       has_block: boolean;
       has_flag: boolean;
+      total_count: string;
     }>(
       `
-      SELECT
-        e.session_id,
-        e.agent_id,
-        a.name AS agent_name,
-        COUNT(*) AS turn_count,
-        AVG(e.confidence) AS avg_confidence,
-        MIN(e.timestamp) AS first_timestamp,
-        MAX(e.timestamp) AS last_timestamp,
-        BOOL_OR(e.action = 'block') AS has_block,
-        BOOL_OR(e.action = 'flag') AS has_flag
-      FROM executions e
-      JOIN agents a ON e.agent_id = a.agent_id AND e.org_id = a.org_id
-      WHERE ${whereClause}
-      GROUP BY e.session_id, e.agent_id, a.name
-      ${statusFilter}
-      ORDER BY MAX(e.timestamp) DESC
-      LIMIT 50
+      WITH filtered AS (
+        SELECT
+          e.session_id,
+          e.agent_id,
+          a.name AS agent_name,
+          COUNT(*) AS turn_count,
+          AVG(e.confidence) AS avg_confidence,
+          MIN(e.timestamp) AS first_timestamp,
+          MAX(e.timestamp) AS last_timestamp,
+          BOOL_OR(e.action = 'block') AS has_block,
+          BOOL_OR(e.action = 'flag') AS has_flag
+        FROM executions e
+        JOIN agents a ON e.agent_id = a.agent_id AND e.org_id = a.org_id
+        WHERE ${whereClause}
+        GROUP BY e.session_id, e.agent_id, a.name
+        ${statusFilter}
+      )
+      SELECT *, COUNT(*) OVER() AS total_count
+      FROM filtered
+      ORDER BY last_timestamp DESC
+      LIMIT ${SESSIONS_PAGE_SIZE} OFFSET ${offset}
       `,
       params,
     );
 
-    return result.rows.map((row) => ({
-      session_id: row.session_id,
-      agent_id: row.agent_id,
-      agent_name: row.agent_name,
-      turn_count: parseInt(row.turn_count, 10),
-      avg_confidence: row.avg_confidence,
-      first_timestamp: row.first_timestamp,
-      last_timestamp: row.last_timestamp,
-      has_block: row.has_block,
-      has_flag: row.has_flag,
-    }));
+    const totalCount = parseInt(result.rows[0]?.total_count ?? '0', 10);
+    const pageCount = Math.max(1, Math.ceil(totalCount / SESSIONS_PAGE_SIZE));
+
+    return {
+      rows: result.rows.map((row) => ({
+        session_id: row.session_id,
+        agent_id: row.agent_id,
+        agent_name: row.agent_name,
+        turn_count: parseInt(row.turn_count, 10),
+        avg_confidence: row.avg_confidence,
+        first_timestamp: row.first_timestamp,
+        last_timestamp: row.last_timestamp,
+        has_block: row.has_block,
+        has_flag: row.has_flag,
+      })),
+      pageCount,
+    };
   },
 );
 
