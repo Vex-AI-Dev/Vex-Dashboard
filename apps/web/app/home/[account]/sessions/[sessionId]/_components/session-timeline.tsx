@@ -126,7 +126,7 @@ function ContentBubble({
 function ToolCallCard({
   step,
 }: {
-  step: { step_name: string; input: string; output: string };
+  step: { step_name: string; input: unknown; output: unknown };
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -134,7 +134,7 @@ function ToolCallCard({
     <div className="border-muted mx-11 rounded-md border">
       <button
         type="button"
-        className="text-muted-foreground flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-muted/50"
+        className="text-muted-foreground hover:bg-muted/50 flex w-full items-center gap-2 px-3 py-2 text-left text-xs"
         onClick={() => setExpanded(!expanded)}
       >
         {expanded ? (
@@ -147,23 +147,23 @@ function ToolCallCard({
       </button>
       {expanded && (
         <div className="border-muted space-y-2 border-t px-3 py-2">
-          {step.input && (
+          {step.input != null && step.input !== '' && (
             <div>
               <span className="text-muted-foreground text-xs font-medium">
                 Input
               </span>
               <pre className="bg-muted/50 mt-1 max-h-40 overflow-auto rounded p-2 text-xs">
-                {step.input}
+                {formatPayloadContent(step.input)}
               </pre>
             </div>
           )}
-          {step.output && (
+          {step.output != null && step.output !== '' && (
             <div>
               <span className="text-muted-foreground text-xs font-medium">
                 Output
               </span>
               <pre className="bg-muted/50 mt-1 max-h-40 overflow-auto rounded p-2 text-xs">
-                {step.output}
+                {formatPayloadContent(step.output)}
               </pre>
             </div>
           )}
