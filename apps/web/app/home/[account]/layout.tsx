@@ -105,7 +105,6 @@ async function SidebarLayout({
 
           {children}
         </Page>
-
       </SidebarProvider>
     </TeamAccountWorkspaceContextProvider>
   );

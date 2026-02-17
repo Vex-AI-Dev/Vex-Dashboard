@@ -36,9 +36,8 @@ async function SessionDetailPage({ params }: SessionDetailPageProps) {
     loadSessionTurns(sessionId, orgId),
   ]);
 
-  const tracePayloads = turns.length > 0
-    ? await loadSessionTracePayloads(turns)
-    : {};
+  const tracePayloads =
+    turns.length > 0 ? await loadSessionTracePayloads(turns) : {};
 
   if (!header) {
     return (

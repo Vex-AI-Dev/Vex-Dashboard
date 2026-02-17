@@ -131,7 +131,10 @@ function SidebarContainer(props: {
             </span>
           </a>
 
-          <ProfileAccountDropdownContainer user={props.user} links={dropdownLinks} />
+          <ProfileAccountDropdownContainer
+            user={props.user}
+            links={dropdownLinks}
+          />
         </SidebarContent>
       </SidebarFooter>
     </Sidebar>

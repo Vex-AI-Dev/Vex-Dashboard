@@ -2,15 +2,15 @@
 
 import Link from 'next/link';
 
+import { format } from 'date-fns';
 import {
   AlertTriangle,
   CheckCircle2,
-  ShieldAlert,
   Hexagon,
+  ShieldAlert,
   Wrench,
   Zap,
 } from 'lucide-react';
-import { format } from 'date-fns';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 
 import { Badge } from '@kit/ui/badge';
@@ -522,4 +522,3 @@ function SeverityPill({
     </Badge>
   );
 }
-

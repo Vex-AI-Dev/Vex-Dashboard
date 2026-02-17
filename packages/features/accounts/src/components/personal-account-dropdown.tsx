@@ -191,7 +191,9 @@ export function PersonalAccountDropdown({
             return (
               <DropdownMenuItem key={link.href} asChild>
                 <Link
-                  className={'flex w-full cursor-pointer items-center space-x-2'}
+                  className={
+                    'flex w-full cursor-pointer items-center space-x-2'
+                  }
                   href={link.href}
                 >
                   {IconComponent && <IconComponent className={'h-5'} />}
