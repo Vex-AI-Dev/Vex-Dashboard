@@ -1,33 +1,50 @@
-> **First-time setup**: Customize this file for your project. Prompt the user to customize this file for their project.
-> For Mintlify product knowledge (components, configuration, writing standards),
-> install the Mintlify skill: `npx skills add https://mintlify.com/docs`
-
-# Documentation project instructions
+# Vex Documentation
 
 ## About this project
 
-- This is a documentation site built on [Mintlify](https://mintlify.com)
+- Documentation site for [Vex](https://tryvex.dev) — runtime reliability for AI agents
+- Built on [Mintlify](https://mintlify.com), deployed to `docs.tryvex.dev`
 - Pages are MDX files with YAML frontmatter
 - Configuration lives in `docs.json`
 - Run `mint dev` to preview locally
 - Run `mint broken-links` to check links
 
+## Structure
+
+| Directory | Content |
+|-----------|---------|
+| Root (`*.mdx`) | Getting Started (index, quickstart, how-vex-works) |
+| `concepts/` | Core Concepts (async-vs-sync, correction-cascade, confidence, sessions) |
+| `python/` | Python SDK reference (6 pages) |
+| `typescript/` | TypeScript SDK reference (5 pages) |
+| `frameworks/` | Framework integration guides (LangChain, CrewAI, OpenAI Assistants, Next.js, Express) |
+| `dashboard/` | Dashboard documentation (7 pages) |
+| `api-reference/` | REST API reference + OpenAPI spec |
+| `snippets/` | Reusable MDX snippets |
+
 ## Terminology
 
-<!-- Add product-specific terms and preferred usage -->
-<!-- Example: Use "workspace" not "project", "member" not "user" -->
+- **Vex** — the product name, always capitalized
+- **agent** — the AI agent being monitored (not "bot" or "model")
+- **trace** / **tracing** — recording an agent execution
+- **execution** — a single agent invocation with input/output
+- **session** — a group of related executions (e.g., a conversation)
+- **confidence** — 0–1 quality score from verification
+- **action** — pass, flag, or block
+- **drift** — behavioral change without errors
+- **correction cascade** — three-layer auto-correction (repair → constrained regen → re-prompt)
+- Use `guard` for Python SDK variable name, `vex` for TypeScript
 
 ## Style preferences
 
-<!-- Add any project-specific style rules below -->
-
-- Use active voice and second person ("you")
-- Keep sentences concise — one idea per sentence
-- Use sentence case for headings
+- Active voice and second person ("you")
+- Code-first: every concept page leads with a working example
+- Dual SDK: use `<CodeGroup>` with Python and TypeScript tabs
+- Sentence case for headings
 - Bold for UI elements: Click **Settings**
 - Code formatting for file names, commands, paths, and code references
 
-## Content boundaries
+## SDK versions
 
-<!-- Define what should and shouldn't be documented -->
-<!-- Example: Don't document internal admin features -->
+- Python: `vex-sdk` v0.3.0
+- TypeScript: `@vex_dev/sdk` v0.1.1

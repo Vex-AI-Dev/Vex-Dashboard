@@ -1,0 +1,10 @@
+| Field | Python | TypeScript | Type | Description |
+|---|---|---|---|---|
+| Output | `result.output` | `result.output` | `any` | Agent output (or corrected output if correction applied) |
+| Confidence | `result.confidence` | `result.confidence` | `float \| null` | 0–1 confidence score (`None`/`null` in async mode) |
+| Action | `result.action` | `result.action` | `string` | `"pass"`, `"flag"`, or `"block"` |
+| Execution ID | `result.execution_id` | `result.executionId` | `string` | UUID identifying this execution |
+| Corrected | `result.corrected` | `result.corrected` | `bool` | Whether the output was corrected |
+| Original Output | `result.original_output` | `result.originalOutput` | `any \| null` | Original output before correction (transparent mode only) |
+| Corrections | `result.corrections` | `result.corrections` | `list \| null` | Details of each correction attempt |
+| Verification | `result.verification` | `result.verification` | `dict \| null` | Per-check results (schema, hallucination, drift, confidence, coherence) |
