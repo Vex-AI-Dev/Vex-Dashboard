@@ -1,0 +1,221 @@
+---
+title: "Sessions"
+description: "Track multi-turn conversations with sessions."
+---
+
+A `Session` groups a sequence of related executions under a single conversation thread. Each turn in the session carries its position in the sequence, and the SDK automatically injects recent conversation history into each trace so the verifier can check for coherence, topic drift, and contradictions across turns.
+
+## Creating a session
+
+```python
+import os
+from vex import Vex
+
+guard = Vex(api_key=os.environ["VEX_API_KEY"])
+
+session = guard.session(agent_id="chat-bot")
+print(session.session_id)  # Auto-generated UUID
+```
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `agent_id` | `str` | Yes | Identifies the agent. All turns in this session appear under this agent in the dashboard. |
+| `session_id` | `str` | No | Custom session identifier. If omitted, a UUID is generated automatically. |
+| `metadata` | `Dict` | No | Key-value pairs attached to the session (e.g. user ID, channel, locale). |
+
+## Running a turn
+
+Use `session.trace()` to execute each conversational turn. The API is identical to `guard.trace()` except the session tracks sequence and history automatically.
+
+```python
+with session.trace(
+    task="Answer customer support questions",
+    input_data={"message": user_message},
+) as ctx:
+    response = llm.complete(user_message)
+    ctx.record(response)
+
+result = ctx.result
+print(result.output)
+print(result.action)
+```
+
+### Parameters
+
+| Parameter | Type | Description |
+|---|---|---|
+| `task` | `str` | Task description for this turn. Can differ across turns if the agent's goal changes. |
+| `input_data` | `Any` | The user's message or structured input for this turn. |
+| `parent_execution_id` | `str` | Execution ID of a parent trace to create a tree relationship. See [Tree tracing](#tree-tracing). |
+
+## Auto-incrementing sequence
+
+Each call to `session.trace()` increments `session.sequence` by 1. The sequence number is recorded on every execution and is visible in the dashboard trace list, making it easy to reconstruct the full conversation order.
+
+```python
+session = guard.session(agent_id="chat-bot")
+print(session.sequence)  # 0
+
+with session.trace(input_data="Hello") as ctx:
+    ctx.record(llm.complete("Hello"))
+
+print(session.sequence)  # 1
+
+with session.trace(input_data="What are your hours?") as ctx:
+    ctx.record(llm.complete("What are your hours?"))
+
+print(session.sequence)  # 2
+```
+
+## Conversation history injection
+
+The session automatically maintains a window of recent `(input, output)` pairs from previous turns. This history is included in every trace sent to the Vex API, enabling the coherence verifier to detect:
+
+- Contradictions between the current response and previous answers
+- Topic drift across the conversation
+- Persona changes (e.g. the bot was friendly in turn 1, curt in turn 5)
+
+The window size is controlled by `conversation_window_size` in `VexConfig` (default: `10`). Older turns are dropped from the window automatically.
+
+```python
+from vex import Vex, VexConfig
+
+guard = Vex(
+    api_key=os.environ["VEX_API_KEY"],
+    config=VexConfig(conversation_window_size=5),  # Keep last 5 turns
+)
+```
+
+## Custom session IDs
+
+Pass a `session_id` to correlate Vex sessions with your own conversation identifiers (database IDs, chat thread IDs, etc.):
+
+```python
+# Your system already has a conversation ID — reuse it.
+conversation_id = db.create_conversation(user_id=user.id)
+
+session = guard.session(
+    agent_id="chat-bot",
+    session_id=str(conversation_id),
+)
+```
+
+Custom session IDs appear in the dashboard and can be used to look up a specific conversation in the Traces view.
+
+## Session metadata
+
+Attach metadata at session creation time. This metadata is inherited by every trace in the session, so you do not need to call `ctx.set_metadata()` on each turn for common fields.
+
+```python
+session = guard.session(
+    agent_id="chat-bot",
+    session_id=str(conversation_id),
+    metadata={
+        "user_id": str(user.id),
+        "channel": "web",
+        "locale": request.headers.get("Accept-Language", "en-US"),
+        "plan": user.subscription_tier,
+    },
+)
+```
+
+## Tree tracing
+
+Pass `parent_execution_id` to create a parent-child relationship between traces. This is useful when a single turn in the conversation triggers sub-agents or tool-calling chains that you want to trace independently.
+
+```python
+with session.trace(input_data=user_message) as main_ctx:
+    # Run the orchestrator — get its execution ID.
+    orchestrator_output = orchestrator.run(user_message)
+    main_execution_id = main_ctx._execution_id  # Available mid-block
+
+    # Sub-agent trace linked as a child of the orchestrator trace.
+    with session.trace(
+        task="Fetch order status from the database",
+        input_data={"order_id": parsed_order_id},
+        parent_execution_id=main_execution_id,
+    ) as sub_ctx:
+        status = order_db.get_status(parsed_order_id)
+        sub_ctx.record(status)
+
+    main_ctx.record(orchestrator_output)
+```
+
+## Thread safety
+
+`Session` is thread-safe for sequential use: the sequence counter and conversation history are protected by a lock. However, calling `session.trace()` concurrently from multiple threads on the same session instance is not supported and will produce undefined sequence ordering. Create one session per conversation thread.
+
+<Warning>
+Do not share a single `Session` instance across concurrent threads or async tasks. Create a new session per conversation context.
+</Warning>
+
+## Full multi-turn example
+
+```python
+import os
+import atexit
+from vex import Vex, VexConfig, VexBlockError
+
+guard = Vex(
+    api_key=os.environ["VEX_API_KEY"],
+    config=VexConfig(
+        mode="sync",
+        conversation_window_size=10,
+    ),
+)
+atexit.register(guard.close)
+
+def run_chat_session(user_id: str, conversation_id: str) -> None:
+    session = guard.session(
+        agent_id="customer-support-chat",
+        session_id=conversation_id,
+        metadata={
+            "user_id": user_id,
+            "channel": "web",
+        },
+    )
+
+    print("Chat started. Type 'quit' to exit.")
+
+    while True:
+        user_message = input("You: ").strip()
+        if user_message.lower() == "quit":
+            break
+
+        try:
+            with session.trace(
+                task="Answer customer support questions accurately and helpfully",
+                input_data={"message": user_message},
+            ) as ctx:
+                # Your existing LLM call — unchanged.
+                response = llm.complete(
+                    system="You are a helpful support agent.",
+                    user=user_message,
+                )
+                ctx.set_token_count(response.usage.total_tokens)
+                ctx.record(response.content)
+
+            result = ctx.result
+
+            if result.action == "flag":
+                # Deliver the response but queue it for human review.
+                logger.warning(
+                    "Flagged turn",
+                    extra={
+                        "execution_id": result.execution_id,
+                        "sequence": session.sequence,
+                        "confidence": result.confidence,
+                    },
+                )
+
+            print(f"Bot: {result.output}")
+
+        except VexBlockError as e:
+            logger.error(
+                "Turn blocked",
+                extra={"execution_id": e.result.execution_id, "sequence": session.sequence},
+            )
+            print("Bot: I'm sorry, I'm unable to respond to that. Please rephrase your question.")
+```

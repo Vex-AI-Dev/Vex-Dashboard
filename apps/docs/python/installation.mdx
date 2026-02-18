@@ -1,0 +1,129 @@
+---
+title: "Installation"
+description: "Install and configure the Vex Python SDK."
+---
+
+## Requirements
+
+The Vex Python SDK requires **Python 3.9 or later**. The following packages are installed automatically as dependencies — you do not need to install them separately:
+
+- [`httpx`](https://www.python-httpx.org/) — async-capable HTTP client used for all API communication
+- [`pydantic`](https://docs.pydantic.dev/) v2 — used for config validation and result modeling
+
+## Install the package
+
+```bash
+pip install vex-sdk
+```
+
+If you manage dependencies with a lockfile, pin to a minor version to avoid unexpected breaking changes:
+
+```bash
+pip install "vex-sdk>=0.3,<0.4"
+```
+
+## Initialize the client
+
+There are two ways to pass your API key to the `Vex` constructor.
+
+<CodeGroup>
+
+```python Environment variable (recommended)
+import os
+from vex import Vex
+
+# SDK reads VEX_API_KEY automatically when api_key is omitted.
+# Set the variable before starting your process:
+#   export VEX_API_KEY=vex_live_...
+guard = Vex(api_key=os.environ["VEX_API_KEY"])
+```
+
+```python Explicit argument
+from vex import Vex
+
+guard = Vex(api_key="vex_live_xxxxxxxxxxxxxxxxxxxx")
+```
+
+</CodeGroup>
+
+<Tip>
+Always load the API key from an environment variable or secrets manager in production. Never commit a raw key to source control.
+</Tip>
+
+### API key validation rules
+
+The constructor raises `ConfigurationError` immediately if the key is invalid — before any network call is made.
+
+| Rule | Detail |
+|---|---|
+| Must not be empty | An empty string raises `ConfigurationError` |
+| Minimum length | At least 10 characters |
+
+```python
+from vex import Vex, ConfigurationError
+
+try:
+    guard = Vex(api_key="short")
+except ConfigurationError as e:
+    print(f"Bad key: {e}")
+```
+
+## Passing a custom configuration
+
+Pass a `VexConfig` instance as the second argument to override any defaults:
+
+```python
+from vex import Vex, VexConfig
+
+guard = Vex(
+    api_key=os.environ["VEX_API_KEY"],
+    config=VexConfig(
+        mode="sync",
+        correction="cascade",
+    ),
+)
+```
+
+See [Configuration](/python/configuration) for the full parameter reference.
+
+## Cleanup
+
+The SDK starts a background flush thread on initialization. Call `guard.close()` when your process is shutting down to flush any buffered events and stop the thread cleanly.
+
+```python
+import atexit
+from vex import Vex
+
+guard = Vex(api_key=os.environ["VEX_API_KEY"])
+
+# Register once at startup — runs automatically on interpreter exit.
+atexit.register(guard.close)
+```
+
+`guard.close()` is idempotent and safe to call multiple times. In long-running services you can also call it explicitly in a shutdown signal handler.
+
+<Note>
+Skipping `guard.close()` at process exit will not cause data loss in most cases — the OS will flush open sockets — but calling it explicitly guarantees that the final batch of events is delivered before the process terminates.
+</Note>
+
+## What's next?
+
+<CardGroup cols={2}>
+
+<Card title="Decorator Pattern" icon="at" href="/python/decorator">
+  Wrap any agent function with a single decorator line.
+</Card>
+
+<Card title="Context Manager" icon="brackets-curly" href="/python/context-manager">
+  Fine-grained step-level tracing for complex pipelines.
+</Card>
+
+<Card title="Sessions" icon="messages" href="/python/sessions">
+  Track multi-turn conversations across calls.
+</Card>
+
+<Card title="Configuration" icon="sliders" href="/python/configuration">
+  Full VexConfig and ThresholdConfig reference.
+</Card>
+
+</CardGroup>

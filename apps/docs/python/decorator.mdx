@@ -1,0 +1,249 @@
+---
+title: "Decorator Pattern"
+sidebarTitle: "Decorator"
+description: "Monitor agent functions with the @guard.watch() decorator."
+---
+
+The `@guard.watch()` decorator is the fastest way to add Vex tracing to an existing agent function. One line wraps the entire execution — input capture, output capture, and verification — with no changes to the function body.
+
+## Basic usage
+
+```python
+import os
+from vex import Vex
+
+guard = Vex(api_key=os.environ["VEX_API_KEY"])
+
+@guard.watch(agent_id="support-bot", task="Answer customer support questions")
+def handle_support(query: str) -> str:
+    return my_llm.run(query)
+
+result = handle_support("How do I reset my password?")
+print(result.output)   # The agent's response string
+print(result.action)   # "pass", "flag", or "block"
+print(result.confidence)  # 0–1 float (None in async mode)
+```
+
+<Note>
+The decorated function returns a `VexResult`, not the raw return value of the original function. Access the agent's actual output via `result.output`.
+</Note>
+
+## Parameters
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `agent_id` | `str` | Yes | Identifies which agent this execution belongs to. Used for grouping traces in the dashboard. |
+| `task` | `str` | No | Human-readable description of what the agent is supposed to do. This string is the primary input to task-drift detection. Omitting it disables drift scoring. |
+
+## How input capture works
+
+The decorator captures the arguments passed to the wrapped function and stores them as the execution input. The capture rules depend on the function signature.
+
+<AccordionGroup>
+
+<Accordion title="Single argument — used directly">
+
+When the wrapped function accepts exactly one positional argument and is called with one argument, that value is stored as-is:
+
+```python
+@guard.watch(agent_id="qa-bot", task="Answer questions")
+def answer(question: str) -> str:
+    return llm.complete(question)
+
+# Input recorded: "What is the capital of France?"
+result = answer("What is the capital of France?")
+```
+
+</Accordion>
+
+<Accordion title="Multiple arguments — wrapped in a dict">
+
+When the function is called with multiple arguments (positional or keyword), they are collected into a dictionary under `args` and `kwargs` keys:
+
+```python
+@guard.watch(agent_id="code-reviewer", task="Review code for bugs")
+def review(code: str, language: str, context: str = "") -> str:
+    return llm.review(code, language, context)
+
+# Input recorded:
+# {"args": ["def foo(): pass", "python"], "kwargs": {"context": "internal tool"}}
+result = review("def foo(): pass", "python", context="internal tool")
+```
+
+</Accordion>
+
+</AccordionGroup>
+
+## Accessing the output
+
+`result.output` always contains the value that the original function returned. In sync mode with correction enabled, `result.output` may contain a corrected version — the original is preserved in `result.original_output`.
+
+```python
+@guard.watch(agent_id="summarizer", task="Summarize documents")
+def summarize(text: str) -> str:
+    return llm.summarize(text)
+
+result = summarize(long_document)
+
+# The output your downstream code should use:
+print(result.output)
+
+# Was this output corrected by Vex?
+if result.corrected:
+    print("Original before correction:", result.original_output)
+```
+
+## Async vs sync behavior
+
+The decorator behaves differently depending on the `mode` set in `VexConfig`.
+
+<CodeGroup>
+
+```python Async mode (default)
+from vex import Vex, VexConfig
+
+guard = Vex(
+    api_key=os.environ["VEX_API_KEY"],
+    config=VexConfig(mode="async"),
+)
+
+@guard.watch(agent_id="chat-bot", task="Answer user questions")
+def chat(message: str) -> str:
+    return llm.complete(message)
+
+result = chat("Hello!")
+
+# In async mode:
+# - result.output  → the agent's raw return value (pass-through)
+# - result.confidence → None (verification happens in background)
+# - result.action  → "pass" (optimistic default)
+print(result.output)
+```
+
+```python Sync mode
+from vex import Vex, VexConfig
+
+guard = Vex(
+    api_key=os.environ["VEX_API_KEY"],
+    config=VexConfig(mode="sync"),
+)
+
+@guard.watch(agent_id="chat-bot", task="Answer user questions")
+def chat(message: str) -> str:
+    return llm.complete(message)
+
+result = chat("Hello!")
+
+# In sync mode:
+# - result.output      → verified output (or corrected if correction is enabled)
+# - result.confidence  → real 0–1 score from the verifier
+# - result.action      → "pass", "flag", or "block" based on thresholds
+print(result.confidence)
+print(result.action)
+```
+
+</CodeGroup>
+
+<Info>
+Async mode adds zero latency to the user-facing response. Sync mode adds approximately 100–200 ms per call but enables active guardrails — blocking or correcting low-confidence outputs before they reach users.
+</Info>
+
+## Exception propagation
+
+If the wrapped agent function raises an exception, the decorator re-raises it unchanged. Vex does not swallow agent errors.
+
+```python
+@guard.watch(agent_id="data-agent", task="Process customer data")
+def process(record: dict) -> dict:
+    if not record.get("id"):
+        raise ValueError("Record missing required 'id' field")
+    return transform(record)
+
+try:
+    result = process({})
+except ValueError as e:
+    # The original ValueError is raised — no VexResult is returned.
+    print(f"Agent error: {e}")
+```
+
+The failed execution is still recorded in the Vex dashboard (with the error captured) so you can observe failure rates alongside quality metrics.
+
+## Handling blocked outputs
+
+In sync mode, if verification returns `action="block"` and no correction is configured (or correction fails), the SDK raises `VexBlockError`. You must handle this in your calling code.
+
+```python
+from vex import Vex, VexConfig, VexBlockError
+
+guard = Vex(
+    api_key=os.environ["VEX_API_KEY"],
+    config=VexConfig(mode="sync"),
+)
+
+@guard.watch(agent_id="content-generator", task="Generate marketing copy")
+def generate(prompt: str) -> str:
+    return llm.generate(prompt)
+
+try:
+    result = generate("Write a product description for X")
+    return result.output
+except VexBlockError as e:
+    # e.result contains the full VexResult with action="block"
+    print(f"Output blocked. Confidence: {e.result.confidence}")
+    return "We're unable to generate content for this request right now."
+```
+
+See [Error Handling](/python/error-handling) for the full exception hierarchy and best practices.
+
+## When to use the decorator
+
+<CardGroup cols={2}>
+
+<Card title="Use the decorator when..." icon="check">
+  Your agent is a single callable function, you want the fastest possible integration with minimal code changes, and you do not need step-level tracing inside the function body.
+</Card>
+
+<Card title="Use the context manager when..." icon="brackets-curly">
+  Your agent has multiple internal steps (tool calls, retrieval, LLM hops) that you want recorded individually, or you need to attach metadata, schemas, or ground truth data to a specific execution.
+</Card>
+
+</CardGroup>
+
+## Complete example
+
+```python
+import os
+import atexit
+from vex import Vex, VexConfig, VexBlockError
+
+guard = Vex(
+    api_key=os.environ["VEX_API_KEY"],
+    config=VexConfig(
+        mode="sync",
+        correction="cascade",
+    ),
+)
+atexit.register(guard.close)
+
+@guard.watch(
+    agent_id="customer-support",
+    task="Resolve customer support tickets accurately and helpfully",
+)
+def handle_ticket(ticket_body: str) -> str:
+    # Your existing agent logic — unchanged.
+    return llm_chain.run(ticket_body)
+
+def process_ticket(body: str) -> str:
+    try:
+        result = handle_ticket(body)
+
+        if result.action == "flag":
+            # Log flagged responses for human review but still deliver them.
+            logger.warning("Flagged response", extra={"execution_id": result.execution_id})
+
+        return result.output
+
+    except VexBlockError as e:
+        logger.error("Response blocked", extra={"execution_id": e.result.execution_id})
+        return "I was unable to process your request. A human agent will follow up shortly."
+```

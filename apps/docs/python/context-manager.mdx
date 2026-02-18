@@ -1,0 +1,309 @@
+---
+title: "Context Manager"
+description: "Fine-grained tracing with guard.trace() for complex agent pipelines."
+---
+
+The `guard.trace()` context manager gives you full control over what gets recorded for a single execution. Use it when your agent has internal stages — retrieval, tool calls, LLM completions — that you want visible as individual steps in the dashboard, or when you need to attach schema, ground truth, token counts, or cost estimates to an execution.
+
+## Basic pattern
+
+```python
+import os
+from vex import Vex
+
+guard = Vex(api_key=os.environ["VEX_API_KEY"])
+
+with guard.trace(
+    agent_id="rag-agent",
+    task="Answer questions using the knowledge base",
+    input_data={"query": user_query},
+) as ctx:
+    docs = retriever.search(user_query)
+    answer = llm.complete(user_query, context=docs)
+    ctx.record(answer)
+
+# ctx.result is available after the block exits.
+result = ctx.result
+print(result.output)
+print(result.action)
+```
+
+## Parameters
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `agent_id` | `str` | Yes | Identifies the agent. Used for grouping in the dashboard. |
+| `task` | `str` | No | Description of the agent's goal. Required for task-drift scoring. |
+| `input_data` | `Any` | No | The input to record for this execution. Pass the raw user input here. |
+
+## TraceContext methods
+
+The `ctx` object yielded by the context manager provides all the methods you need to instrument the execution.
+
+<AccordionGroup>
+
+<Accordion title="ctx.record(output) — set the final output">
+
+Call `record()` once with the value your agent produced. This is the output that will be verified and returned in `result.output`.
+
+```python
+with guard.trace(agent_id="summarizer", task="Summarize text") as ctx:
+    summary = llm.summarize(document)
+    ctx.record(summary)
+```
+
+If you do not call `record()`, the output is recorded as `None`.
+
+</Accordion>
+
+<Accordion title="ctx.step() — record an intermediate step">
+
+Call `step()` for each meaningful stage inside the agent. Steps appear in the dashboard trace view and are used by the hallucination detector to check that the final output is grounded in intermediate results.
+
+```python
+ctx.step(
+    step_type="retrieval",      # Free-form category label
+    name="knowledge-base-search",
+    input={"query": user_query},
+    output=retrieved_docs,
+    duration_ms=142.5,
+)
+```
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `step_type` | `str` | Yes | Category label, e.g. `"llm"`, `"retrieval"`, `"tool"`, `"transform"` |
+| `name` | `str` | Yes | Specific step name for display |
+| `input` | `Any` | No | Input to this step |
+| `output` | `Any` | No | Output from this step |
+| `duration_ms` | `float` | No | Wall-clock time for this step in milliseconds |
+
+</Accordion>
+
+<Accordion title="ctx.set_ground_truth(data) — reference data for verification">
+
+Provide the expected or known-correct output. When ground truth is present, the verifier can compute an exact match score in addition to semantic checks.
+
+```python
+ctx.set_ground_truth({
+    "answer": "The return policy allows returns within 30 days.",
+    "source": "policy-doc-v3",
+})
+```
+
+</Accordion>
+
+<Accordion title="ctx.set_schema(schema) — expected output structure">
+
+Pass a JSON Schema dict describing the structure your agent's output must conform to. The verifier will flag any structural deviations (missing required fields, wrong types, unexpected nulls).
+
+```python
+ctx.set_schema({
+    "type": "object",
+    "required": ["answer", "sources"],
+    "properties": {
+        "answer": {"type": "string"},
+        "sources": {
+            "type": "array",
+            "items": {"type": "string"},
+        },
+    },
+})
+```
+
+</Accordion>
+
+<Accordion title="ctx.set_token_count(count) — total tokens used">
+
+Record the total number of tokens consumed by this execution. Appears in the dashboard and is included in cost-analysis aggregations.
+
+```python
+response = llm.complete(prompt)
+ctx.set_token_count(response.usage.total_tokens)
+```
+
+</Accordion>
+
+<Accordion title="ctx.set_cost_estimate(cost) — estimated cost in USD">
+
+Record the estimated dollar cost of this execution. Useful for surfacing expensive agent calls in the dashboard.
+
+```python
+# Example: gpt-4o pricing
+input_cost = (prompt_tokens / 1_000_000) * 2.50
+output_cost = (completion_tokens / 1_000_000) * 10.00
+ctx.set_cost_estimate(input_cost + output_cost)
+```
+
+</Accordion>
+
+<Accordion title="ctx.set_metadata(key, value) — custom key-value pairs">
+
+Attach arbitrary metadata to the execution. Values must be JSON-serializable. Metadata is searchable and filterable in the dashboard.
+
+```python
+ctx.set_metadata("user_id", "usr_abc123")
+ctx.set_metadata("region", "us-west-2")
+ctx.set_metadata("model_version", "gpt-4o-2024-11-20")
+ctx.set_metadata("feature_flags", ["rag_v2", "reranking"])
+```
+
+</Accordion>
+
+</AccordionGroup>
+
+## Accessing the result
+
+`ctx.result` is populated after the `with` block exits. It is `None` inside the block.
+
+```python
+with guard.trace(agent_id="my-agent", task="...") as ctx:
+    output = agent.run(input)
+    ctx.record(output)
+
+# After the block:
+result = ctx.result
+print(result.execution_id)
+print(result.confidence)
+print(result.action)
+```
+
+## Full example: multi-step RAG agent
+
+```python
+import os
+import time
+import atexit
+from vex import Vex, VexConfig, VexBlockError
+
+guard = Vex(
+    api_key=os.environ["VEX_API_KEY"],
+    config=VexConfig(mode="sync", correction="cascade"),
+)
+atexit.register(guard.close)
+
+def answer_question(user_query: str, user_id: str) -> str:
+    with guard.trace(
+        agent_id="rag-support-bot",
+        task="Answer customer support questions using the knowledge base accurately",
+        input_data={"query": user_query},
+    ) as ctx:
+        # Attach custom metadata for filtering in the dashboard.
+        ctx.set_metadata("user_id", user_id)
+        ctx.set_metadata("query_length", len(user_query))
+
+        # Step 1: Retrieve relevant documents.
+        t0 = time.monotonic()
+        docs = knowledge_base.search(user_query, top_k=5)
+        ctx.step(
+            step_type="retrieval",
+            name="knowledge-base-search",
+            input={"query": user_query, "top_k": 5},
+            output=[d.id for d in docs],
+            duration_ms=(time.monotonic() - t0) * 1000,
+        )
+
+        # Step 2: Re-rank retrieved documents.
+        t0 = time.monotonic()
+        ranked_docs = reranker.rank(user_query, docs)
+        ctx.step(
+            step_type="transform",
+            name="rerank",
+            input={"query": user_query, "doc_count": len(docs)},
+            output={"top_doc_id": ranked_docs[0].id, "score": ranked_docs[0].score},
+            duration_ms=(time.monotonic() - t0) * 1000,
+        )
+
+        # Step 3: Call the LLM.
+        t0 = time.monotonic()
+        context_text = "\n\n".join(d.content for d in ranked_docs[:3])
+        response = llm.complete(
+            system="You are a helpful customer support agent.",
+            user=f"Context:\n{context_text}\n\nQuestion: {user_query}",
+        )
+        ctx.step(
+            step_type="llm",
+            name="gpt-4o-completion",
+            input={"prompt_tokens": response.usage.prompt_tokens},
+            output={"completion_tokens": response.usage.completion_tokens},
+            duration_ms=(time.monotonic() - t0) * 1000,
+        )
+
+        # Attach token count and cost for the dashboard.
+        ctx.set_token_count(response.usage.total_tokens)
+        ctx.set_cost_estimate(
+            (response.usage.prompt_tokens / 1_000_000) * 2.50
+            + (response.usage.completion_tokens / 1_000_000) * 10.00
+        )
+
+        # Set output schema so the verifier checks structure.
+        ctx.set_schema({
+            "type": "object",
+            "required": ["answer", "sources"],
+            "properties": {
+                "answer": {"type": "string"},
+                "sources": {"type": "array", "items": {"type": "string"}},
+            },
+        })
+
+        # Record the final output.
+        final_output = {
+            "answer": response.content,
+            "sources": [d.id for d in ranked_docs[:3]],
+        }
+        ctx.record(final_output)
+
+    # ctx.result is ready here.
+    result = ctx.result
+
+    if result.action == "flag":
+        logger.warning(
+            "Flagged response for review",
+            extra={"execution_id": result.execution_id, "confidence": result.confidence},
+        )
+
+    return result.output["answer"]
+```
+
+## The `guard.run()` alternative
+
+For cases where you do not need step-level instrumentation, `guard.run()` provides a functional API that is less verbose than a `with` block:
+
+```python
+result = guard.run(
+    agent_id="simple-agent",
+    fn=lambda: llm.complete(prompt),
+    task="Classify customer sentiment",
+    input_data=prompt,
+    schema={"type": "string", "enum": ["positive", "neutral", "negative"]},
+    ground_truth="positive",
+)
+print(result.output)
+```
+
+| Parameter | Type | Description |
+|---|---|---|
+| `agent_id` | `str` | Agent identifier |
+| `fn` | `Callable` | Zero-argument callable that returns the agent output |
+| `task` | `str` | Task description for drift detection |
+| `ground_truth` | `Any` | Reference value for verification |
+| `schema` | `Dict` | JSON Schema for output structure validation |
+| `input_data` | `Any` | Input to record for the execution |
+
+<Note>
+`guard.run()` does not support intermediate `step()` recording. Use `guard.trace()` when you need step-level visibility inside a complex pipeline.
+</Note>
+
+## When to use the context manager
+
+<CardGroup cols={2}>
+
+<Card title="Use guard.trace() when..." icon="brackets-curly">
+  Your agent has multiple internal stages you want visible individually, or you need to attach schema, ground truth, token counts, cost estimates, or custom metadata to the execution.
+</Card>
+
+<Card title="Use @guard.watch() when..." icon="at">
+  Your agent is a straightforward function and you want the simplest possible integration with minimal code changes.
+</Card>
+
+</CardGroup>

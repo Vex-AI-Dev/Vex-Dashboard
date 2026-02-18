@@ -1,0 +1,276 @@
+---
+title: "Error Handling"
+description: "Handle exceptions and inspect verification results in the Python SDK."
+---
+
+The SDK raises typed exceptions for every failure category. All SDK exceptions inherit from `VexError`, making it straightforward to catch Vex-specific errors without affecting your agent's own exception handling.
+
+## Exception hierarchy
+
+```
+VexError
+├── ConfigurationError   — invalid constructor arguments (raised at init time)
+├── IngestionError       — async event flush failed (non-fatal, logged as warning)
+├── VerificationError    — sync verification request failed (non-fatal, returns pass-through)
+└── VexBlockError        — output was blocked by the verifier (sync mode only)
+```
+
+All exceptions are importable from the top-level `vex` package:
+
+```python
+from vex import VexError, VexBlockError, ConfigurationError
+```
+
+## ConfigurationError
+
+Raised synchronously in the `Vex` constructor when the provided configuration is invalid. No network calls have been made at this point.
+
+```python
+from vex import Vex, ConfigurationError
+
+try:
+    guard = Vex(api_key="")  # Empty key
+except ConfigurationError as e:
+    print(f"Invalid configuration: {e}")
+```
+
+Common causes:
+
+| Cause | Detail |
+|---|---|
+| Empty API key | `api_key=""` raises immediately |
+| API key too short | Minimum 10 characters |
+| Invalid `ThresholdConfig` ordering | Must satisfy `block < flag < pass` |
+
+## VexBlockError
+
+Raised in **sync mode** when the verifier returns `action="block"` and either correction is disabled or all correction layers have failed to produce an output above the block threshold.
+
+`VexBlockError` carries the full `VexResult` on the `result` attribute so you can inspect the confidence score, verification breakdown, and correction attempts before choosing a fallback.
+
+```python
+from vex import Vex, VexConfig, VexBlockError
+
+guard = Vex(
+    api_key=os.environ["VEX_API_KEY"],
+    config=VexConfig(mode="sync", correction="cascade"),
+)
+
+@guard.watch(agent_id="content-agent", task="Generate accurate product descriptions")
+def generate_description(product: dict) -> str:
+    return llm.generate(product)
+
+try:
+    result = generate_description(product_data)
+    return result.output
+
+except VexBlockError as e:
+    # Inspect why the output was blocked.
+    print(f"Confidence: {e.result.confidence}")
+    print(f"Execution ID: {e.result.execution_id}")
+
+    if e.result.corrections:
+        print(f"Correction layers attempted: {len(e.result.corrections)}")
+
+    # Return a safe fallback — never deliver the blocked output to users.
+    return FALLBACK_DESCRIPTION
+```
+
+<Warning>
+Never deliver a blocked output to users. When `VexBlockError` is raised, the output did not meet your quality threshold even after correction. Always provide a fallback response or escalate to a human.
+</Warning>
+
+## Graceful degradation in sync mode
+
+If the Vex API is unreachable during a sync verification call (network failure, timeout), the SDK does **not** raise an exception. Instead it logs a warning and returns a pass-through `VexResult` with:
+
+- `output` — the agent's original output (unmodified)
+- `action` — `"pass"`
+- `confidence` — `None`
+- `corrected` — `False`
+
+This means your agent continues to function normally even if the Vex API is temporarily unavailable. Your users are never blocked by a Vex outage.
+
+```python
+# If the Vex API is down, this still returns the agent's output.
+result = handle_ticket(ticket_body)
+
+# Always safe to use result.output regardless of API availability.
+return result.output
+```
+
+<Info>
+Async mode is also resilient: if the background flush fails, the event is dropped after logging a warning. No exception is raised in your application code.
+</Info>
+
+## IngestionError and VerificationError
+
+These are internal exceptions that the SDK handles gracefully before they reach your code. In the event of an unrecoverable transport failure, the SDK logs at `WARNING` level. You will not see these in your application's exception handlers under normal circumstances.
+
+If you need to handle them explicitly (for example, in a test harness or a custom transport implementation), you can import and catch them:
+
+```python
+from vex import IngestionError, VerificationError
+```
+
+## VexResult field reference
+
+Every successful execution (including pass-through results from graceful degradation) returns a `VexResult`. The full field set:
+
+| Field | Type | Description |
+|---|---|---|
+| `output` | `Any` | The agent output to deliver. In sync+correction mode, this may be the corrected version. |
+| `confidence` | `Optional[float]` | 0–1 score from the verifier. `None` in async mode or on network failure. |
+| `action` | `str` | `"pass"`, `"flag"`, or `"block"` — the verdict against your configured thresholds. |
+| `corrections` | `Optional[List[Dict]]` | List of correction attempt details when `correction="cascade"` is enabled. |
+| `execution_id` | `str` | UUID identifying this specific execution. Use this to look up the trace in the dashboard. |
+| `verification` | `Optional[Dict]` | Per-check breakdown from the verifier. See [Inspecting verification results](#inspecting-verification-results) below. |
+| `corrected` | `bool` | `True` if the output in `result.output` was produced by a correction layer rather than the agent. |
+| `original_output` | `Optional[Any]` | The agent's original output before correction. Set only when `corrected=True`. |
+
+## Inspecting verification results
+
+`result.verification` contains the per-check breakdown returned by the verifier. It is `None` in async mode (verification happens asynchronously and is not returned inline).
+
+```python
+result = handle_ticket(ticket_body)
+
+if result.verification:
+    checks = result.verification
+
+    # Example structure:
+    # {
+    #     "schema": {"passed": True, "score": 1.0},
+    #     "hallucination": {"passed": True, "score": 0.92},
+    #     "task_drift": {"passed": False, "score": 0.41, "reason": "Response topic diverges from billing"},
+    #     "coherence": {"passed": True, "score": 0.88},
+    # }
+
+    for check_name, check_result in checks.items():
+        if not check_result.get("passed"):
+            logger.warning(
+                "Verification check failed",
+                extra={
+                    "check": check_name,
+                    "score": check_result.get("score"),
+                    "reason": check_result.get("reason"),
+                    "execution_id": result.execution_id,
+                },
+            )
+```
+
+## Handling flagged results
+
+`action="flag"` means the output was above the block threshold but below the pass threshold. The output is delivered normally — Vex does not raise an exception for flagged results. Log them for human review.
+
+```python
+result = handle_ticket(ticket_body)
+
+match result.action:
+    case "pass":
+        return result.output
+
+    case "flag":
+        # Deliver the response but route to the review queue.
+        review_queue.push({
+            "execution_id": result.execution_id,
+            "confidence": result.confidence,
+            "output": result.output,
+            "input": ticket_body,
+        })
+        return result.output
+
+    case "block":
+        # This branch is only reached if correction="none" and you are
+        # not catching VexBlockError. In practice, block in sync mode
+        # raises VexBlockError before reaching this code.
+        return FALLBACK_RESPONSE
+```
+
+## Full example with complete error handling
+
+```python
+import os
+import atexit
+import logging
+from vex import Vex, VexConfig, VexBlockError, ConfigurationError
+
+logger = logging.getLogger(__name__)
+
+try:
+    guard = Vex(
+        api_key=os.environ["VEX_API_KEY"],
+        config=VexConfig(
+            mode="sync",
+            correction="cascade",
+        ),
+    )
+except ConfigurationError as e:
+    logger.critical("Failed to initialize Vex SDK: %s", e)
+    raise SystemExit(1) from e
+
+atexit.register(guard.close)
+
+@guard.watch(
+    agent_id="support-agent",
+    task="Resolve customer support tickets accurately",
+)
+def handle_ticket(ticket: str) -> str:
+    return llm.complete(ticket)
+
+def process_ticket(ticket_body: str, ticket_id: str) -> str:
+    try:
+        result = handle_ticket(ticket_body)
+
+        if result.action == "flag":
+            logger.warning(
+                "Flagged response queued for review",
+                extra={
+                    "ticket_id": ticket_id,
+                    "execution_id": result.execution_id,
+                    "confidence": result.confidence,
+                },
+            )
+            review_queue.push(ticket_id, result.execution_id)
+
+        return result.output
+
+    except VexBlockError as e:
+        logger.error(
+            "Response blocked after correction cascade",
+            extra={
+                "ticket_id": ticket_id,
+                "execution_id": e.result.execution_id,
+                "confidence": e.result.confidence,
+                "correction_layers": len(e.result.corrections or []),
+            },
+        )
+        # Escalate to human support rather than delivering a bad answer.
+        escalation_queue.push(ticket_id)
+        return (
+            "I wasn't able to resolve this automatically. "
+            "A human agent will follow up with you shortly."
+        )
+```
+
+## Best practices
+
+<CardGroup cols={2}>
+
+<Card title="Always handle VexBlockError in sync mode" icon="shield-exclamation">
+  If you use `mode="sync"`, every agent call site must be wrapped in a try/except for `VexBlockError`. Unhandled, it propagates like any other exception and will crash your request handler.
+</Card>
+
+<Card title="Log flagged results" icon="flag">
+  `action="flag"` is the primary signal for quality degradation trending downward. Route flagged executions to a review queue so your team can annotate and tune thresholds before problems reach the block level.
+</Card>
+
+<Card title="Use execution_id for correlation" icon="link">
+  Every `VexResult` and `VexBlockError` carries an `execution_id`. Log it alongside your own request IDs so you can look up the full Vex trace in the dashboard for any incident.
+</Card>
+
+<Card title="Start async, move to sync selectively" icon="sliders">
+  Begin with `mode="async"` to collect baseline confidence data with zero latency impact. Once you understand your agent's score distribution, enable `mode="sync"` only for the highest-stakes functions.
+</Card>
+
+</CardGroup>
