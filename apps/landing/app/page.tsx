@@ -62,6 +62,153 @@ export default function LandingPage() {
         {/* ===== LOGO BAR ===== */}
         <LogoBar />
 
+        {/* ===== CAPABILITIES ===== */}
+        <section className="border-t border-[#252525] py-20">
+          <div className="container">
+            <h2 className="max-w-[800px] text-3xl font-semibold leading-tight tracking-tight text-white sm:text-4xl">
+              Observe, Correct, Optimize.{' '}
+              <span className="text-[#686868]">
+                Runtime Guardrails for AI Agents.
+              </span>
+            </h2>
+
+            <div className="mt-12 grid gap-px overflow-hidden rounded-xl border border-[#252525] bg-[#252525] lg:grid-cols-3">
+              {/* Col 1 — Observe */}
+              <div className="flex flex-col bg-[#0a0a0a] p-7">
+                <div className="mb-6">
+                  <h3 className="mb-2 font-mono text-[18px] font-medium leading-snug text-white">
+                    Real-Time Observability for Every Agent Action
+                  </h3>
+                  <p className="text-[15px] leading-relaxed text-[#a2a2a2]">
+                    Track every LLM call, tool use, and decision in production. Detect drift before users do.
+                  </p>
+                </div>
+                <div className="mt-auto flex flex-col items-center justify-center py-12">
+                  <div className="relative flex h-36 w-36 items-center justify-center">
+                    <svg
+                      className="absolute inset-0"
+                      viewBox="0 0 144 144"
+                      fill="none"
+                    >
+                      <circle
+                        cx="72"
+                        cy="72"
+                        r="70"
+                        stroke="#252525"
+                        strokeWidth="1"
+                      />
+                      <circle
+                        cx="72"
+                        cy="72"
+                        r="70"
+                        stroke="rgb(16,185,129)"
+                        strokeWidth="2"
+                        strokeDasharray="440"
+                        strokeDashoffset="44"
+                        strokeLinecap="round"
+                        className="opacity-60"
+                      />
+                    </svg>
+                    <span className="font-mono text-2xl text-emerald-500">
+                      99.2%
+                    </span>
+                  </div>
+                  <div className="mt-4 inline-flex items-center rounded-full border border-[#252525] bg-[#161616] px-4 py-1.5">
+                    <code className="font-mono text-sm text-[#a2a2a2]">
+                      vex.observe(agent)
+                    </code>
+                  </div>
+                </div>
+              </div>
+
+              {/* Col 2 — Correct */}
+              <div className="flex flex-col bg-[#0a0a0a] p-7">
+                <div className="mb-6">
+                  <h3 className="mb-2 font-mono text-[18px] font-medium leading-snug text-white">
+                    Automatic Correction When Agents Drift
+                  </h3>
+                  <p className="text-[15px] leading-relaxed text-[#a2a2a2]">
+                    Multi-layer guardrails catch hallucinations, off-task behavior, and policy violations in real time.
+                  </p>
+                </div>
+                <div className="mt-auto flex flex-col gap-3 py-12">
+                  {[
+                    { label: 'Hallucination', status: 'blocked', color: 'text-red-400 border-red-400/40' },
+                    { label: 'Policy Violation', status: 'blocked', color: 'text-red-400 border-red-400/40' },
+                    { label: 'Off-Task Drift', status: 'corrected', color: 'text-amber-400 border-amber-400/40' },
+                    { label: 'Factual Response', status: 'passed', color: 'text-emerald-500 border-emerald-500/40' },
+                    { label: 'On-Task Action', status: 'passed', color: 'text-emerald-500 border-emerald-500/40' },
+                  ].map((row) => (
+                    <div
+                      key={row.label}
+                      className="flex items-center gap-3"
+                    >
+                      <div
+                        className={`flex items-center justify-center rounded-full border px-3 py-1 font-mono text-xs ${row.color}`}
+                      >
+                        <svg
+                          width="10"
+                          height="10"
+                          viewBox="0 0 10 10"
+                          className="mr-1.5"
+                        >
+                          <circle
+                            cx="5"
+                            cy="5"
+                            r="4"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1"
+                          />
+                        </svg>
+                        {row.label}
+                      </div>
+                      <div className="h-px flex-1 bg-[#252525]" />
+                      <span className={`font-mono text-[11px] uppercase ${row.color.split(' ')[0]}`}>
+                        {row.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Col 3 — Optimize */}
+              <div className="flex flex-col bg-[#0a0a0a] p-7">
+                <div className="mb-6">
+                  <h3 className="mb-2 font-mono text-[18px] font-medium leading-snug text-white">
+                    Continuous Optimization Across Agent Runs
+                  </h3>
+                  <p className="text-[15px] leading-relaxed text-[#a2a2a2]">
+                    Learn from every session. Automatically tune prompts, thresholds, and correction strategies.
+                  </p>
+                </div>
+                <div className="mt-auto grid grid-cols-3 gap-2 py-12">
+                  {[
+                    { label: 'Accuracy', value: '94→99%', improved: true },
+                    { label: 'Latency', value: '-42%', improved: true },
+                    { label: 'Cost', value: '-38%', improved: true },
+                    { label: 'Drift', value: '-87%', improved: true },
+                    { label: 'Uptime', value: '99.9%', improved: true },
+                    { label: 'Incidents', value: '-91%', improved: true },
+                  ].map((metric) => (
+                    <div
+                      key={metric.label}
+                      className="flex flex-col items-center justify-center rounded-md border border-[#252525] bg-[#161616] p-3"
+                    >
+                      <span className="font-mono text-sm text-emerald-500">
+                        {metric.value}
+                      </span>
+                      <span className="mt-1 text-[11px] text-[#585858]">
+                        {metric.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* ===== PROBLEM ===== */}
         <section id="problem" className="border-t border-[#252525] py-20">
           <div className="container">
