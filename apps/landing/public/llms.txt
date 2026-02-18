@@ -1,0 +1,23 @@
+# Vex
+
+> Runtime reliability for AI agents in production.
+
+Vex is an open-source runtime reliability layer that detects when AI agent behavior
+silently drifts in production. It observes every LLM call, corrects hallucinations
+and policy violations in real time, and continuously optimizes agent performance.
+
+## Key Features
+- Real-time observability for every agent action
+- Automatic correction of hallucinations, drift, and policy violations
+- Continuous optimization of prompts, thresholds, and correction strategies
+- Works with LangChain, CrewAI, OpenAI Assistants, and any Python/TypeScript agent
+
+## Links
+- Website: https://tryvex.dev
+- Docs: https://docs.tryvex.dev
+- GitHub: https://github.com/Vex-AI-Dev/Python-SDK
+- API: https://api.tryvex.dev
+
+## Install
+pip install vex-sdk
+npm install @vex_dev/sdk
