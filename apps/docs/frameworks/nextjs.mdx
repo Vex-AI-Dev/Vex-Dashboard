@@ -1,0 +1,385 @@
+---
+title: "Next.js"
+sidebarTitle: "Next.js"
+description: "Integrate Vex with Next.js API routes and server actions."
+---
+
+Vex integrates cleanly with Next.js App Router API routes and server actions. The patterns on this page follow the same approach used in production at MoonForge, which runs Vex in two distinct modes: synchronous tracing for batch agent pipelines that require verified outputs, and asynchronous fire-and-forget tracing for interactive chat routes where latency is the priority.
+
+## Prerequisites
+
+```bash
+npm install @vex_dev/sdk
+```
+
+## Singleton pattern
+
+Next.js server-side code runs in a long-lived Node.js process. Create a single Vex instance in a shared module and import it across all routes and actions. Never instantiate Vex inside a route handler or server action — each request would create a new HTTP connection pool.
+
+```typescript lib/vex.ts
+import { Vex } from '@vex_dev/sdk';
+
+// A no-op session returned when VEX_API_KEY is not set.
+// This allows Vex to be optional in local development.
+const noopSession = {
+  trace: async (_opts: unknown, fn: (ctx: NoopCtx) => Promise<void>) => {
+    const ctx: NoopCtx = {
+      record: () => {},
+      step: () => {},
+      setGroundTruth: () => {},
+      setSchema: () => {},
+    };
+    await fn(ctx);
+    return { output: null, action: 'pass' as const, confidence: null, corrected: false };
+  },
+};
+
+interface NoopCtx {
+  record: (output: unknown) => void;
+  step: (opts: unknown) => void;
+  setGroundTruth: (data: unknown) => void;
+  setSchema: (schema: unknown) => void;
+}
+
+function createVex() {
+  const apiKey = process.env.VEX_API_KEY;
+  if (!apiKey) {
+    console.warn('[vex] VEX_API_KEY is not set — tracing is disabled.');
+    return null;
+  }
+  return new Vex({ apiKey });
+}
+
+// Export a singleton. May be null when the API key is absent.
+export const vex = createVex();
+
+// Helper: create a real session or return the no-op fallback.
+export function getSession(agentId: string) {
+  return vex?.session({ agentId }) ?? noopSession;
+}
+```
+
+<Note>
+The `getSession` helper returns a real Vex session when `VEX_API_KEY` is set, or a no-op object otherwise. This pattern — used by MoonForge — lets you deploy the same codebase to environments without a Vex key without any conditional logic at the call site.
+</Note>
+
+## API Route (App Router)
+
+Trace agent calls directly inside App Router route handlers. Use sync mode for routes where you need a verified response before replying to the client, and async mode for routes where the agent's response should be returned immediately.
+
+### Sync mode — verified response before reply
+
+```typescript app/api/insights/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { vex } from '@/lib/vex';
+import { VexBlockError } from '@vex_dev/sdk';
+import { generateInsight } from '@/lib/agents/insight-agent';
+import { db } from '@/lib/db';
+
+export async function POST(req: NextRequest) {
+  const { gameId, userId } = await req.json();
+
+  if (!gameId || !userId) {
+    return NextResponse.json({ error: 'gameId and userId are required' }, { status: 400 });
+  }
+
+  try {
+    // If Vex is not configured, fall back to calling the agent directly.
+    if (!vex) {
+      const output = await generateInsight({ gameId, userId });
+      return NextResponse.json({ insight: output });
+    }
+
+    const result = await vex.trace(
+      {
+        agentId: 'insight-agent',
+        task: 'Generate an accurate, personalized game insight for the user based on their history',
+      },
+      async (ctx) => {
+        // Step 1: Fetch user data from the database.
+        const dbStart = Date.now();
+        const userHistory = await db.getUserGameHistory(userId, gameId);
+        ctx.step({
+          type: 'db_query',
+          name: 'fetch-user-game-history',
+          input: { userId, gameId },
+          output: { recordCount: userHistory.length },
+          durationMs: Date.now() - dbStart,
+        });
+
+        // Step 2: Call the LLM agent.
+        const llmStart = Date.now();
+        const insight = await generateInsight({ gameId, userId, history: userHistory });
+        ctx.step({
+          type: 'llm_call',
+          name: 'insight-generation',
+          input: { historyLength: userHistory.length },
+          output: { insightLength: insight.length },
+          durationMs: Date.now() - llmStart,
+        });
+
+        ctx.setGroundTruth({ userId, gameId });
+        ctx.record(insight);
+      },
+    );
+
+    return NextResponse.json({
+      insight: result.output,
+      action: result.action,
+      corrected: result.corrected,
+    });
+  } catch (err) {
+    if (err instanceof VexBlockError) {
+      return NextResponse.json(
+        { error: 'Unable to generate a verified insight for this request.' },
+        { status: 422 },
+      );
+    }
+    console.error('[insights] Unexpected error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+```
+
+### Async mode — fire-and-forget for low-latency routes
+
+```typescript app/api/summarize/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { vex } from '@/lib/vex';
+import { summarizeDocument } from '@/lib/agents/summarizer';
+
+export async function POST(req: NextRequest) {
+  const { documentId, content } = await req.json();
+
+  if (!documentId || !content) {
+    return NextResponse.json({ error: 'documentId and content are required' }, { status: 400 });
+  }
+
+  // In async mode, Vex submits the trace in the background and returns
+  // the agent's output immediately — no added latency.
+  if (vex) {
+    const result = await vex.trace(
+      {
+        agentId: 'summarizer',
+        task: 'Summarize the document accurately and concisely without adding information not present in the source',
+      },
+      async (ctx) => {
+        const summary = await summarizeDocument(content);
+        ctx.record(summary);
+      },
+    );
+    return NextResponse.json({ summary: result.output, documentId });
+  }
+
+  // Fallback when Vex is not configured.
+  const summary = await summarizeDocument(content);
+  return NextResponse.json({ summary, documentId });
+}
+```
+
+## Server Actions
+
+Wrap server actions with `vex.trace()` the same way as route handlers. The action's return value comes from `result.output`.
+
+```typescript app/actions/generate-report.ts
+'use server';
+
+import { vex } from '@/lib/vex';
+import { VexBlockError } from '@vex_dev/sdk';
+import { generateReport } from '@/lib/agents/report-agent';
+import { db } from '@/lib/db';
+
+export async function generateReportAction(params: {
+  reportType: string;
+  dateRange: { start: string; end: string };
+  userId: string;
+}): Promise<{ report: string; corrected: boolean } | { error: string }> {
+  try {
+    if (!vex) {
+      const report = await generateReport(params);
+      return { report, corrected: false };
+    }
+
+    const result = await vex.trace(
+      {
+        agentId: 'report-generator',
+        task: 'Generate an accurate business report based strictly on provided data; do not extrapolate beyond available records',
+      },
+      async (ctx) => {
+        const dataStart = Date.now();
+        const reportData = await db.getReportData(params);
+        ctx.step({
+          type: 'db_query',
+          name: 'fetch-report-data',
+          input: { reportType: params.reportType, dateRange: params.dateRange },
+          output: { recordCount: reportData.length },
+          durationMs: Date.now() - dataStart,
+        });
+
+        const llmStart = Date.now();
+        const report = await generateReport({ ...params, data: reportData });
+        ctx.step({
+          type: 'llm_call',
+          name: 'report-generation',
+          input: { dataPoints: reportData.length, reportType: params.reportType },
+          output: { reportLength: report.length },
+          durationMs: Date.now() - llmStart,
+        });
+
+        ctx.record(report);
+      },
+    );
+
+    return { report: result.output as string, corrected: result.corrected };
+  } catch (err) {
+    if (err instanceof VexBlockError) {
+      return { error: 'The generated report did not meet quality requirements. Please try again.' };
+    }
+    console.error('[generate-report] Unexpected error:', err);
+    return { error: 'Failed to generate report.' };
+  }
+}
+```
+
+## Chat route with session management
+
+For multi-turn chat, maintain a session cache keyed by conversation ID. Reuse sessions across requests so all turns of a conversation are grouped together in the Vex dashboard.
+
+This pattern mirrors MoonForge's `traceChatAsync()` implementation: a Map-based session cache with a 30-minute TTL handles session reuse, and async mode keeps chat latency low.
+
+```typescript lib/chat-vex.ts
+import { Vex } from '@vex_dev/sdk';
+
+const SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
+interface CachedSession {
+  session: ReturnType<Vex['session']>;
+  lastUsed: number;
+}
+
+// Singleton Vex instance configured for async chat tracing.
+const chatVex = process.env.VEX_API_KEY
+  ? new Vex({ apiKey: process.env.VEX_API_KEY, config: { mode: 'async' } })
+  : null;
+
+// Session cache: conversationId → { session, lastUsed }
+const sessionCache = new Map<string, CachedSession>();
+
+function evictExpiredSessions() {
+  const now = Date.now();
+  for (const [id, entry] of sessionCache) {
+    if (now - entry.lastUsed > SESSION_TTL_MS) {
+      sessionCache.delete(id);
+    }
+  }
+}
+
+export function getChatSession(conversationId: string, agentId: string) {
+  if (!chatVex) return null;
+
+  evictExpiredSessions();
+
+  let cached = sessionCache.get(conversationId);
+  if (!cached) {
+    cached = {
+      session: chatVex.session({ agentId }),
+      lastUsed: Date.now(),
+    };
+    sessionCache.set(conversationId, cached);
+  } else {
+    cached.lastUsed = Date.now();
+  }
+
+  return cached.session;
+}
+```
+
+```typescript app/api/chat/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { getChatSession } from '@/lib/chat-vex';
+import { streamChatResponse } from '@/lib/agents/chat-agent';
+
+export async function POST(req: NextRequest) {
+  const { conversationId, message, userId } = await req.json();
+
+  if (!conversationId || !message) {
+    return NextResponse.json(
+      { error: 'conversationId and message are required' },
+      { status: 400 },
+    );
+  }
+
+  const session = getChatSession(conversationId, `chat-agent:${userId}`);
+
+  // If Vex is not available, call the agent directly.
+  if (!session) {
+    const response = await streamChatResponse({ conversationId, message });
+    return NextResponse.json({ response });
+  }
+
+  // Fire-and-forget: trace() runs asynchronously so the user's reply
+  // is not delayed by verification.
+  const result = await session.trace(
+    {
+      task: 'Respond to the user helpfully and accurately; do not make up facts or fabricate references',
+    },
+    async (ctx) => {
+      const response = await streamChatResponse({ conversationId, message });
+      ctx.record(response);
+    },
+  );
+
+  return NextResponse.json({ response: result.output });
+}
+```
+
+## Graceful degradation
+
+When `VEX_API_KEY` is absent (e.g., in a developer's local environment without credentials), the singleton in `lib/vex.ts` is `null`. All call sites check for null or delegate to `getSession()`, which returns the no-op session automatically. This means:
+
+- No runtime errors if the key is missing.
+- Agent calls proceed normally — outputs are returned without verification.
+- Adding Vex to a new environment requires only setting the environment variable.
+
+```typescript
+// Good: uses getSession(), which handles the null case.
+import { getSession } from '@/lib/vex';
+
+const session = getSession('my-agent');
+const result = await session.trace({ task: '...' }, async (ctx) => {
+  ctx.record(await myAgent.run(input));
+});
+
+// Good: explicit null check.
+import { vex } from '@/lib/vex';
+
+if (vex) {
+  const result = await vex.trace({ agentId: 'my-agent', task: '...' }, async (ctx) => {
+    ctx.record(await myAgent.run(input));
+  });
+} else {
+  output = await myAgent.run(input);
+}
+```
+
+## Graceful shutdown
+
+Next.js does not expose a clean shutdown lifecycle hook during normal request handling. Register a `SIGTERM` handler in a module that is imported early (such as `lib/vex.ts`) to ensure pending async traces are flushed before the process exits.
+
+```typescript lib/vex.ts (additions)
+import { Vex } from '@vex_dev/sdk';
+
+// ... (singleton creation from above) ...
+
+// Flush pending traces on graceful shutdown.
+// Next.js sends SIGTERM when Vercel or a container orchestrator terminates the process.
+if (vex) {
+  process.once('SIGTERM', async () => {
+    await vex.close();
+  });
+}
+```
+
+<Warning>
+`process.once('SIGTERM', ...)` only fires in a persistent Node.js server (e.g., `next start` or a containerized deployment). It does not fire during Vercel's serverless function teardown, where each invocation is isolated. For serverless deployments, use sync mode to ensure every trace is submitted within the request lifecycle.
+</Warning>

@@ -1,0 +1,454 @@
+---
+title: "Express"
+sidebarTitle: "Express"
+description: "Integrate Vex with Express.js middleware and routes."
+---
+
+Vex integrates with Express at the route level or as middleware. The recommended approach is a per-route trace for agent endpoints — each request maps to a single trace — with a singleton Vex instance shared across all routes and a `SIGTERM` handler that flushes pending async traces before the process exits.
+
+## Prerequisites
+
+```bash
+npm install @vex_dev/sdk express
+npm install --save-dev @types/express
+```
+
+## Singleton Vex instance
+
+Create one Vex instance when the process starts and import it wherever you need it. Instantiating Vex per-request would create a new connection pool on every call and exhaust file descriptors under load.
+
+```typescript src/lib/vex.ts
+import { Vex } from '@vex_dev/sdk';
+
+function createVex(): Vex | null {
+  const apiKey = process.env.VEX_API_KEY;
+  if (!apiKey) {
+    console.warn('[vex] VEX_API_KEY is not set — tracing is disabled.');
+    return null;
+  }
+  return new Vex({ apiKey, config: { mode: 'sync', correction: 'auto' } });
+}
+
+export const vex = createVex();
+
+// Flush pending traces on graceful shutdown.
+if (vex) {
+  process.once('SIGTERM', async () => {
+    console.log('[vex] Flushing traces before shutdown...');
+    await vex.close();
+  });
+}
+```
+
+## Per-route tracing
+
+Trace agent calls inside individual route handlers. This is the clearest pattern: each handler owns its trace, controls what gets recorded as steps, and handles `VexBlockError` locally.
+
+```typescript src/routes/ai.ts
+import { Router, Request, Response } from 'express';
+import { vex } from '../lib/vex';
+import { VexBlockError } from '@vex_dev/sdk';
+import { runAnswerAgent } from '../agents/answer-agent';
+import { fetchRelevantDocs } from '../lib/retrieval';
+
+const router = Router();
+
+router.post('/answer', async (req: Request, res: Response): Promise<void> => {
+  const { question, userId } = req.body as { question?: string; userId?: string };
+
+  if (!question) {
+    res.status(400).json({ error: 'question is required' });
+    return;
+  }
+
+  try {
+    // Fall back to direct agent call when Vex is not configured.
+    if (!vex) {
+      const answer = await runAnswerAgent(question);
+      res.json({ answer });
+      return;
+    }
+
+    const result = await vex.trace(
+      {
+        agentId: 'answer-agent',
+        task: 'Answer the user\'s question accurately using retrieved documents; do not fabricate sources',
+      },
+      async (ctx) => {
+        // Step 1: Retrieve relevant documents.
+        const retrievalStart = Date.now();
+        const docs = await fetchRelevantDocs(question);
+        ctx.step({
+          type: 'retrieval',
+          name: 'document-retrieval',
+          input: { query: question },
+          output: { docCount: docs.length },
+          durationMs: Date.now() - retrievalStart,
+        });
+
+        // Step 2: Call the LLM agent.
+        const llmStart = Date.now();
+        const answer = await runAnswerAgent(question, docs);
+        ctx.step({
+          type: 'llm_call',
+          name: 'answer-generation',
+          input: { docCount: docs.length, questionLength: question.length },
+          output: { answerLength: answer.length },
+          durationMs: Date.now() - llmStart,
+        });
+
+        if (userId) ctx.setGroundTruth({ userId });
+        ctx.record(answer);
+      },
+    );
+
+    res.json({
+      answer: result.output,
+      action: result.action,
+      corrected: result.corrected,
+    });
+  } catch (err) {
+    if (err instanceof VexBlockError) {
+      res.status(422).json({
+        error: 'The generated answer did not meet quality requirements. Please rephrase your question.',
+        action: 'block',
+      });
+      return;
+    }
+    console.error('[/answer] Unexpected error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+export default router;
+```
+
+## Middleware pattern
+
+For applications where every AI endpoint should be traced automatically, write a middleware factory that wraps the route handler and creates a Vex trace around it. This is useful when all your AI routes share the same tracing requirements and you want to avoid repeating the trace setup in each handler.
+
+```typescript src/middleware/vex-trace.ts
+import { Request, Response, NextFunction, RequestHandler } from 'express';
+import { vex } from '../lib/vex';
+import { VexBlockError } from '@vex_dev/sdk';
+
+interface VexTraceOptions {
+  agentId: string;
+  task: string;
+  /** Extract the agent input from the request. Defaults to req.body. */
+  getInput?: (req: Request) => unknown;
+  /** Extract the agent output from res.locals for recording. */
+  outputKey?: string;
+}
+
+/**
+ * Middleware factory that wraps a route handler in a Vex trace.
+ *
+ * Usage:
+ *   router.post('/summarize', withVexTrace({ agentId: 'summarizer', task: '...', outputKey: 'summary' }), handler);
+ *
+ * The handler must store its output in res.locals[outputKey] before calling next().
+ * The middleware records that value and replaces it with the verified result.output.
+ */
+export function withVexTrace(options: VexTraceOptions): RequestHandler {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    if (!vex) {
+      next();
+      return;
+    }
+
+    const { agentId, task, getInput, outputKey = 'agentOutput' } = options;
+    const inputData = getInput ? getInput(req) : req.body;
+
+    try {
+      await vex.trace({ agentId, task }, async (ctx) => {
+        // Let the downstream handler run. It stores its output in res.locals.
+        await new Promise<void>((resolve, reject) => {
+          const originalNext = (err?: unknown) => {
+            if (err) reject(err as Error);
+            else resolve();
+          };
+          next(undefined);
+          // Note: we rely on the handler being synchronous or calling next() promptly.
+          // For async handlers, mount them before this middleware instead.
+          resolve();
+        });
+
+        const output = res.locals[outputKey];
+        if (output !== undefined) {
+          ctx.record(output);
+        }
+      });
+
+      // Replace the local with the verified result — downstream JSON serialization picks it up.
+    } catch (err) {
+      if (err instanceof VexBlockError) {
+        res.status(422).json({ error: 'Output did not meet quality requirements.' });
+        return;
+      }
+      next(err);
+    }
+  };
+}
+```
+
+<Note>
+The middleware pattern works best for simple handlers. For agents with multiple internal steps that you want recorded individually, use the per-route trace pattern instead — it gives you direct access to `ctx.step()` inside the handler body.
+</Note>
+
+## Session management for chat routes
+
+For multi-turn chat endpoints, maintain a session cache keyed by conversation or user ID. Use async mode to keep chat latency low.
+
+```typescript src/lib/chat-sessions.ts
+import { Vex } from '@vex_dev/sdk';
+
+const SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
+interface CachedSession {
+  session: ReturnType<Vex['session']>;
+  lastUsed: number;
+}
+
+// Dedicated async Vex instance for chat — separate from the sync instance
+// used for verified agent routes.
+const chatVex = process.env.VEX_API_KEY
+  ? new Vex({ apiKey: process.env.VEX_API_KEY, config: { mode: 'async' } })
+  : null;
+
+if (chatVex) {
+  process.once('SIGTERM', async () => {
+    await chatVex.close();
+  });
+}
+
+const sessionCache = new Map<string, CachedSession>();
+
+function evictExpired(): void {
+  const now = Date.now();
+  for (const [id, entry] of sessionCache) {
+    if (now - entry.lastUsed > SESSION_TTL_MS) {
+      sessionCache.delete(id);
+    }
+  }
+}
+
+export function getChatSession(conversationId: string, agentId: string) {
+  if (!chatVex) return null;
+
+  evictExpired();
+
+  let cached = sessionCache.get(conversationId);
+  if (!cached) {
+    cached = { session: chatVex.session({ agentId }), lastUsed: Date.now() };
+    sessionCache.set(conversationId, cached);
+  } else {
+    cached.lastUsed = Date.now();
+  }
+
+  return cached.session;
+}
+```
+
+```typescript src/routes/chat.ts
+import { Router, Request, Response } from 'express';
+import { getChatSession } from '../lib/chat-sessions';
+import { generateChatReply } from '../agents/chat-agent';
+
+const router = Router();
+
+router.post('/chat', async (req: Request, res: Response): Promise<void> => {
+  const { conversationId, message, userId } = req.body as {
+    conversationId?: string;
+    message?: string;
+    userId?: string;
+  };
+
+  if (!conversationId || !message) {
+    res.status(400).json({ error: 'conversationId and message are required' });
+    return;
+  }
+
+  const session = getChatSession(conversationId, `chat-agent:${userId ?? 'anonymous'}`);
+
+  try {
+    if (!session) {
+      // Vex not configured — call the agent directly.
+      const reply = await generateChatReply({ conversationId, message });
+      res.json({ reply });
+      return;
+    }
+
+    // Async mode: trace() returns immediately; verification runs in background.
+    const result = await session.trace(
+      {
+        task: 'Respond helpfully and accurately; never fabricate facts or references',
+      },
+      async (ctx) => {
+        const reply = await generateChatReply({ conversationId, message });
+        ctx.record(reply);
+      },
+    );
+
+    res.json({ reply: result.output });
+  } catch (err) {
+    console.error('[/chat] Unexpected error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+export default router;
+```
+
+## Graceful shutdown
+
+Register SIGTERM and SIGINT handlers to flush any pending async traces before the process exits. Both signals should call `vex.close()` — SIGTERM is sent by container orchestrators (Kubernetes, Docker), SIGINT is sent by `Ctrl+C` during local development.
+
+```typescript src/server.ts
+import express from 'express';
+import { vex } from './lib/vex';
+import aiRouter from './routes/ai';
+import chatRouter from './routes/chat';
+
+const app = express();
+app.use(express.json());
+
+app.use('/api/ai', aiRouter);
+app.use('/api', chatRouter);
+
+const server = app.listen(process.env.PORT ?? 3000, () => {
+  console.log(`Server listening on port ${process.env.PORT ?? 3000}`);
+});
+
+async function shutdown(signal: string): Promise<void> {
+  console.log(`[server] Received ${signal}. Shutting down gracefully...`);
+
+  // Stop accepting new connections.
+  server.close(() => {
+    console.log('[server] HTTP server closed.');
+  });
+
+  // Flush pending Vex traces.
+  if (vex) {
+    await vex.close();
+    console.log('[vex] Traces flushed.');
+  }
+
+  process.exit(0);
+}
+
+process.once('SIGTERM', () => shutdown('SIGTERM'));
+process.once('SIGINT', () => shutdown('SIGINT'));
+```
+
+## Complete example: AI endpoint with Vex verification
+
+The following is a self-contained Express application demonstrating the full pattern: singleton, per-route trace, step recording, error handling, and graceful shutdown.
+
+```typescript src/index.ts
+import express, { Request, Response } from 'express';
+import { Vex, VexBlockError } from '@vex_dev/sdk';
+import OpenAI from 'openai';
+
+// --- Setup ---
+
+const app = express();
+app.use(express.json());
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+const vex = process.env.VEX_API_KEY
+  ? new Vex({
+      apiKey: process.env.VEX_API_KEY,
+      config: { mode: 'sync', correction: 'auto' },
+    })
+  : null;
+
+// --- Route ---
+
+app.post('/api/summarize', async (req: Request, res: Response): Promise<void> => {
+  const { text, userId } = req.body as { text?: string; userId?: string };
+
+  if (!text) {
+    res.status(400).json({ error: 'text is required' });
+    return;
+  }
+
+  async function summarize(): Promise<string> {
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'system',
+          content: 'Summarize the following text in 2-3 sentences. Do not add information not present in the text.',
+        },
+        { role: 'user', content: text! },
+      ],
+    });
+    return completion.choices[0].message.content ?? '';
+  }
+
+  try {
+    if (!vex) {
+      const summary = await summarize();
+      res.json({ summary });
+      return;
+    }
+
+    const result = await vex.trace(
+      {
+        agentId: 'summarizer',
+        task: 'Summarize the provided text concisely and accurately without adding information not present in the source',
+      },
+      async (ctx) => {
+        const llmStart = Date.now();
+        const summary = await summarize();
+        ctx.step({
+          type: 'llm_call',
+          name: 'gpt-4o-summarization',
+          input: { textLength: text!.length },
+          output: { summaryLength: summary.length },
+          durationMs: Date.now() - llmStart,
+        });
+
+        if (userId) ctx.setGroundTruth({ sourceTextLength: text!.length });
+        ctx.record(summary);
+      },
+    );
+
+    res.json({
+      summary: result.output,
+      action: result.action,
+      corrected: result.corrected,
+    });
+  } catch (err) {
+    if (err instanceof VexBlockError) {
+      res.status(422).json({
+        error: 'The generated summary did not meet quality requirements.',
+        confidence: err.result.confidence,
+      });
+      return;
+    }
+    console.error('[/api/summarize] Unexpected error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// --- Start server ---
+
+const server = app.listen(process.env.PORT ?? 3000, () => {
+  console.log(`Listening on port ${process.env.PORT ?? 3000}`);
+});
+
+// --- Graceful shutdown ---
+
+async function shutdown(signal: string): Promise<void> {
+  console.log(`Received ${signal}. Shutting down...`);
+  server.close();
+  if (vex) await vex.close();
+  process.exit(0);
+}
+
+process.once('SIGTERM', () => shutdown('SIGTERM'));
+process.once('SIGINT', () => shutdown('SIGINT'));
+```

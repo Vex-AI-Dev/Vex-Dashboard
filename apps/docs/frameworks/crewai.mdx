@@ -1,0 +1,298 @@
+---
+title: "CrewAI"
+sidebarTitle: "CrewAI"
+description: "Integrate Vex with CrewAI multi-agent crews."
+---
+
+Vex integrates with CrewAI at two levels: you can wrap the entire `crew.kickoff()` call for a top-level quality check, or create a Vex session per crew run and trace each agent's task individually for per-agent visibility. Both patterns work with synchronous and async kickoff.
+
+## Prerequisites
+
+```bash
+pip install vex-sdk crewai
+```
+
+## Wrapping crew.kickoff()
+
+The simplest integration wraps the full crew execution in a single Vex trace. This records the crew's combined output and applies verification and correction to the final result.
+
+```python
+import os
+import atexit
+from vex import Vex, VexConfig, VexBlockError
+from crewai import Agent, Task, Crew, Process
+
+guard = Vex(
+    api_key=os.environ["VEX_API_KEY"],
+    config=VexConfig(mode="sync", correction="cascade"),
+)
+atexit.register(guard.close)
+
+researcher = Agent(
+    role="Senior Research Analyst",
+    goal="Uncover cutting-edge developments in AI",
+    backstory="You work at a leading tech think tank.",
+    verbose=True,
+)
+
+writer = Agent(
+    role="Tech Content Strategist",
+    goal="Craft compelling content on tech advancements",
+    backstory="You are a renowned Content Strategist known for insightful articles.",
+    verbose=True,
+)
+
+research_task = Task(
+    description="Investigate the latest AI trends in 2025. Identify key developments.",
+    expected_output="A bullet-point list of the top 5 AI trends with a one-sentence summary each.",
+    agent=researcher,
+)
+
+write_task = Task(
+    description="Write a concise blog post on the AI trends identified by the researcher.",
+    expected_output="A 300-word blog post structured as an introduction, three body paragraphs, and a conclusion.",
+    agent=writer,
+)
+
+crew = Crew(
+    agents=[researcher, writer],
+    tasks=[research_task, write_task],
+    process=Process.sequential,
+    verbose=True,
+)
+
+def run_crew(topic: str) -> str:
+    with guard.trace(
+        agent_id="research-writing-crew",
+        task="Research a topic and produce a well-grounded, accurate blog post",
+        input_data={"topic": topic},
+    ) as ctx:
+        result = crew.kickoff(inputs={"topic": topic})
+        ctx.record(str(result))
+
+    return ctx.result.output
+
+try:
+    output = run_crew("The impact of reasoning models on enterprise software")
+    print(output)
+except VexBlockError as e:
+    print(f"Crew output blocked (confidence: {e.result.confidence:.2f})")
+    print("The crew's output did not meet quality requirements.")
+```
+
+<Note>
+`crew.kickoff()` returns a `CrewOutput` object. Convert it to a string with `str(result)` before passing it to `ctx.record()` so Vex can serialize the output correctly.
+</Note>
+
+## Per-agent tracing with sessions
+
+For fine-grained visibility, create a Vex session per crew run and trace each agent task as a separate execution within the session. This lets you see which specific agent produced a low-confidence output and review its inputs and outputs independently.
+
+```python
+import os
+import time
+import atexit
+from vex import Vex, VexConfig, VexBlockError
+from crewai import Agent, Task, Crew, Process
+from crewai.tasks.task_output import TaskOutput
+
+guard = Vex(
+    api_key=os.environ["VEX_API_KEY"],
+    config=VexConfig(mode="sync", correction="cascade"),
+)
+atexit.register(guard.close)
+
+researcher = Agent(
+    role="Senior Research Analyst",
+    goal="Uncover cutting-edge developments in AI",
+    backstory="You work at a leading tech think tank.",
+    verbose=False,
+)
+
+writer = Agent(
+    role="Tech Content Strategist",
+    goal="Craft compelling content on tech advancements",
+    backstory="You are a renowned Content Strategist known for insightful articles.",
+    verbose=False,
+)
+
+def run_crew_with_per_agent_tracing(topic: str, run_id: str) -> str:
+    # Create one Vex session for the entire crew run.
+    session = guard.session(agent_id=f"research-writing-crew:{run_id}")
+
+    # --- Trace the research task ---
+    research_task = Task(
+        description=f"Investigate the latest AI trends related to: {topic}. Identify key developments.",
+        expected_output="A bullet-point list of the top 5 AI trends with a one-sentence summary each.",
+        agent=researcher,
+    )
+
+    research_crew = Crew(
+        agents=[researcher],
+        tasks=[research_task],
+        process=Process.sequential,
+    )
+
+    with session.trace(
+        task="Research a topic and produce an accurate list of key AI developments",
+        input_data={"topic": topic},
+    ) as ctx:
+        t0 = time.monotonic()
+        research_result = research_crew.kickoff(inputs={"topic": topic})
+        ctx.step(
+            step_type="llm",
+            name="researcher-agent",
+            input={"topic": topic},
+            output={"result_length": len(str(research_result))},
+            duration_ms=(time.monotonic() - t0) * 1000,
+        )
+        ctx.record(str(research_result))
+
+    research_output = ctx.result.output
+    print(f"Research action: {ctx.result.action} (confidence: {ctx.result.confidence:.2f})")
+
+    # --- Trace the writing task, using the verified research output ---
+    write_task = Task(
+        description=(
+            f"Write a concise blog post about: {topic}. "
+            f"Base your writing on this research:\n{research_output}"
+        ),
+        expected_output="A 300-word blog post with an introduction, three body paragraphs, and a conclusion.",
+        agent=writer,
+    )
+
+    write_crew = Crew(
+        agents=[writer],
+        tasks=[write_task],
+        process=Process.sequential,
+    )
+
+    with session.trace(
+        task="Write a factually accurate and engaging blog post based on provided research",
+        input_data={"topic": topic, "research_summary": research_output[:500]},
+    ) as ctx:
+        t0 = time.monotonic()
+        write_result = write_crew.kickoff()
+        ctx.step(
+            step_type="llm",
+            name="writer-agent",
+            input={"research_length": len(research_output)},
+            output={"article_length": len(str(write_result))},
+            duration_ms=(time.monotonic() - t0) * 1000,
+        )
+        ctx.record(str(write_result))
+
+    print(f"Writing action: {ctx.result.action} (confidence: {ctx.result.confidence:.2f})")
+    return ctx.result.output
+```
+
+<Tip>
+Naming the session with a `run_id` (e.g., a UUID) makes it easy to correlate all per-agent traces for a single crew execution in the dashboard's session view.
+</Tip>
+
+## Handling blocked outputs
+
+In sync mode with `correction="cascade"`, Vex attempts to correct a low-confidence output before raising `VexBlockError`. If correction also fails, the exception is raised and you should return a safe fallback to the caller.
+
+```python
+import uuid
+from vex import VexBlockError
+
+def generate_article(topic: str) -> str:
+    run_id = str(uuid.uuid4())
+    try:
+        return run_crew_with_per_agent_tracing(topic, run_id)
+    except VexBlockError as e:
+        # Log the blocked execution ID for dashboard review.
+        print(
+            f"Article generation blocked. "
+            f"Run: {run_id}, confidence: {e.result.confidence:.2f}"
+        )
+        return (
+            "We were unable to generate a verified article for this topic. "
+            "Our team has been notified and will review the request."
+        )
+```
+
+## Complete example: research and writing crew
+
+```python
+import os
+import uuid
+import atexit
+from vex import Vex, VexConfig, VexBlockError
+from crewai import Agent, Task, Crew, Process
+
+guard = Vex(
+    api_key=os.environ["VEX_API_KEY"],
+    config=VexConfig(mode="sync", correction="cascade"),
+)
+atexit.register(guard.close)
+
+researcher = Agent(
+    role="Senior Research Analyst",
+    goal="Uncover cutting-edge developments in AI and provide accurate, well-sourced information",
+    backstory=(
+        "You work at a leading technology research institute. "
+        "You are known for thorough analysis and factual precision."
+    ),
+    verbose=False,
+)
+
+writer = Agent(
+    role="Tech Content Strategist",
+    goal="Craft compelling, accurate content based strictly on provided research",
+    backstory=(
+        "You are an experienced technology writer who never speculates beyond the provided facts. "
+        "Your articles are clear, engaging, and always grounded in evidence."
+    ),
+    verbose=False,
+)
+
+def produce_article(topic: str) -> str:
+    run_id = str(uuid.uuid4())
+    session = guard.session(agent_id=f"article-crew:{run_id}")
+
+    try:
+        # Step 1: Research.
+        research_task = Task(
+            description=f"Research the following topic thoroughly: {topic}",
+            expected_output="A detailed bullet-point list of findings with supporting facts.",
+            agent=researcher,
+        )
+        research_crew = Crew(agents=[researcher], tasks=[research_task], process=Process.sequential)
+
+        with session.trace(
+            task="Research a topic thoroughly and return accurate, verifiable findings",
+            input_data={"topic": topic},
+        ) as ctx:
+            research_result = research_crew.kickoff(inputs={"topic": topic})
+            ctx.record(str(research_result))
+
+        research_output = ctx.result.output
+
+        # Step 2: Write.
+        write_task = Task(
+            description=f"Write a 300-word blog post on '{topic}' using only: {research_output}",
+            expected_output="A polished blog post: introduction, three body paragraphs, conclusion.",
+            agent=writer,
+        )
+        write_crew = Crew(agents=[writer], tasks=[write_task], process=Process.sequential)
+
+        with session.trace(
+            task="Write a factually accurate blog post strictly based on provided research findings",
+            input_data={"topic": topic},
+        ) as ctx:
+            write_result = write_crew.kickoff()
+            ctx.record(str(write_result))
+
+        return ctx.result.output
+
+    except VexBlockError as e:
+        print(f"Output blocked for run {run_id}: confidence={e.result.confidence:.2f}")
+        return "Unable to produce a verified article for this topic at this time."
+
+if __name__ == "__main__":
+    article = produce_article("Reasoning models and their impact on enterprise AI in 2025")
+    print(article)
+```

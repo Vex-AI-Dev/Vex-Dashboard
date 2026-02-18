@@ -1,0 +1,476 @@
+---
+title: "LangChain"
+sidebarTitle: "LangChain"
+description: "Integrate Vex with LangChain and LangGraph agents."
+---
+
+Vex works alongside LangChain and LangGraph without requiring any changes to your chain or graph definitions. Wrap the invocation point with `guard.watch()` or `vex.trace()`, then use `ctx.step()` to record tool calls and intermediate chain outputs as individual steps.
+
+## Prerequisites
+
+<CodeGroup>
+
+```bash Python
+pip install vex-sdk langchain langchain-openai
+```
+
+```bash TypeScript
+npm install @vex_dev/sdk langchain @langchain/openai
+```
+
+</CodeGroup>
+
+## Simple chain wrapping
+
+The fastest integration is to wrap the call site where you invoke the chain. No changes to the chain definition are needed.
+
+<CodeGroup>
+
+```python Python
+import os
+import atexit
+from vex import Vex, VexConfig, VexBlockError
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+
+guard = Vex(
+    api_key=os.environ["VEX_API_KEY"],
+    config=VexConfig(mode="sync", correction="cascade"),
+)
+atexit.register(guard.close)
+
+llm = ChatOpenAI(model="gpt-4o")
+prompt = ChatPromptTemplate.from_template("Answer this question concisely: {question}")
+chain = prompt | llm | StrOutputParser()
+
+@guard.watch(agent_id="qa-chain", task="Answer user questions concisely and accurately")
+def run_chain(question: str) -> str:
+    return chain.invoke({"question": question})
+
+try:
+    result = run_chain("What is the capital of France?")
+    print(result.output)   # The chain's answer
+    print(result.action)   # "pass", "flag", or "block"
+except VexBlockError as e:
+    print(f"Output blocked (confidence: {e.result.confidence:.2f})")
+```
+
+```typescript TypeScript
+import { Vex, VexBlockError } from '@vex_dev/sdk';
+import { ChatOpenAI } from '@langchain/openai';
+import { ChatPromptTemplate } from '@langchain/core/prompts';
+import { StringOutputParser } from '@langchain/core/output_parsers';
+
+const vex = new Vex({
+  apiKey: process.env.VEX_API_KEY!,
+  config: { mode: 'sync', correction: 'auto' },
+});
+
+const llm = new ChatOpenAI({ model: 'gpt-4o' });
+const prompt = ChatPromptTemplate.fromTemplate('Answer this question concisely: {question}');
+const chain = prompt.pipe(llm).pipe(new StringOutputParser());
+
+async function runChain(question: string) {
+  try {
+    const result = await vex.trace(
+      { agentId: 'qa-chain', task: 'Answer user questions concisely and accurately' },
+      async (ctx) => {
+        const answer = await chain.invoke({ question });
+        ctx.record(answer);
+      },
+    );
+
+    console.log(result.output);  // The chain's answer
+    console.log(result.action);  // "pass", "flag", or "block"
+    return result.output;
+  } catch (err) {
+    if (err instanceof VexBlockError) {
+      console.error(`Output blocked (confidence: ${err.result.confidence?.toFixed(2)})`);
+      throw err;
+    }
+    throw err;
+  }
+}
+```
+
+</CodeGroup>
+
+## Step tracing for tool calls and chain stages
+
+When your chain has multiple stages — retrieval, tool invocations, LLM completions — record each stage as a step. Steps appear individually in the dashboard trace view and allow the hallucination detector to verify that the final output is grounded in intermediate results.
+
+<CodeGroup>
+
+```python Python
+import os
+import time
+import atexit
+from vex import Vex, VexConfig
+from langchain_openai import ChatOpenAI
+from langchain_community.tools import DuckDuckGoSearchRun
+
+guard = Vex(
+    api_key=os.environ["VEX_API_KEY"],
+    config=VexConfig(mode="sync", correction="cascade"),
+)
+atexit.register(guard.close)
+
+search_tool = DuckDuckGoSearchRun()
+llm = ChatOpenAI(model="gpt-4o")
+
+def research_and_answer(question: str) -> str:
+    with guard.trace(
+        agent_id="research-chain",
+        task="Research a topic and provide a well-grounded answer",
+        input_data={"question": question},
+    ) as ctx:
+        # Step 1: Search for relevant information.
+        t0 = time.monotonic()
+        search_results = search_tool.run(question)
+        ctx.step(
+            step_type="tool",
+            name="duckduckgo-search",
+            input={"query": question},
+            output={"snippet": search_results[:500]},
+            duration_ms=(time.monotonic() - t0) * 1000,
+        )
+
+        # Step 2: Synthesize an answer with the LLM.
+        t0 = time.monotonic()
+        response = llm.invoke(
+            f"Using this context:\n{search_results}\n\nAnswer: {question}"
+        )
+        ctx.step(
+            step_type="llm",
+            name="gpt-4o-synthesis",
+            input={"context_length": len(search_results)},
+            output={"answer_length": len(response.content)},
+            duration_ms=(time.monotonic() - t0) * 1000,
+        )
+
+        ctx.record(response.content)
+
+    return ctx.result.output
+```
+
+```typescript TypeScript
+import { Vex } from '@vex_dev/sdk';
+import { ChatOpenAI } from '@langchain/openai';
+import { DuckDuckGoSearch } from '@langchain/community/tools/duckduckgo_search';
+
+const vex = new Vex({
+  apiKey: process.env.VEX_API_KEY!,
+  config: { mode: 'sync', correction: 'auto' },
+});
+
+const searchTool = new DuckDuckGoSearch();
+const llm = new ChatOpenAI({ model: 'gpt-4o' });
+
+async function researchAndAnswer(question: string): Promise<string> {
+  const result = await vex.trace(
+    {
+      agentId: 'research-chain',
+      task: 'Research a topic and provide a well-grounded answer',
+    },
+    async (ctx) => {
+      // Step 1: Search for relevant information.
+      const searchStart = Date.now();
+      const searchResults = await searchTool.invoke(question);
+      ctx.step({
+        type: 'tool',
+        name: 'duckduckgo-search',
+        input: { query: question },
+        output: { snippet: searchResults.slice(0, 500) },
+        durationMs: Date.now() - searchStart,
+      });
+
+      // Step 2: Synthesize an answer with the LLM.
+      const llmStart = Date.now();
+      const response = await llm.invoke(
+        `Using this context:\n${searchResults}\n\nAnswer: ${question}`,
+      );
+      const answer = response.content as string;
+      ctx.step({
+        type: 'llm',
+        name: 'gpt-4o-synthesis',
+        input: { contextLength: searchResults.length },
+        output: { answerLength: answer.length },
+        durationMs: Date.now() - llmStart,
+      });
+
+      ctx.record(answer);
+    },
+  );
+
+  return result.output as string;
+}
+```
+
+</CodeGroup>
+
+## LangGraph agent tracing
+
+For LangGraph agents, wrap the full graph execution in a single trace and record each node's output as a step. This gives you a complete view of the agent's reasoning path in the dashboard.
+
+<CodeGroup>
+
+```python Python
+import os
+import time
+import atexit
+from typing import TypedDict, Annotated
+from vex import Vex, VexConfig
+from langgraph.graph import StateGraph, END
+from langchain_openai import ChatOpenAI
+
+guard = Vex(
+    api_key=os.environ["VEX_API_KEY"],
+    config=VexConfig(mode="sync", correction="cascade"),
+)
+atexit.register(guard.close)
+
+llm = ChatOpenAI(model="gpt-4o")
+
+class AgentState(TypedDict):
+    messages: list
+    tool_results: list
+    final_answer: str
+
+def call_llm(state: AgentState) -> AgentState:
+    response = llm.invoke(state["messages"])
+    state["messages"].append(response)
+    return state
+
+def run_tools(state: AgentState) -> AgentState:
+    # Simulate tool execution based on last LLM message.
+    last_message = state["messages"][-1]
+    tool_output = {"result": f"Tool executed for: {last_message.content[:100]}"}
+    state["tool_results"].append(tool_output)
+    return state
+
+def finalize(state: AgentState) -> AgentState:
+    last_message = state["messages"][-1]
+    state["final_answer"] = last_message.content
+    return state
+
+graph = (
+    StateGraph(AgentState)
+    .add_node("llm", call_llm)
+    .add_node("tools", run_tools)
+    .add_node("finalize", finalize)
+    .add_edge("llm", "tools")
+    .add_edge("tools", "finalize")
+    .add_edge("finalize", END)
+    .set_entry_point("llm")
+    .compile()
+)
+
+def run_agent(user_input: str) -> str:
+    initial_state = {
+        "messages": [{"role": "user", "content": user_input}],
+        "tool_results": [],
+        "final_answer": "",
+    }
+
+    with guard.trace(
+        agent_id="langgraph-research-agent",
+        task="Research a topic thoroughly using available tools and provide an accurate answer",
+        input_data={"query": user_input},
+    ) as ctx:
+        # Stream graph execution and record each node as a step.
+        t0 = time.monotonic()
+        final_state = None
+
+        for step_output in graph.stream(initial_state):
+            node_name = list(step_output.keys())[0]
+            node_state = step_output[node_name]
+
+            ctx.step(
+                step_type="tool" if node_name == "tools" else "llm",
+                name=f"langgraph-node:{node_name}",
+                input={"node": node_name},
+                output={
+                    "tool_results_count": len(node_state.get("tool_results", [])),
+                    "message_count": len(node_state.get("messages", [])),
+                },
+                duration_ms=(time.monotonic() - t0) * 1000,
+            )
+            t0 = time.monotonic()
+            final_state = node_state
+
+        answer = final_state.get("final_answer", "")
+        ctx.record(answer)
+
+    return ctx.result.output
+```
+
+```typescript TypeScript
+import { Vex } from '@vex_dev/sdk';
+import { ChatOpenAI } from '@langchain/openai';
+import { StateGraph, END } from '@langchain/langgraph';
+import { BaseMessage, HumanMessage } from '@langchain/core/messages';
+
+const vex = new Vex({
+  apiKey: process.env.VEX_API_KEY!,
+  config: { mode: 'sync', correction: 'auto' },
+});
+
+const llm = new ChatOpenAI({ model: 'gpt-4o' });
+
+interface AgentState {
+  messages: BaseMessage[];
+  toolResults: object[];
+  finalAnswer: string;
+}
+
+// Define graph nodes.
+async function callLLM(state: AgentState): Promise<AgentState> {
+  const response = await llm.invoke(state.messages);
+  return { ...state, messages: [...state.messages, response] };
+}
+
+async function runTools(state: AgentState): Promise<AgentState> {
+  const lastMessage = state.messages[state.messages.length - 1];
+  const toolOutput = { result: `Tool executed for: ${lastMessage.content}` };
+  return { ...state, toolResults: [...state.toolResults, toolOutput] };
+}
+
+async function finalize(state: AgentState): Promise<AgentState> {
+  const lastMessage = state.messages[state.messages.length - 1];
+  return { ...state, finalAnswer: lastMessage.content as string };
+}
+
+const graph = new StateGraph<AgentState>({ channels: {} })
+  .addNode('llm', callLLM)
+  .addNode('tools', runTools)
+  .addNode('finalize', finalize)
+  .addEdge('llm', 'tools')
+  .addEdge('tools', 'finalize')
+  .addEdge('finalize', END)
+  .compile();
+
+async function runAgent(userInput: string): Promise<string> {
+  const result = await vex.trace(
+    {
+      agentId: 'langgraph-research-agent',
+      task: 'Research a topic thoroughly using available tools and provide an accurate answer',
+    },
+    async (ctx) => {
+      const initialState: AgentState = {
+        messages: [new HumanMessage(userInput)],
+        toolResults: [],
+        finalAnswer: '',
+      };
+
+      // Stream graph execution and record each node as a step.
+      let finalState: AgentState = initialState;
+
+      for await (const stepOutput of graph.stream(initialState)) {
+        const [nodeName, nodeState] = Object.entries(stepOutput)[0] as [string, AgentState];
+        ctx.step({
+          type: nodeName === 'tools' ? 'tool' : 'llm',
+          name: `langgraph-node:${nodeName}`,
+          input: { node: nodeName },
+          output: {
+            toolResultsCount: nodeState.toolResults.length,
+            messageCount: nodeState.messages.length,
+          },
+        });
+        finalState = nodeState;
+      }
+
+      ctx.record(finalState.finalAnswer);
+    },
+  );
+
+  return result.output as string;
+}
+```
+
+</CodeGroup>
+
+## Multi-turn chat with sessions
+
+For conversational LangChain agents that maintain context across messages, use Vex sessions so that all turns of a conversation are grouped together in the dashboard.
+
+<Tip>
+Sessions group multiple traces under a single conversation ID. Use one session per user conversation so you can track quality across the entire interaction, not just individual messages.
+</Tip>
+
+<CodeGroup>
+
+```python Python
+import os
+import atexit
+from vex import Vex, VexConfig
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage, AIMessage
+
+guard = Vex(
+    api_key=os.environ["VEX_API_KEY"],
+    config=VexConfig(mode="async"),  # Async keeps latency low for chat.
+)
+atexit.register(guard.close)
+
+llm = ChatOpenAI(model="gpt-4o")
+
+class ChatAgent:
+    def __init__(self, user_id: str):
+        self.history: list = []
+        # Create one Vex session per conversation.
+        self.session = guard.session(agent_id=f"chat-agent:{user_id}")
+
+    def respond(self, user_message: str) -> str:
+        self.history.append(HumanMessage(content=user_message))
+
+        with self.session.trace(
+            task="Hold a helpful, accurate multi-turn conversation",
+            input_data={"message": user_message},
+        ) as ctx:
+            response = llm.invoke(self.history)
+            self.history.append(AIMessage(content=response.content))
+            ctx.record(response.content)
+
+        return ctx.result.output
+```
+
+```typescript TypeScript
+import { Vex } from '@vex_dev/sdk';
+import { ChatOpenAI } from '@langchain/openai';
+import { HumanMessage, AIMessage, BaseMessage } from '@langchain/core/messages';
+
+const vex = new Vex({
+  apiKey: process.env.VEX_API_KEY!,
+  config: { mode: 'async' }, // Async keeps latency low for chat.
+});
+
+const llm = new ChatOpenAI({ model: 'gpt-4o' });
+
+class ChatAgent {
+  private history: BaseMessage[] = [];
+  private session = vex.session({ agentId: `chat-agent:${this.userId}` });
+
+  constructor(private readonly userId: string) {}
+
+  async respond(userMessage: string): Promise<string> {
+    this.history.push(new HumanMessage(userMessage));
+
+    const result = await this.session.trace(
+      {
+        task: 'Hold a helpful, accurate multi-turn conversation',
+      },
+      async (ctx) => {
+        const response = await llm.invoke(this.history);
+        const content = response.content as string;
+        this.history.push(new AIMessage(content));
+        ctx.record(content);
+      },
+    );
+
+    return result.output as string;
+  }
+}
+```
+
+</CodeGroup>

@@ -1,0 +1,575 @@
+---
+title: "OpenAI Assistants"
+sidebarTitle: "OpenAI Assistants"
+description: "Integrate Vex with OpenAI Assistants API and function calling."
+---
+
+The OpenAI Assistants API involves multiple API calls — creating a message, starting a run, polling for completion, and handling tool calls — that together constitute a single logical agent execution. Vex wraps the entire flow in one trace and records each tool call as an individual step, giving you a complete view of the assistant's reasoning path in the dashboard.
+
+## Prerequisites
+
+<CodeGroup>
+
+```bash Python
+pip install vex-sdk openai
+```
+
+```bash TypeScript
+npm install @vex_dev/sdk openai
+```
+
+</CodeGroup>
+
+## Basic assistant run tracing
+
+Wrap the full run lifecycle — message creation through completion — in a single `guard.trace()` call. Record the final assistant message as the output.
+
+<CodeGroup>
+
+```python Python
+import os
+import time
+import atexit
+from openai import OpenAI
+from vex import Vex, VexConfig, VexBlockError
+
+guard = Vex(
+    api_key=os.environ["VEX_API_KEY"],
+    config=VexConfig(mode="sync", correction="cascade"),
+)
+atexit.register(guard.close)
+
+client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+
+ASSISTANT_ID = os.environ["OPENAI_ASSISTANT_ID"]
+
+
+def run_assistant(user_message: str, thread_id: str | None = None) -> str:
+    """Run an assistant turn and return the verified response text."""
+
+    # Reuse an existing thread or create a new one.
+    if thread_id is None:
+        thread = client.beta.threads.create()
+        thread_id = thread.id
+
+    with guard.trace(
+        agent_id="openai-assistant",
+        task="Answer user questions accurately using the assistant's tools and knowledge",
+        input_data={"message": user_message, "thread_id": thread_id},
+    ) as ctx:
+        # Add the user message to the thread.
+        client.beta.threads.messages.create(
+            thread_id=thread_id,
+            role="user",
+            content=user_message,
+        )
+
+        # Start the run.
+        t0 = time.monotonic()
+        run = client.beta.threads.runs.create(
+            thread_id=thread_id,
+            assistant_id=ASSISTANT_ID,
+        )
+
+        # Poll until the run completes.
+        while run.status in ("queued", "in_progress"):
+            time.sleep(0.5)
+            run = client.beta.threads.runs.retrieve(
+                thread_id=thread_id,
+                run_id=run.id,
+            )
+
+        ctx.step(
+            step_type="llm",
+            name="assistant-run",
+            input={"user_message": user_message},
+            output={"status": run.status, "run_id": run.id},
+            duration_ms=(time.monotonic() - t0) * 1000,
+        )
+
+        if run.status != "completed":
+            raise RuntimeError(f"Assistant run ended with status: {run.status}")
+
+        # Retrieve the last assistant message.
+        messages = client.beta.threads.messages.list(
+            thread_id=thread_id, order="desc", limit=1
+        )
+        assistant_message = messages.data[0].content[0].text.value
+        ctx.record(assistant_message)
+
+    return ctx.result.output
+
+
+try:
+    answer = run_assistant("What are the store hours for the downtown location?")
+    print(answer)
+except VexBlockError as e:
+    print(f"Assistant response blocked (confidence: {e.result.confidence:.2f})")
+```
+
+```typescript TypeScript
+import OpenAI from 'openai';
+import { Vex, VexBlockError } from '@vex_dev/sdk';
+
+const vex = new Vex({
+  apiKey: process.env.VEX_API_KEY!,
+  config: { mode: 'sync', correction: 'auto' },
+});
+
+const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const ASSISTANT_ID = process.env.OPENAI_ASSISTANT_ID!;
+
+async function pollRun(threadId: string, runId: string): Promise<OpenAI.Beta.Threads.Run> {
+  let run = await client.beta.threads.runs.retrieve(threadId, runId);
+  while (run.status === 'queued' || run.status === 'in_progress') {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    run = await client.beta.threads.runs.retrieve(threadId, runId);
+  }
+  return run;
+}
+
+async function runAssistant(userMessage: string, threadId?: string): Promise<string> {
+  const thread =
+    threadId != null
+      ? { id: threadId }
+      : await client.beta.threads.create();
+
+  try {
+    const result = await vex.trace(
+      {
+        agentId: 'openai-assistant',
+        task: 'Answer user questions accurately using the assistant\'s tools and knowledge',
+      },
+      async (ctx) => {
+        // Add the user message.
+        await client.beta.threads.messages.create(thread.id, {
+          role: 'user',
+          content: userMessage,
+        });
+
+        // Start and poll the run.
+        const runStart = Date.now();
+        let run = await client.beta.threads.runs.create(thread.id, {
+          assistant_id: ASSISTANT_ID,
+        });
+        run = await pollRun(thread.id, run.id);
+
+        ctx.step({
+          type: 'llm',
+          name: 'assistant-run',
+          input: { userMessage },
+          output: { status: run.status, runId: run.id },
+          durationMs: Date.now() - runStart,
+        });
+
+        if (run.status !== 'completed') {
+          throw new Error(`Assistant run ended with status: ${run.status}`);
+        }
+
+        // Retrieve the last assistant message.
+        const messages = await client.beta.threads.messages.list(thread.id, {
+          order: 'desc',
+          limit: 1,
+        });
+        const content = messages.data[0].content[0];
+        const assistantMessage = content.type === 'text' ? content.text.value : '';
+        ctx.record(assistantMessage);
+      },
+    );
+
+    return result.output as string;
+  } catch (err) {
+    if (err instanceof VexBlockError) {
+      console.error(`Assistant response blocked (confidence: ${err.result.confidence?.toFixed(2)})`);
+      throw err;
+    }
+    throw err;
+  }
+}
+```
+
+</CodeGroup>
+
+## Function calling with step recording
+
+When the assistant invokes functions (tools), handle the `requires_action` run status, execute the functions, submit the tool outputs, and record each tool call as a Vex step. This lets the hallucination detector verify that the assistant's final answer is grounded in the actual tool results.
+
+<CodeGroup>
+
+```python Python
+import os
+import json
+import time
+import atexit
+from openai import OpenAI
+from vex import Vex, VexConfig, VexBlockError
+
+guard = Vex(
+    api_key=os.environ["VEX_API_KEY"],
+    config=VexConfig(mode="sync", correction="cascade"),
+)
+atexit.register(guard.close)
+
+client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+ASSISTANT_ID = os.environ["OPENAI_ASSISTANT_ID"]
+
+
+# --- Tool implementations ---
+
+def get_weather(location: str, unit: str = "celsius") -> dict:
+    """Simulate a weather API call."""
+    return {
+        "location": location,
+        "temperature": 22,
+        "unit": unit,
+        "condition": "Partly cloudy",
+        "humidity": 65,
+    }
+
+
+def get_store_hours(store_id: str) -> dict:
+    """Simulate a store hours lookup."""
+    hours = {
+        "downtown": {"weekdays": "9am-8pm", "weekends": "10am-6pm"},
+        "uptown": {"weekdays": "8am-9pm", "weekends": "9am-7pm"},
+    }
+    return hours.get(store_id, {"error": "Store not found"})
+
+
+TOOL_REGISTRY = {
+    "get_weather": get_weather,
+    "get_store_hours": get_store_hours,
+}
+
+
+def execute_tool_call(tool_call) -> str:
+    """Execute a single function tool call and return the JSON result."""
+    fn_name = tool_call.function.name
+    fn_args = json.loads(tool_call.function.arguments)
+
+    if fn_name not in TOOL_REGISTRY:
+        return json.dumps({"error": f"Unknown function: {fn_name}"})
+
+    result = TOOL_REGISTRY[fn_name](**fn_args)
+    return json.dumps(result)
+
+
+def run_assistant_with_tools(user_message: str) -> str:
+    thread = client.beta.threads.create()
+
+    with guard.trace(
+        agent_id="openai-assistant-with-tools",
+        task="Answer user questions accurately using available tools; never fabricate tool results",
+        input_data={"message": user_message},
+    ) as ctx:
+        client.beta.threads.messages.create(
+            thread_id=thread.id,
+            role="user",
+            content=user_message,
+        )
+
+        run = client.beta.threads.runs.create(
+            thread_id=thread.id,
+            assistant_id=ASSISTANT_ID,
+        )
+
+        # Poll and handle tool calls.
+        while True:
+            run = client.beta.threads.runs.retrieve(
+                thread_id=thread.id, run_id=run.id
+            )
+
+            if run.status == "completed":
+                break
+
+            if run.status == "requires_action":
+                tool_calls = run.required_action.submit_tool_outputs.tool_calls
+                tool_outputs = []
+
+                for tool_call in tool_calls:
+                    t0 = time.monotonic()
+                    output = execute_tool_call(tool_call)
+                    duration_ms = (time.monotonic() - t0) * 1000
+
+                    tool_outputs.append({
+                        "tool_call_id": tool_call.id,
+                        "output": output,
+                    })
+
+                    # Record each tool call as a Vex step.
+                    ctx.step(
+                        step_type="tool",
+                        name=tool_call.function.name,
+                        input=json.loads(tool_call.function.arguments),
+                        output=json.loads(output),
+                        duration_ms=duration_ms,
+                    )
+
+                # Submit all tool outputs in one batch.
+                run = client.beta.threads.runs.submit_tool_outputs(
+                    thread_id=thread.id,
+                    run_id=run.id,
+                    tool_outputs=tool_outputs,
+                )
+                continue
+
+            if run.status in ("failed", "expired", "cancelled"):
+                raise RuntimeError(f"Run ended with status: {run.status}")
+
+            time.sleep(0.5)
+
+        # Retrieve the final assistant message.
+        messages = client.beta.threads.messages.list(
+            thread_id=thread.id, order="desc", limit=1
+        )
+        response_text = messages.data[0].content[0].text.value
+        ctx.record(response_text)
+
+    return ctx.result.output
+
+
+try:
+    print(run_assistant_with_tools("What's the weather in London and what are the downtown store hours?"))
+except VexBlockError as e:
+    print(f"Response blocked (confidence: {e.result.confidence:.2f})")
+```
+
+```typescript TypeScript
+import OpenAI from 'openai';
+import { Vex, VexBlockError } from '@vex_dev/sdk';
+
+const vex = new Vex({
+  apiKey: process.env.VEX_API_KEY!,
+  config: { mode: 'sync', correction: 'auto' },
+});
+
+const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const ASSISTANT_ID = process.env.OPENAI_ASSISTANT_ID!;
+
+// --- Tool implementations ---
+
+function getWeather(location: string, unit = 'celsius') {
+  return { location, temperature: 22, unit, condition: 'Partly cloudy', humidity: 65 };
+}
+
+function getStoreHours(storeId: string) {
+  const hours: Record<string, object> = {
+    downtown: { weekdays: '9am-8pm', weekends: '10am-6pm' },
+    uptown: { weekdays: '8am-9pm', weekends: '9am-7pm' },
+  };
+  return hours[storeId] ?? { error: 'Store not found' };
+}
+
+const toolRegistry: Record<string, (...args: unknown[]) => unknown> = {
+  get_weather: (args: { location: string; unit?: string }) =>
+    getWeather(args.location, args.unit),
+  get_store_hours: (args: { store_id: string }) => getStoreHours(args.store_id),
+};
+
+async function runAssistantWithTools(userMessage: string): Promise<string> {
+  const thread = await client.beta.threads.create();
+
+  try {
+    const result = await vex.trace(
+      {
+        agentId: 'openai-assistant-with-tools',
+        task: "Answer user questions accurately using available tools; never fabricate tool results",
+      },
+      async (ctx) => {
+        await client.beta.threads.messages.create(thread.id, {
+          role: 'user',
+          content: userMessage,
+        });
+
+        let run = await client.beta.threads.runs.create(thread.id, {
+          assistant_id: ASSISTANT_ID,
+        });
+
+        // Poll and handle tool calls.
+        while (true) {
+          run = await client.beta.threads.runs.retrieve(thread.id, run.id);
+
+          if (run.status === 'completed') break;
+
+          if (run.status === 'requires_action') {
+            const toolCalls =
+              run.required_action!.submit_tool_outputs.tool_calls;
+            const toolOutputs: OpenAI.Beta.Threads.Runs.RunSubmitToolOutputsParams.ToolOutput[] =
+              [];
+
+            for (const toolCall of toolCalls) {
+              const fnName = toolCall.function.name;
+              const fnArgs = JSON.parse(toolCall.function.arguments);
+
+              const toolStart = Date.now();
+              const toolResult = toolRegistry[fnName]?.(fnArgs) ?? { error: `Unknown tool: ${fnName}` };
+              const durationMs = Date.now() - toolStart;
+              const outputStr = JSON.stringify(toolResult);
+
+              toolOutputs.push({ tool_call_id: toolCall.id, output: outputStr });
+
+              // Record each tool call as a Vex step.
+              ctx.step({
+                type: 'tool',
+                name: fnName,
+                input: fnArgs,
+                output: toolResult,
+                durationMs,
+              });
+            }
+
+            run = await client.beta.threads.runs.submitToolOutputs(thread.id, run.id, {
+              tool_outputs: toolOutputs,
+            });
+            continue;
+          }
+
+          if (['failed', 'expired', 'cancelled'].includes(run.status)) {
+            throw new Error(`Run ended with status: ${run.status}`);
+          }
+
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+
+        // Retrieve the final assistant message.
+        const messages = await client.beta.threads.messages.list(thread.id, {
+          order: 'desc',
+          limit: 1,
+        });
+        const content = messages.data[0].content[0];
+        const responseText = content.type === 'text' ? content.text.value : '';
+        ctx.record(responseText);
+      },
+    );
+
+    return result.output as string;
+  } catch (err) {
+    if (err instanceof VexBlockError) {
+      console.error(`Response blocked (confidence: ${err.result.confidence?.toFixed(2)})`);
+      throw err;
+    }
+    throw err;
+  }
+}
+```
+
+</CodeGroup>
+
+<Note>
+Recording tool call inputs and outputs as steps before submitting them to the Assistants API gives the Vex hallucination detector full context: it can verify that every claim in the assistant's final response is supported by actual tool results rather than fabricated data.
+</Note>
+
+## Multi-turn conversations with sessions
+
+Use Vex sessions to group all turns of an Assistants API conversation together. Pair this with a persistent OpenAI thread so both the assistant and Vex maintain the full conversation context.
+
+<CodeGroup>
+
+```python Python
+import os
+import time
+import atexit
+from openai import OpenAI
+from vex import Vex, VexConfig
+
+guard = Vex(
+    api_key=os.environ["VEX_API_KEY"],
+    config=VexConfig(mode="async"),  # Low-latency for interactive chat.
+)
+atexit.register(guard.close)
+
+client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+ASSISTANT_ID = os.environ["OPENAI_ASSISTANT_ID"]
+
+
+class AssistantConversation:
+    def __init__(self, user_id: str):
+        self.user_id = user_id
+        # One OpenAI thread and one Vex session per conversation.
+        self.thread = client.beta.threads.create()
+        self.session = guard.session(agent_id=f"assistant:{user_id}")
+
+    def send(self, message: str) -> str:
+        with self.session.trace(
+            task="Continue the conversation helpfully and accurately",
+            input_data={"message": message},
+        ) as ctx:
+            client.beta.threads.messages.create(
+                thread_id=self.thread.id,
+                role="user",
+                content=message,
+            )
+            run = client.beta.threads.runs.create_and_poll(
+                thread_id=self.thread.id,
+                assistant_id=ASSISTANT_ID,
+            )
+            messages = client.beta.threads.messages.list(
+                thread_id=self.thread.id, order="desc", limit=1
+            )
+            response = messages.data[0].content[0].text.value
+            ctx.record(response)
+
+        # In async mode, result.output is the pass-through response.
+        return ctx.result.output
+```
+
+```typescript TypeScript
+import OpenAI from 'openai';
+import { Vex } from '@vex_dev/sdk';
+
+const vex = new Vex({
+  apiKey: process.env.VEX_API_KEY!,
+  config: { mode: 'async' }, // Low-latency for interactive chat.
+});
+
+const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const ASSISTANT_ID = process.env.OPENAI_ASSISTANT_ID!;
+
+class AssistantConversation {
+  private thread!: OpenAI.Beta.Thread;
+  private session = vex.session({ agentId: `assistant:${this.userId}` });
+
+  constructor(private readonly userId: string) {}
+
+  async init(): Promise<this> {
+    this.thread = await client.beta.threads.create();
+    return this;
+  }
+
+  async send(message: string): Promise<string> {
+    const result = await this.session.trace(
+      { task: 'Continue the conversation helpfully and accurately' },
+      async (ctx) => {
+        await client.beta.threads.messages.create(this.thread.id, {
+          role: 'user',
+          content: message,
+        });
+
+        const run = await client.beta.threads.runs.createAndPoll(this.thread.id, {
+          assistant_id: ASSISTANT_ID,
+        });
+
+        if (run.status !== 'completed') {
+          throw new Error(`Run ended with status: ${run.status}`);
+        }
+
+        const messages = await client.beta.threads.messages.list(this.thread.id, {
+          order: 'desc',
+          limit: 1,
+        });
+        const content = messages.data[0].content[0];
+        const responseText = content.type === 'text' ? content.text.value : '';
+        ctx.record(responseText);
+      },
+    );
+
+    return result.output as string;
+  }
+}
+
+// Usage:
+// const conversation = await new AssistantConversation('user_123').init();
+// const reply = await conversation.send('What are your store hours?');
+```
+
+</CodeGroup>
