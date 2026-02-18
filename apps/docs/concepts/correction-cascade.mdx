@@ -1,0 +1,285 @@
+---
+title: "Correction Cascade"
+sidebarTitle: "Correction Cascade"
+description: "Three-layer auto-correction that progressively repairs, regenerates, or re-prompts failed agent outputs."
+---
+
+When an agent output falls below your block threshold, Vex can attempt to repair it automatically before returning the result to your code. This is the **correction cascade** — a sequence of three escalating strategies that try progressively harder to produce an output that passes verification.
+
+<Note>
+Correction is only available in sync mode. In async mode the output is returned immediately and correction cannot run. Set `mode="sync"` (Python) or `mode: 'sync'` (TypeScript) before enabling correction.
+</Note>
+
+---
+
+## How it works
+
+When `action = "block"` is determined by the verifier, the cascade begins at Layer 1. Each layer:
+
+1. Generates a corrected output using the strategy and model for that layer
+2. Submits the corrected output to the verifier
+3. If the new confidence score is at or above `pass_threshold`, returns the corrected output immediately — cascade stops
+4. If the score is still below the block threshold, escalates to the next layer
+
+If all three layers are exhausted without reaching `pass_threshold`, the result is returned with `action = "block"`. Your application code is responsible for the fallback path — typically a safe static response or human escalation.
+
+---
+
+## The three layers
+
+| Layer | Trigger | Model | Strategy |
+|---|---|---|---|
+| **Layer 1 — Surgical Repair** | confidence > 0.5 | gpt-4o-mini | Targeted edits to the specific failing sections identified by the verifier. The structure and wording of passing sections are preserved as-is. |
+| **Layer 2 — Constrained Regeneration** | confidence 0.3–0.5 | gpt-4o | Full regeneration of the output with the original prompt augmented by explicit constraints derived from the failure analysis. The agent's task and context are preserved. |
+| **Layer 3 — Full Re-prompt** | confidence < 0.3 | gpt-4o | Complete re-execution of the task with an enriched system prompt. Failure feedback from all prior checks is injected so the model understands what went wrong. |
+
+<Info>
+Layers are triggered based on the confidence score at the point the cascade begins, not re-evaluated between layers. If the initial confidence is 0.2, the cascade starts at Layer 3 directly — it does not proceed through Layers 1 and 2 first.
+</Info>
+
+---
+
+## Configuration
+
+Enable correction by setting the `correction` field in your SDK config:
+
+<CodeGroup>
+
+```python Python
+from vex import Vex, VexConfig
+
+guard = Vex(
+    api_key="your-api-key",
+    config=VexConfig(
+        mode="sync",           # required for correction
+        correction="cascade",  # enable the three-layer cascade
+    ),
+)
+```
+
+```typescript TypeScript
+import { Vex } from '@vex_dev/sdk';
+
+const vex = new Vex({
+  apiKey: 'your-api-key',
+  config: {
+    mode: 'sync',      // required for correction
+    correction: 'auto', // enable the three-layer cascade
+  },
+});
+```
+
+</CodeGroup>
+
+To disable correction while keeping sync mode for inline confidence scores:
+
+<CodeGroup>
+
+```python Python
+config = VexConfig(mode="sync", correction="none")
+```
+
+```typescript TypeScript
+config: { mode: 'sync', correction: 'none' }
+```
+
+</CodeGroup>
+
+---
+
+## Transparency modes
+
+Transparency controls how much correction detail is surfaced in `VexResult`.
+
+### Opaque (default)
+
+The corrected output silently replaces the original. `result.output` contains the best output the cascade produced. Your application code sees no difference from a normal pass — it just gets a good output.
+
+```python Python
+config = VexConfig(
+    mode="sync",
+    correction="cascade",
+    transparency="opaque",  # default — can be omitted
+)
+
+result = get_invoice_summary("cust_123")
+print(result.output)    # The corrected output — caller cannot tell it was corrected
+print(result.corrected) # True — the only signal that correction ran
+```
+
+### Transparent
+
+`result.output` still contains the best output, but additional fields are populated so you can inspect what happened:
+
+- `result.corrected` — `True` if any correction layer ran
+- `result.original_output` — the raw output from your agent before any correction
+- `result.corrections` — a list of dicts, one per layer that ran, with details of the attempt
+
+<CodeGroup>
+
+```python Python
+from vex import Vex, VexConfig
+from vex.models import ThresholdConfig
+
+guard = Vex(
+    api_key="your-api-key",
+    config=VexConfig(
+        mode="sync",
+        correction="cascade",
+        transparency="transparent",
+        confidence_threshold=ThresholdConfig(
+            pass_threshold=0.8,
+            flag_threshold=0.5,
+            block_threshold=0.3,
+        ),
+    ),
+)
+
+@guard.watch(
+    agent_id="research-agent",
+    task="Summarize research papers accurately",
+)
+def summarize(paper_id: str) -> str:
+    return my_agent.summarize(paper_id)
+
+result = summarize("paper_456")
+
+print(result.output)           # Best output (corrected or original)
+print(result.confidence)       # Final confidence score after correction
+print(result.action)           # "pass", "flag", or "block"
+print(result.corrected)        # True if any correction layer ran
+print(result.original_output)  # Agent's raw output before correction
+
+if result.corrections:
+    for attempt in result.corrections:
+        print(f"Layer {attempt['layer']}: confidence {attempt['confidence']:.2f}")
+        print(f"  Strategy: {attempt['strategy']}")
+        print(f"  Model: {attempt['model']}")
+```
+
+```typescript TypeScript
+import { Vex } from '@vex_dev/sdk';
+
+const vex = new Vex({
+  apiKey: 'your-api-key',
+  config: {
+    mode: 'sync',
+    correction: 'auto',
+    transparency: 'transparent',
+    threshold: {
+      pass: 0.8,
+      flag: 0.5,
+      block: 0.3,
+    },
+  },
+});
+
+const result = await vex.trace(
+  { agentId: 'research-agent', task: 'Summarize research papers accurately' },
+  async (ctx) => {
+    const summary = await myAgent.summarize('paper_456');
+    ctx.record(summary);
+  }
+);
+
+console.log(result.output);          // Best output (corrected or original)
+console.log(result.confidence);      // Final confidence score after correction
+console.log(result.action);          // "pass", "flag", or "block"
+console.log(result.corrected);       // true if any correction layer ran
+console.log(result.originalOutput);  // Agent's raw output before correction
+
+if (result.corrections) {
+  for (const attempt of result.corrections) {
+    console.log(`Layer ${attempt.layer}: confidence ${attempt.confidence.toFixed(2)}`);
+    console.log(`  Strategy: ${attempt.strategy}`);
+    console.log(`  Model: ${attempt.model}`);
+  }
+}
+```
+
+</CodeGroup>
+
+---
+
+## Timeouts
+
+Correction requests use a longer timeout than normal verification requests because they involve model inference in addition to scoring.
+
+| Request type | Default timeout |
+|---|---|
+| Normal verification (`POST /v1/verify`) | 10 s (`timeout_s` / `timeoutMs`) |
+| Correction cascade (per layer) | 30 s (3× the normal timeout) |
+
+The correction timeout is derived automatically from your configured `timeout_s` / `timeoutMs`. If you need a shorter correction window, reduce the base timeout:
+
+<CodeGroup>
+
+```python Python
+# Normal timeout = 5 s, correction timeout = 15 s per layer
+config = VexConfig(mode="sync", correction="cascade", timeout_s=5.0)
+```
+
+```typescript TypeScript
+// Normal timeout = 5000 ms, correction timeout = 15 000 ms per layer
+config: { mode: 'sync', correction: 'auto', timeoutMs: 5000 }
+```
+
+</CodeGroup>
+
+<Warning>
+If a correction layer times out, that layer is treated as a failure and the cascade escalates to the next layer. If all layers time out, the original output is returned with `action = "block"`.
+</Warning>
+
+---
+
+## Handling a permanent block
+
+When all three correction layers fail to produce a passing output, `VexBlockError` is raised (sync mode only). Always handle this explicitly in production code:
+
+<CodeGroup>
+
+```python Python
+from vex import VexBlockError
+
+try:
+    result = summarize("paper_456")
+    return result.output
+except VexBlockError as e:
+    # All correction layers failed — return a safe fallback
+    logger.warning("Agent output permanently blocked", extra={"execution_id": e.execution_id})
+    return "I was unable to generate a reliable summary for this paper. Please try again or contact support."
+```
+
+```typescript TypeScript
+import { VexBlockError } from '@vex_dev/sdk';
+
+try {
+  const result = await vex.trace(/* ... */);
+  return result.output;
+} catch (e) {
+  if (e instanceof VexBlockError) {
+    // All correction layers failed — return a safe fallback
+    console.warn('Agent output permanently blocked', { executionId: e.executionId });
+    return 'I was unable to generate a reliable summary for this paper. Please try again or contact support.';
+  }
+  throw e;
+}
+```
+
+</CodeGroup>
+
+---
+
+## Related
+
+<CardGroup cols={2}>
+
+<Card title="Async vs Sync Mode" icon="timer" href="/concepts/async-vs-sync">
+  Correction requires sync mode. Understand the trade-offs before enabling it.
+</Card>
+
+<Card title="Confidence & Thresholds" icon="chart-line" href="/concepts/confidence">
+  How the block threshold is determined and how to tune it for your agent.
+</Card>
+
+</CardGroup>

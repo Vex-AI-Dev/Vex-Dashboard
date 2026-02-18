@@ -1,0 +1,241 @@
+---
+title: "Confidence & Thresholds"
+sidebarTitle: "Confidence"
+description: "How Vex scores agent outputs and maps confidence to actions."
+---
+
+Every agent execution verified by Vex produces a **confidence score** — a single float between 0 and 1 that represents how well the output satisfies all of the verification checks. The score is then compared against your configured thresholds to determine the **action** taken on that output.
+
+---
+
+## Confidence score
+
+Confidence is computed by the Vex verification engine as a weighted aggregate of five individual checks. The score is available on `VexResult` as `result.confidence` in sync mode. In async mode it is `None` at call time (available later in the dashboard once the batch is processed).
+
+A score of `1.0` means all checks passed with full confidence. A score of `0.0` means the output failed every check. Most real-world outputs score between `0.4` and `0.95`.
+
+---
+
+## Action zones
+
+The confidence score is mapped to one of three actions by comparing it against your threshold configuration:
+
+| Confidence range | Action | Behavior |
+|---|---|---|
+| `>= pass_threshold` (default 0.8) | `"pass"` | Output is good. Returned as-is. |
+| `>= flag_threshold` (default 0.5) and `< pass_threshold` | `"flag"` | Output is questionable. Returned as-is but logged as a warning and surfaced in the Review queue. |
+| `< block_threshold` (default 0.3) | `"block"` | Output is bad. In sync mode, correction runs if enabled. If correction is disabled or fails, `VexBlockError` is raised. |
+| `>= block_threshold` and `< flag_threshold` | `"flag"` | Falls between block and flag thresholds — treated as flag. |
+
+<Info>
+The gap between `block_threshold` and `flag_threshold` (default 0.3–0.5) is intentional. Outputs in this zone are marginal enough to warrant human review but not bad enough to block or correct automatically.
+</Info>
+
+---
+
+## Verification checks
+
+The confidence score is derived from five checks. Each check contributes a sub-score; the engine combines them into the final confidence value.
+
+<CardGroup cols={2}>
+
+<Card title="Schema Validation" icon="brackets-curly">
+  Validates the output structure against the schema you provided via `ctx.set_schema` / `ctx.setSchema`. Catches missing required fields, wrong value types, unexpected nulls, and structural deviations before downstream consumers see them.
+</Card>
+
+<Card title="Hallucination Detection" icon="magnifying-glass">
+  Compares claims in the output against retrieved context, tool call results, and ground truth provided via `ctx.set_ground_truth` / `ctx.setGroundTruth`. Statements not grounded in the provided evidence are penalized.
+</Card>
+
+<Card title="Task Drift" icon="compass">
+  Scores the output for semantic alignment with the `task` string you passed when wrapping the agent. An agent asked to "Answer billing questions" that starts returning marketing copy will score low here, even if the output is coherent and well-formed.
+</Card>
+
+<Card title="Confidence Scoring" icon="gauge">
+  The aggregate quality signal — a learned combination of all check sub-scores. This is the primary driver of the final confidence value and reflects the overall reliability of the output given all available context.
+</Card>
+
+<Card title="Coherence (multi-turn)" icon="messages">
+  Checks the current response for consistency with previous turns in the same session. Detects self-contradictions, topic shifts, and persona drift across a conversation. Only active when using sessions.
+</Card>
+
+</CardGroup>
+
+---
+
+## VexResult.verification
+
+In sync mode, `result.verification` is a dict containing the per-check breakdown. Inspecting it helps you understand why a particular output scored the way it did:
+
+<CodeGroup>
+
+```python Python
+from vex import Vex, VexConfig
+from vex.models import ThresholdConfig
+
+guard = Vex(
+    api_key="your-api-key",
+    config=VexConfig(
+        mode="sync",
+        transparency="transparent",
+        confidence_threshold=ThresholdConfig(
+            pass_threshold=0.8,
+            flag_threshold=0.5,
+            block_threshold=0.3,
+        ),
+    ),
+)
+
+@guard.watch(
+    agent_id="qa-agent",
+    task="Answer questions based on the provided document",
+)
+def answer_question(question: str, document: str) -> str:
+    return my_agent.answer(question, document)
+
+result = answer_question("What is the refund policy?", policy_doc)
+
+print(f"Confidence: {result.confidence:.2f}")
+print(f"Action:     {result.action}")
+
+if result.verification:
+    for check_name, check_result in result.verification.items():
+        score = check_result.get("score", "n/a")
+        passed = check_result.get("passed", False)
+        print(f"  {check_name}: score={score}, passed={passed}")
+```
+
+```typescript TypeScript
+import { Vex } from '@vex_dev/sdk';
+
+const vex = new Vex({
+  apiKey: 'your-api-key',
+  config: {
+    mode: 'sync',
+    transparency: 'transparent',
+    threshold: {
+      pass: 0.8,
+      flag: 0.5,
+      block: 0.3,
+    },
+  },
+});
+
+const result = await vex.trace(
+  { agentId: 'qa-agent', task: 'Answer questions based on the provided document' },
+  async (ctx) => {
+    const answer = await myAgent.answer(question, document);
+    ctx.record(answer);
+  }
+);
+
+console.log(`Confidence: ${result.confidence?.toFixed(2)}`);
+console.log(`Action:     ${result.action}`);
+
+if (result.verification) {
+  for (const [checkName, checkResult] of Object.entries(result.verification)) {
+    console.log(`  ${checkName}: score=${checkResult.score}, passed=${checkResult.passed}`);
+  }
+}
+```
+
+</CodeGroup>
+
+---
+
+## Custom thresholds
+
+The defaults (`pass=0.8`, `flag=0.5`, `block=0.3`) are a sensible starting point. Tune them once you have real confidence score distributions from your agent:
+
+<CodeGroup>
+
+```python Python
+from vex import Vex, VexConfig
+from vex.models import ThresholdConfig
+
+# Tight thresholds for a high-stakes medical information agent
+guard = Vex(
+    api_key="your-api-key",
+    config=VexConfig(
+        mode="sync",
+        correction="cascade",
+        confidence_threshold=ThresholdConfig(
+            pass_threshold=0.92,  # only very high-confidence outputs pass
+            flag_threshold=0.70,  # broad flag zone for human review
+            block_threshold=0.50, # block anything below 0.5
+        ),
+    ),
+)
+```
+
+```typescript TypeScript
+import { Vex } from '@vex_dev/sdk';
+
+// Tight thresholds for a high-stakes medical information agent
+const vex = new Vex({
+  apiKey: 'your-api-key',
+  config: {
+    mode: 'sync',
+    correction: 'auto',
+    threshold: {
+      pass: 0.92,  // only very high-confidence outputs pass
+      flag: 0.70,  // broad flag zone for human review
+      block: 0.50, // block anything below 0.5
+    },
+  },
+});
+```
+
+</CodeGroup>
+
+---
+
+## Best practices
+
+<Steps>
+
+<Step title="Start with the defaults">
+Deploy with the default thresholds (`pass=0.8`, `flag=0.5`, `block=0.3`) in async mode first. Let real traffic accumulate confidence score data in the dashboard before tuning.
+</Step>
+
+<Step title="Analyze the distribution in the dashboard">
+Navigate to **Agents → [your agent] → Confidence Distribution**. Look at the histogram of scores across recent executions. Identify natural breakpoints where the distribution clusters.
+</Step>
+
+<Step title="Tighten pass_threshold for critical agents">
+If most of your agent's outputs cluster above 0.9, raise `pass_threshold` to 0.9. This will catch the tail of borderline outputs that previously slipped through as passes.
+</Step>
+
+<Step title="Lower block_threshold for permissive use cases">
+For agents where occasional inaccuracies are acceptable and correction is expensive, lower `block_threshold` to 0.1 or 0.2. This reserves blocking for only the most egregiously bad outputs.
+</Step>
+
+<Step title="Switch to sync mode for guardrails">
+Once you are confident in your thresholds, switch from async to sync mode. The real confidence scores will now gate outputs before they reach your users.
+</Step>
+
+</Steps>
+
+<Tip>
+The flag zone is your calibration tool. Outputs that land in the flag zone are surfaced in the **Review** queue in the dashboard. Annotating them as correct or incorrect gives Vex signal to improve the verification model for your specific agent.
+</Tip>
+
+---
+
+## Related
+
+<CardGroup cols={2}>
+
+<Card title="Correction Cascade" icon="rotate" href="/concepts/correction-cascade">
+  What happens when an output is blocked and correction is enabled.
+</Card>
+
+<Card title="Async vs Sync Mode" icon="timer" href="/concepts/async-vs-sync">
+  Confidence scores are only available at call time in sync mode.
+</Card>
+
+<Card title="Sessions" icon="messages" href="/concepts/sessions">
+  The coherence check requires sessions to have cross-turn history available.
+</Card>
+
+</CardGroup>

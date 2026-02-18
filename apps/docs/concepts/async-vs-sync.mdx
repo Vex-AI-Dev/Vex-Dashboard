@@ -1,0 +1,262 @@
+---
+title: "Async vs Sync Mode"
+sidebarTitle: "Async vs Sync"
+description: "Choose between zero-latency observability (async) and inline quality gates (sync)."
+---
+
+Vex operates in one of two modes that control **when** verification runs relative to your agent's response. The choice affects latency, the shape of `VexResult`, and whether blocking and correction are possible.
+
+## Comparison
+
+| | Async (default) | Sync |
+|---|---|---|
+| **Latency added** | Zero — fire-and-forget | ~100–200 ms per call |
+| **Return value** | `action = "pass"`, `confidence = None` always | Real `confidence` float, real `action` |
+| **Verification timing** | Background, after your agent returns | Inline, before result returned to caller |
+| **Correction available** | No | Yes (`correction="cascade"` / `correction: 'auto'`) |
+| **`VexBlockError` possible** | No | Yes |
+| **API endpoint** | `POST /v1/ingest/batch` (batched, async flush) | `POST /v1/verify` (immediate) |
+| **Primary use case** | Observability, monitoring, development | Production guardrails, blocking bad outputs |
+
+---
+
+## Async mode
+
+Async is the default. Your agent runs and returns its output immediately. The SDK serializes the execution event and places it in an in-memory buffer. A background flush loop drains the buffer in batches to `POST /v1/ingest/batch` at a configurable interval (`flush_interval_s` in Python, `flushIntervalMs` in TypeScript).
+
+Because verification is decoupled from the request path, `VexResult` always contains:
+
+- `action = "pass"` — no inline decision was made
+- `confidence = None` — the score is not yet available at return time
+- `corrected = False` — correction never runs in async mode
+
+The real confidence and action appear in the dashboard a few seconds later, once the batch has been processed.
+
+<Note>
+Async mode does not buffer indefinitely. The buffer is capped at `max_buffer_size` events (default 1000). If the buffer fills before a flush completes, older events are dropped. For very high-throughput workloads, tune `flush_batch_size` and `flush_interval_s` / `flushIntervalMs` accordingly.
+</Note>
+
+<CodeGroup>
+
+```python Python
+from vex import Vex, VexConfig
+
+guard = Vex(
+    api_key="your-api-key",
+    config=VexConfig(
+        mode="async",           # default — can be omitted
+        flush_interval_s=5.0,   # flush every 5 seconds
+        flush_batch_size=50,    # up to 50 events per batch
+    ),
+)
+
+@guard.watch(agent_id="support-bot", task="Answer customer questions about billing")
+def handle_support(query: str) -> str:
+    return my_agent.run(query)
+
+result = handle_support("How do I reset my password?")
+
+# In async mode these are always their default values at call time
+print(result.output)      # The agent's response — real value
+print(result.action)      # "pass" — always in async mode
+print(result.confidence)  # None — not yet computed
+print(result.corrected)   # False — correction unavailable in async mode
+```
+
+```typescript TypeScript
+import { Vex } from '@vex_dev/sdk';
+
+const vex = new Vex({
+  apiKey: 'your-api-key',
+  config: {
+    mode: 'async',          // default — can be omitted
+    flushIntervalMs: 5000,  // flush every 5 seconds
+    flushBatchSize: 50,     // up to 50 events per batch
+  },
+});
+
+const result = await vex.trace(
+  { agentId: 'support-bot', task: 'Answer customer questions about billing' },
+  async (ctx) => {
+    const response = await myAgent.run('How do I reset my password?');
+    ctx.record(response);
+  }
+);
+
+// In async mode these are always their default values at call time
+console.log(result.output);      // The agent's response — real value
+console.log(result.action);      // "pass" — always in async mode
+console.log(result.confidence);  // null — not yet computed
+console.log(result.corrected);   // false — correction unavailable in async mode
+```
+
+</CodeGroup>
+
+---
+
+## Sync mode
+
+In sync mode the SDK calls `POST /v1/verify` immediately after your agent produces its output, awaits the verification response, and only then returns `VexResult` to your code. This adds approximately 100–200 ms of network round-trip latency on every call.
+
+The benefit is a fully populated `VexResult`:
+
+- `confidence` is the real 0–1 score from the verification engine
+- `action` reflects the actual decision (`"pass"`, `"flag"`, or `"block"`)
+- If correction is enabled and the output was below the block threshold, `corrected = True` and `result.output` contains the corrected output
+
+<Warning>
+In sync mode with `correction` disabled, a `"block"` action means the raw output is still returned — it is your responsibility to handle it. To have Vex automatically attempt to repair a blocked output, enable correction as shown below.
+</Warning>
+
+<CodeGroup>
+
+```python Python
+from vex import Vex, VexConfig
+from vex.models import ThresholdConfig
+from vex import VexBlockError
+
+guard = Vex(
+    api_key="your-api-key",
+    config=VexConfig(
+        mode="sync",
+        correction="cascade",       # enable auto-correction
+        transparency="transparent", # expose correction details in result
+        confidence_threshold=ThresholdConfig(
+            pass_threshold=0.8,
+            flag_threshold=0.5,
+            block_threshold=0.3,
+        ),
+    ),
+)
+
+@guard.watch(agent_id="billing-agent", task="Retrieve and summarize customer invoices")
+def get_invoice_summary(customer_id: str) -> str:
+    return my_agent.run(customer_id)
+
+try:
+    result = get_invoice_summary("cust_123")
+    print(result.output)      # Corrected output if corrected, original otherwise
+    print(result.confidence)  # e.g. 0.91
+    print(result.action)      # "pass", "flag", or "block"
+    print(result.corrected)   # True if correction was applied
+except VexBlockError as e:
+    # Raised only if action == "block" AND correction failed or is disabled
+    print(f"Agent output was blocked: {e}")
+    return fallback_response()
+```
+
+```typescript TypeScript
+import { Vex, VexBlockError } from '@vex_dev/sdk';
+
+const vex = new Vex({
+  apiKey: 'your-api-key',
+  config: {
+    mode: 'sync',
+    correction: 'auto',          // enable auto-correction
+    transparency: 'transparent', // expose correction details in result
+    threshold: {
+      pass: 0.8,
+      flag: 0.5,
+      block: 0.3,
+    },
+  },
+});
+
+try {
+  const result = await vex.trace(
+    { agentId: 'billing-agent', task: 'Retrieve and summarize customer invoices' },
+    async (ctx) => {
+      const response = await myAgent.run('cust_123');
+      ctx.record(response);
+    }
+  );
+
+  console.log(result.output);      // Corrected output if corrected, original otherwise
+  console.log(result.confidence);  // e.g. 0.91
+  console.log(result.action);      // "pass", "flag", or "block"
+  console.log(result.corrected);   // true if correction was applied
+} catch (e) {
+  if (e instanceof VexBlockError) {
+    // Raised only if action === "block" AND correction failed or is disabled
+    console.error('Agent output was blocked:', e.message);
+    return fallbackResponse();
+  }
+  throw e;
+}
+```
+
+</CodeGroup>
+
+---
+
+## When to use each mode
+
+<CardGroup cols={2}>
+
+<Card title="Use async for..." icon="eye">
+  - Observability and quality monitoring in development or staging
+  - High-throughput workloads where 100–200 ms of added latency is unacceptable
+  - Initial deployment to a production agent — monitor trends before tightening thresholds
+  - Any pipeline where the downstream consumer is not affected by output quality (e.g., batch jobs, logging pipelines)
+</Card>
+
+<Card title="Use sync for..." icon="shield-check">
+  - Customer-facing agents where a bad output has real consequences
+  - Regulated workflows (finance, healthcare, legal) where outputs must meet quality standards before being acted on
+  - Any agent where you want correction to run automatically before the caller sees the output
+  - Canary deployments of a new agent version — verify quality inline before rolling out
+</Card>
+
+</CardGroup>
+
+---
+
+## Migrating from async to sync
+
+The mode is a single config field. No other code changes are required:
+
+<CodeGroup>
+
+```python Python
+# Before
+config = VexConfig(mode="async")
+
+# After — add sync + correction when you are ready for guardrails
+config = VexConfig(
+    mode="sync",
+    correction="cascade",
+)
+```
+
+```typescript TypeScript
+// Before
+config: { mode: 'async' }
+
+// After — add sync + correction when you are ready for guardrails
+config: {
+  mode: 'sync',
+  correction: 'auto',
+}
+```
+
+</CodeGroup>
+
+<Tip>
+The recommended migration path is: start with `mode="async"` to observe confidence score distributions across real traffic, identify the right thresholds for your agent, then switch to `mode="sync"` with those thresholds set explicitly. This avoids blocking good outputs during the calibration phase.
+</Tip>
+
+---
+
+## Related
+
+<CardGroup cols={2}>
+
+<Card title="Confidence & Thresholds" icon="chart-line" href="/concepts/confidence">
+  How confidence scores are computed and how thresholds map scores to actions.
+</Card>
+
+<Card title="Correction Cascade" icon="rotate" href="/concepts/correction-cascade">
+  How the three-layer auto-correction works and how to configure it.
+</Card>
+
+</CardGroup>

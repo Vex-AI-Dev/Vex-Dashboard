@@ -1,0 +1,346 @@
+---
+title: "Sessions"
+sidebarTitle: "Sessions"
+description: "Track multi-turn conversations for cross-turn verification and coherence detection."
+---
+
+A **session** groups a sequence of related agent executions — for example, all the turns in a single chat conversation. Sessions enable Vex to verify not just individual outputs in isolation but the agent's behavior across the full conversation arc.
+
+---
+
+## What sessions provide
+
+Without a session, each execution is verified independently. With a session, Vex has access to the conversation history and can run additional cross-turn checks:
+
+- **Self-contradiction detection** — the agent says X in turn 3 and then asserts not-X in turn 7
+- **Goal drift** — the agent progressively moves away from the user's original stated intent
+- **Coherence degradation** — output quality degrades over the course of a long conversation, even if each individual turn looks acceptable in isolation
+- **Persona drift** — tone, style, or behavior shifts mid-conversation in ways that are invisible from a single-turn view
+
+These checks feed into the **Coherence** component of the confidence score and are only active when using sessions.
+
+---
+
+## How sessions work
+
+When you call `guard.session()` / `vex.session()`, the SDK:
+
+1. Generates a `session_id` (UUID v4) automatically, unless you provide your own
+2. Returns a session handle that wraps your Vex client
+3. Assigns an auto-incrementing `sequence_number` to each trace made through that handle
+4. Stores each turn's input and output in the conversation history, windowed to the last `conversation_window_size` turns (default 10, configurable)
+
+The conversation window is sent to the verifier with each new trace, giving the verification engine the context it needs to run coherence checks.
+
+---
+
+## Basic usage
+
+<CodeGroup>
+
+```python Python
+from vex import Vex, VexConfig
+
+guard = Vex(
+    api_key="your-api-key",
+    config=VexConfig(mode="sync"),
+)
+
+# Create a session for a new conversation
+session = guard.session(agent_id="support-bot")
+
+# Turn 1
+with session.trace(
+    task="Answer customer questions about account management",
+    input_data={"user": "How do I change my email address?"},
+) as ctx:
+    response_1 = my_agent.run("How do I change my email address?")
+    ctx.record(response_1)
+
+# Turn 2 — session history includes turn 1
+with session.trace(
+    task="Answer customer questions about account management",
+    input_data={"user": "What if I've lost access to the old email?"},
+) as ctx:
+    response_2 = my_agent.run("What if I've lost access to the old email?")
+    ctx.record(response_2)
+
+# Turn 3 — session history includes turns 1 and 2
+with session.trace(
+    task="Answer customer questions about account management",
+    input_data={"user": "OK, I've submitted the form. What happens next?"},
+) as ctx:
+    response_3 = my_agent.run("OK, I've submitted the form. What happens next?")
+    ctx.record(response_3)
+```
+
+```typescript TypeScript
+import { Vex } from '@vex_dev/sdk';
+
+const vex = new Vex({
+  apiKey: 'your-api-key',
+  config: { mode: 'sync' },
+});
+
+// Create a session for a new conversation
+const session = vex.session({ agentId: 'support-bot' });
+
+// Turn 1
+const result1 = await session.trace(
+  {
+    task: 'Answer customer questions about account management',
+    inputData: { user: 'How do I change my email address?' },
+  },
+  async (ctx) => {
+    const response = await myAgent.run('How do I change my email address?');
+    ctx.record(response);
+  }
+);
+
+// Turn 2 — session history includes turn 1
+const result2 = await session.trace(
+  {
+    task: 'Answer customer questions about account management',
+    inputData: { user: "What if I've lost access to the old email?" },
+  },
+  async (ctx) => {
+    const response = await myAgent.run("What if I've lost access to the old email?");
+    ctx.record(response);
+  }
+);
+
+// Turn 3 — session history includes turns 1 and 2
+const result3 = await session.trace(
+  {
+    task: 'Answer customer questions about account management',
+    inputData: { user: "OK, I've submitted the form. What happens next?" },
+  },
+  async (ctx) => {
+    const response = await myAgent.run("OK, I've submitted the form. What happens next?");
+    ctx.record(response);
+  }
+);
+```
+
+</CodeGroup>
+
+---
+
+## Custom session IDs
+
+By default the SDK generates a UUID for each session. If your application already has a conversation or session identifier (for example, a thread ID from your chat system or a database row ID), pass it explicitly so that Vex session data aligns with your own records:
+
+<CodeGroup>
+
+```python Python
+# Use your own session ID — must be a string
+session = guard.session(
+    agent_id="support-bot",
+    session_id="conv_01HZR8FXWK3BNDMQV7R9JS2GCP",  # your existing ID
+)
+```
+
+```typescript TypeScript
+// Use your own session ID — must be a string
+const session = vex.session({
+  agentId: 'support-bot',
+  sessionId: 'conv_01HZR8FXWK3BNDMQV7R9JS2GCP', // your existing ID
+});
+```
+
+</CodeGroup>
+
+<Tip>
+Using your own session IDs makes it straightforward to correlate Vex session data with conversations in your product database. The session ID appears on every trace in the dashboard and in webhook payloads.
+</Tip>
+
+---
+
+## Session metadata
+
+Attach arbitrary key-value pairs to a session. The metadata is recorded on every trace in the session, making it easy to filter and group sessions in the dashboard by attributes like user tier, product area, or experiment variant:
+
+<CodeGroup>
+
+```python Python
+session = guard.session(
+    agent_id="support-bot",
+    session_id="conv_01HZR8FXWK3BNDMQV7R9JS2GCP",
+    metadata={
+        "user_id": "usr_8829",
+        "plan": "enterprise",
+        "region": "us-east-1",
+        "experiment": "new-prompt-v2",
+    },
+)
+```
+
+```typescript TypeScript
+const session = vex.session({
+  agentId: 'support-bot',
+  sessionId: 'conv_01HZR8FXWK3BNDMQV7R9JS2GCP',
+  metadata: {
+    userId: 'usr_8829',
+    plan: 'enterprise',
+    region: 'us-east-1',
+    experiment: 'new-prompt-v2',
+  },
+});
+```
+
+</CodeGroup>
+
+---
+
+## Conversation window
+
+Vex stores each turn's input and output and sends the most recent `conversation_window_size` turns to the verifier with each new trace. The default window is 10 turns.
+
+For very long conversations, a larger window improves coherence detection but increases the payload size sent to the verifier on each call. Tune the window based on the typical length of your conversations and the latency budget you have available:
+
+<CodeGroup>
+
+```python Python
+from vex import Vex, VexConfig
+
+guard = Vex(
+    api_key="your-api-key",
+    config=VexConfig(
+        mode="sync",
+        conversation_window_size=20,  # keep the last 20 turns in context
+    ),
+)
+```
+
+```typescript TypeScript
+import { Vex } from '@vex_dev/sdk';
+
+const vex = new Vex({
+  apiKey: 'your-api-key',
+  config: {
+    mode: 'sync',
+    conversationWindowSize: 20, // keep the last 20 turns in context
+  },
+});
+```
+
+</CodeGroup>
+
+<Note>
+The conversation window is applied at the SDK level before sending to the API. Turns older than the window are not transmitted to the verifier — they are still stored in the dashboard for audit purposes.
+</Note>
+
+---
+
+## Parent execution linking
+
+For orchestrator-style architectures where a top-level agent spawns sub-agents, you can link sub-agent executions back to the parent using `parent_execution_id`. This produces a tree-shaped trace view in the dashboard where you can see the full call graph of an orchestration run:
+
+<CodeGroup>
+
+```python Python
+# Orchestrator execution
+with guard.trace(
+    agent_id="orchestrator",
+    task="Coordinate research and draft report",
+    input_data={"topic": "AI safety"},
+) as orchestrator_ctx:
+    orchestrator_ctx.record("Starting sub-agents...")
+    parent_id = orchestrator_ctx.execution_id
+
+    # Sub-agent 1 — linked to orchestrator
+    with guard.trace(
+        agent_id="research-agent",
+        task="Gather sources on AI safety",
+        input_data={"topic": "AI safety"},
+        parent_execution_id=parent_id,
+    ) as research_ctx:
+        sources = research_agent.run("AI safety")
+        research_ctx.record(sources)
+
+    # Sub-agent 2 — also linked to same orchestrator
+    with guard.trace(
+        agent_id="writer-agent",
+        task="Draft report from provided sources",
+        input_data={"sources": sources},
+        parent_execution_id=parent_id,
+    ) as writer_ctx:
+        report = writer_agent.run(sources)
+        writer_ctx.record(report)
+
+    orchestrator_ctx.record(report)
+```
+
+```typescript TypeScript
+// Orchestrator execution
+const orchestratorResult = await vex.trace(
+  { agentId: 'orchestrator', task: 'Coordinate research and draft report' },
+  async (orchestratorCtx) => {
+    const parentId = orchestratorCtx.executionId;
+
+    // Sub-agent 1 — linked to orchestrator
+    const researchResult = await vex.trace(
+      {
+        agentId: 'research-agent',
+        task: 'Gather sources on AI safety',
+        parentExecutionId: parentId,
+      },
+      async (researchCtx) => {
+        const sources = await researchAgent.run('AI safety');
+        researchCtx.record(sources);
+      }
+    );
+
+    // Sub-agent 2 — also linked to same orchestrator
+    const reportResult = await vex.trace(
+      {
+        agentId: 'writer-agent',
+        task: 'Draft report from provided sources',
+        parentExecutionId: parentId,
+      },
+      async (writerCtx) => {
+        const report = await writerAgent.run(researchResult.output);
+        writerCtx.record(report);
+      }
+    );
+
+    orchestratorCtx.record(reportResult.output);
+  }
+);
+```
+
+</CodeGroup>
+
+---
+
+## Sessions in async vs sync mode
+
+Sessions work in both modes. In async mode, session history is buffered locally in the SDK and included in the batch payload when flushed — there is no latency cost. In sync mode, the session history is sent with each verification request, enabling the coherence check to run inline.
+
+<CardGroup cols={2}>
+
+<Card title="Async sessions" icon="eye">
+  Zero latency. Coherence checks run in the background after each batch flush. Results visible in the dashboard a few seconds after each turn. Useful for monitoring conversation quality trends across large volumes.
+</Card>
+
+<Card title="Sync sessions" icon="shield-check">
+  Coherence check runs inline, ~100–200 ms overhead per turn. `result.verification` includes the coherence sub-score. Enables blocking or correcting incoherent turns before they reach the user.
+</Card>
+
+</CardGroup>
+
+---
+
+## Related
+
+<CardGroup cols={2}>
+
+<Card title="Confidence & Thresholds" icon="chart-line" href="/concepts/confidence">
+  The coherence check contributes to the confidence score and requires sessions.
+</Card>
+
+<Card title="Async vs Sync Mode" icon="timer" href="/concepts/async-vs-sync">
+  Sessions work in both modes — understand the trade-offs for your use case.
+</Card>
+
+</CardGroup>
