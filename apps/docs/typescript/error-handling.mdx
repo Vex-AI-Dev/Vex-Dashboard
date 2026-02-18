@@ -1,0 +1,314 @@
+---
+title: "Error Handling"
+description: "Handle exceptions and inspect verification results in the TypeScript SDK."
+---
+
+The SDK throws typed exceptions for every failure category. All SDK exceptions inherit from `VexError`, making it straightforward to catch Vex-specific errors without affecting your agent's own exception handling.
+
+## Exception hierarchy
+
+```
+VexError
+├── ConfigurationError   — invalid constructor arguments (thrown at init time)
+├── IngestionError       — async event flush failed (non-fatal, logged as warning)
+├── VerificationError    — sync verification request failed (non-fatal, returns pass-through)
+└── VexBlockError        — output was blocked by the verifier (sync mode only)
+```
+
+All exceptions are importable from the top-level `@vex_dev/sdk` package:
+
+```typescript
+import {
+  VexError,
+  VexBlockError,
+  ConfigurationError,
+  IngestionError,
+  VerificationError,
+} from '@vex_dev/sdk';
+```
+
+## ConfigurationError
+
+Thrown synchronously in the `Vex` constructor when the provided configuration is invalid. No network calls have been made at this point.
+
+```typescript
+import { Vex, ConfigurationError } from '@vex_dev/sdk';
+
+try {
+  const vex = new Vex({ apiKey: '' }); // Empty key
+} catch (err) {
+  if (err instanceof ConfigurationError) {
+    console.error(`Invalid configuration: ${err.message}`);
+  }
+}
+```
+
+Common causes:
+
+| Cause | Detail |
+|---|---|
+| Empty API key | `apiKey: ""` throws immediately |
+| API key too short | Minimum 10 characters |
+| Invalid `ThresholdConfig` ordering | Must satisfy `block < flag < pass` |
+
+## VexBlockError
+
+Thrown in **sync mode** when the verifier returns `action="block"` and either correction is disabled or automatic correction has failed to produce an output above the block threshold.
+
+`VexBlockError` carries the full `VexResult` on the `result` property so you can inspect the confidence score, verification breakdown, and correction attempts before choosing a fallback.
+
+```typescript
+import { Vex, VexBlockError } from '@vex_dev/sdk';
+
+const vex = new Vex({
+  apiKey: process.env.VEX_API_KEY!,
+  config: { mode: 'sync', correction: 'auto' },
+});
+
+try {
+  const result = await vex.trace(
+    { agentId: 'content-agent', task: 'Generate accurate product descriptions' },
+    async (ctx) => {
+      const description = await llm.generate(product);
+      ctx.record(description);
+    },
+  );
+  return result.output as string;
+} catch (err) {
+  if (err instanceof VexBlockError) {
+    // Inspect why the output was blocked.
+    console.error('Output blocked', {
+      confidence: err.result.confidence,
+      executionId: err.result.executionId,
+      correctionAttempts: err.result.corrections?.length ?? 0,
+    });
+
+    // Return a safe fallback — never deliver the blocked output to users.
+    return FALLBACK_DESCRIPTION;
+  }
+  throw err;
+}
+```
+
+<Warning>
+Never deliver a blocked output to users. When `VexBlockError` is thrown, the output did not meet your quality threshold even after correction. Always provide a fallback response or escalate to a human.
+</Warning>
+
+## Graceful degradation in sync mode
+
+If the Vex API is unreachable during a sync verification call (network failure, timeout), the SDK does **not** throw an exception. Instead it logs a warning and returns a pass-through `VexResult` with:
+
+- `output` — the agent's original output (unmodified)
+- `action` — `"pass"`
+- `confidence` — `null`
+- `corrected` — `false`
+
+This means your agent continues to function normally even if the Vex API is temporarily unavailable. Your users are never blocked by a Vex outage.
+
+```typescript
+// If the Vex API is down, this still returns the agent's output.
+const result = await vex.trace(
+  { agentId: 'support-bot' },
+  async (ctx) => {
+    const response = await llm.complete(query);
+    ctx.record(response);
+  },
+);
+
+// Always safe to use result.output regardless of API availability.
+return result.output;
+```
+
+<Info>
+Async mode is also resilient: if the background flush fails, the event is dropped after logging a warning. No exception is thrown in your application code.
+</Info>
+
+## IngestionError and VerificationError
+
+These are internal exceptions that the SDK handles gracefully before they reach your code. In the event of an unrecoverable transport failure, the SDK logs at warning level. You will not see these in your application's exception handlers under normal circumstances.
+
+If you need to handle them explicitly (for example, in a test harness or a custom transport implementation), you can import and catch them:
+
+```typescript
+import { IngestionError, VerificationError } from '@vex_dev/sdk';
+```
+
+## VexResult field reference
+
+Every successful execution (including pass-through results from graceful degradation) returns a `VexResult`. The full field set:
+
+| Field | Type | Description |
+|---|---|---|
+| `executionId` | `string` | UUID identifying this specific execution. Use this to look up the trace in the dashboard. |
+| `action` | `'pass' \| 'flag' \| 'block'` | The verdict against your configured thresholds. |
+| `confidence` | `number \| null` | 0–1 score from the verifier. `null` in async mode or on network failure. |
+| `output` | `unknown` | The agent output to deliver. In sync + correction mode, this may be the corrected version. |
+| `corrections` | `Record<string, unknown>[] \| null` | List of correction attempt details when `correction: 'auto'` is enabled. |
+| `verification` | `Record<string, unknown> \| null` | Per-check breakdown from the verifier. `null` in async mode. |
+| `corrected` | `boolean` | `true` if the output in `result.output` was produced by a correction layer rather than the agent. |
+| `originalOutput` | `unknown \| null` | The agent's original output before correction. Set only when `corrected === true`. |
+
+## Inspecting verification results
+
+`result.verification` contains the per-check breakdown returned by the verifier. It is `null` in async mode (verification happens asynchronously and is not returned inline).
+
+```typescript
+const result = await vex.trace(
+  { agentId: 'support-bot', task: 'Resolve support tickets' },
+  async (ctx) => {
+    const response = await llm.complete(ticket);
+    ctx.record(response);
+  },
+);
+
+if (result.verification) {
+  // Example structure:
+  // {
+  //   schema:        { passed: true,  score: 1.0 },
+  //   hallucination: { passed: true,  score: 0.92 },
+  //   task_drift:    { passed: false, score: 0.41, reason: 'Response topic diverges from billing' },
+  //   coherence:     { passed: true,  score: 0.88 },
+  // }
+
+  for (const [checkName, checkResult] of Object.entries(result.verification)) {
+    const check = checkResult as { passed: boolean; score?: number; reason?: string };
+    if (!check.passed) {
+      console.warn('Verification check failed', {
+        check: checkName,
+        score: check.score,
+        reason: check.reason,
+        executionId: result.executionId,
+      });
+    }
+  }
+}
+```
+
+## Handling flagged results
+
+`action="flag"` means the output was above the block threshold but below the pass threshold. The output is delivered normally — Vex does not throw an exception for flagged results. Log them for human review.
+
+```typescript
+const result = await vex.trace(
+  { agentId: 'support-bot' },
+  async (ctx) => {
+    ctx.record(await llm.complete(ticket));
+  },
+);
+
+switch (result.action) {
+  case 'pass':
+    return result.output;
+
+  case 'flag':
+    // Deliver the response but route to the review queue.
+    await reviewQueue.push({
+      executionId: result.executionId,
+      confidence: result.confidence,
+      output: result.output,
+      input: ticket,
+    });
+    return result.output;
+
+  case 'block':
+    // This branch is only reached if the SDK is in async mode.
+    // In sync mode, VexBlockError is thrown before reaching here.
+    return FALLBACK_RESPONSE;
+}
+```
+
+## Full example with complete error handling
+
+```typescript
+import { Vex, VexConfig, VexBlockError, ConfigurationError } from '@vex_dev/sdk';
+
+let vex: Vex;
+
+try {
+  vex = new Vex({
+    apiKey: process.env.VEX_API_KEY!,
+    config: {
+      mode: 'sync',
+      correction: 'auto',
+    },
+  });
+} catch (err) {
+  if (err instanceof ConfigurationError) {
+    console.error('Failed to initialize Vex SDK', { message: err.message });
+    process.exit(1);
+  }
+  throw err;
+}
+
+process.on('SIGTERM', async () => {
+  await vex.close();
+  process.exit(0);
+});
+
+async function processSupportTicket(ticketBody: string, ticketId: string): Promise<string> {
+  try {
+    const result = await vex.trace(
+      {
+        agentId: 'support-agent',
+        task: 'Resolve customer support tickets accurately',
+        input: { ticketBody, ticketId },
+      },
+      async (ctx) => {
+        ctx.setMetadata('ticketId', ticketId);
+        const response = await llm.complete(ticketBody);
+        ctx.record(response);
+      },
+    );
+
+    if (result.action === 'flag') {
+      console.warn('Flagged response queued for review', {
+        ticketId,
+        executionId: result.executionId,
+        confidence: result.confidence,
+      });
+      await reviewQueue.push(ticketId, result.executionId);
+    }
+
+    return result.output as string;
+  } catch (err) {
+    if (err instanceof VexBlockError) {
+      console.error('Response blocked after correction', {
+        ticketId,
+        executionId: err.result.executionId,
+        confidence: err.result.confidence,
+        correctionAttempts: err.result.corrections?.length ?? 0,
+      });
+
+      // Escalate to human support rather than delivering a bad answer.
+      await escalationQueue.push(ticketId);
+      return (
+        "I wasn't able to resolve this automatically. " +
+        'A human agent will follow up with you shortly.'
+      );
+    }
+    throw err;
+  }
+}
+```
+
+## Best practices
+
+<CardGroup cols={2}>
+
+<Card title="Always handle VexBlockError in sync mode" icon="shield-exclamation">
+  If you use `mode: 'sync'`, every agent call site must be wrapped in a try/catch for `VexBlockError`. Unhandled, it propagates like any other exception and will crash your request handler.
+</Card>
+
+<Card title="Log flagged results" icon="flag">
+  `action="flag"` is the primary signal for quality degradation trending downward. Route flagged executions to a review queue so your team can annotate and tune thresholds before problems reach the block level.
+</Card>
+
+<Card title="Use executionId for correlation" icon="link">
+  Every `VexResult` and `VexBlockError` carries an `executionId`. Log it alongside your own request IDs so you can look up the full Vex trace in the dashboard for any incident.
+</Card>
+
+<Card title="Start async, move to sync selectively" icon="sliders">
+  Begin with `mode: 'async'` to collect baseline confidence data with zero latency impact. Once you understand your agent's score distribution, enable `mode: 'sync'` only for the highest-stakes functions.
+</Card>
+
+</CardGroup>

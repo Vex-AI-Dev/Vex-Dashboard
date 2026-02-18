@@ -1,0 +1,192 @@
+---
+title: "Installation"
+description: "Install and configure the Vex TypeScript SDK."
+---
+
+## Requirements
+
+The Vex TypeScript SDK requires **Node.js 18 or later**. It also runs on **Deno**, **Bun**, and any **Edge runtime** that supports the Web Fetch API. The package has **zero runtime dependencies** — no transitive packages are installed.
+
+## Install the package
+
+<CodeGroup>
+
+```bash npm
+npm install @vex_dev/sdk
+```
+
+```bash yarn
+yarn add @vex_dev/sdk
+```
+
+```bash pnpm
+pnpm add @vex_dev/sdk
+```
+
+```bash bun
+bun add @vex_dev/sdk
+```
+
+</CodeGroup>
+
+The package ships as a **dual ESM + CJS publish**, so it works in both `"type": "module"` projects and CommonJS projects without any additional configuration.
+
+## Initialize the client
+
+There are two ways to pass your API key to the `Vex` constructor.
+
+<CodeGroup>
+
+```typescript Environment variable (recommended)
+import { Vex } from '@vex_dev/sdk';
+
+// Set the variable before starting your process:
+//   export VEX_API_KEY=vex_live_...
+const vex = new Vex({ apiKey: process.env.VEX_API_KEY! });
+```
+
+```typescript Explicit argument
+import { Vex } from '@vex_dev/sdk';
+
+const vex = new Vex({ apiKey: 'vex_live_xxxxxxxxxxxxxxxxxxxx' });
+```
+
+</CodeGroup>
+
+<Tip>
+Always load the API key from an environment variable or secrets manager in production. Never commit a raw key to source control.
+</Tip>
+
+### API key validation rules
+
+The constructor throws `ConfigurationError` immediately if the key is invalid — before any network call is made.
+
+| Rule | Detail |
+|---|---|
+| Must not be empty | An empty string throws `ConfigurationError` |
+| Minimum length | At least 10 characters |
+
+```typescript
+import { Vex, ConfigurationError } from '@vex_dev/sdk';
+
+try {
+  const vex = new Vex({ apiKey: 'short' });
+} catch (err) {
+  if (err instanceof ConfigurationError) {
+    console.error(`Bad key: ${err.message}`);
+  }
+}
+```
+
+## Passing a custom configuration
+
+Pass a `VexConfigInput` object on the `config` key to override any defaults:
+
+```typescript
+import { Vex } from '@vex_dev/sdk';
+
+const vex = new Vex({
+  apiKey: process.env.VEX_API_KEY!,
+  config: {
+    mode: 'sync',
+    correction: 'auto',
+  },
+});
+```
+
+See [Configuration](/typescript/configuration) for the full parameter reference.
+
+## Cleanup
+
+The SDK maintains a background flush interval on initialization. Call `await vex.close()` when your process is shutting down to flush any buffered events and stop the interval cleanly.
+
+```typescript
+import { Vex } from '@vex_dev/sdk';
+
+const vex = new Vex({ apiKey: process.env.VEX_API_KEY! });
+
+// In a Node.js long-running process, register a shutdown handler:
+process.on('SIGTERM', async () => {
+  await vex.close();
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  await vex.close();
+  process.exit(0);
+});
+```
+
+`vex.close()` is safe to call multiple times. In short-lived scripts, call it explicitly at the end of your main function:
+
+```typescript
+async function main() {
+  const vex = new Vex({ apiKey: process.env.VEX_API_KEY! });
+
+  try {
+    // ... your agent logic
+  } finally {
+    await vex.close();
+  }
+}
+
+main();
+```
+
+<Note>
+Skipping `vex.close()` at process exit will not cause data loss in most cases — the OS will flush open sockets — but calling it explicitly guarantees that the final batch of events is delivered before the process terminates.
+</Note>
+
+## ESM and CJS support
+
+The package is published with both ESM and CJS entry points. Your bundler or runtime will select the appropriate format automatically.
+
+```typescript
+// ESM (recommended)
+import { Vex } from '@vex_dev/sdk';
+
+// CommonJS
+const { Vex } = require('@vex_dev/sdk');
+```
+
+## Deno and Bun compatibility
+
+The SDK works in Deno and Bun without any special configuration. Use your runtime's standard import mechanism:
+
+<CodeGroup>
+
+```typescript Deno
+import { Vex } from 'npm:@vex_dev/sdk';
+
+const vex = new Vex({ apiKey: Deno.env.get('VEX_API_KEY')! });
+```
+
+```typescript Bun
+import { Vex } from '@vex_dev/sdk';
+
+const vex = new Vex({ apiKey: process.env.VEX_API_KEY! });
+```
+
+</CodeGroup>
+
+## What's next?
+
+<CardGroup cols={2}>
+
+<Card title="Tracing" icon="chart-line" href="/typescript/tracing">
+  Trace agent executions with the callback-based vex.trace() API.
+</Card>
+
+<Card title="Sessions" icon="messages" href="/typescript/sessions">
+  Track multi-turn conversations across calls.
+</Card>
+
+<Card title="Configuration" icon="sliders" href="/typescript/configuration">
+  Full VexConfig and ThresholdConfig reference.
+</Card>
+
+<Card title="Error Handling" icon="shield-exclamation" href="/typescript/error-handling">
+  Handle exceptions and inspect verification results.
+</Card>
+
+</CardGroup>

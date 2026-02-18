@@ -1,0 +1,240 @@
+---
+title: "Configuration"
+description: "Complete VexConfig reference for the TypeScript SDK."
+---
+
+Pass a `VexConfigInput` object on the `config` key of the `Vex` constructor to override any default values. All fields are optional — omitted fields use the defaults shown below.
+
+```typescript
+import { Vex } from '@vex_dev/sdk';
+
+const vex = new Vex({
+  apiKey: process.env.VEX_API_KEY!,
+  config: {
+    mode: 'sync',
+    correction: 'auto',
+  },
+});
+```
+
+`VexConfigInput` is a partial of `VexConfig` with `threshold` accepting a partial `ThresholdConfig`. You never need to specify every field.
+
+## VexConfig reference
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `mode` | `'async' \| 'sync'` | `'async'` | `'async'` — fire-and-forget, zero latency overhead. `'sync'` — inline verification, enables active guardrails. |
+| `correction` | `'none' \| 'auto'` | `'none'` | `'none'` — no correction attempted. `'auto'` — automatically corrects blocked outputs using the Vex correction cascade. |
+| `transparency` | `'opaque' \| 'transparent'` | `'opaque'` | `'opaque'` — correction is invisible to callers (corrected output replaces original silently). `'transparent'` — result carries both original and corrected output in separate fields. |
+| `threshold` | `ThresholdConfig` | see below | Controls which action is taken based on the confidence score. |
+| `apiUrl` | `string` | `'https://api.tryvex.dev'` | Base URL for the Vex API. Override for self-hosted deployments or testing. |
+| `timeoutMs` | `number` | `10000` | HTTP request timeout in milliseconds for both sync verification and async flush requests. |
+| `flushIntervalMs` | `number` | `1000` | How frequently (in milliseconds) the background flush interval sends buffered async events. |
+| `flushBatchSize` | `number` | `50` | Maximum number of events sent in a single flush request. |
+| `conversationWindowSize` | `number` | `10` | Number of recent turns kept in session history for coherence checking. |
+| `maxBufferSize` | `number` | `10000` | Maximum number of async events held in memory before overflow. Events are dropped (with a warning log) when this limit is reached. |
+| `logEventIds` | `boolean` | `false` | When `true`, logs the `executionId` of every event to the console at info level. Useful for correlating Vex traces with your own logs during development. |
+
+## ThresholdConfig reference
+
+`ThresholdConfig` defines the confidence score boundaries that determine the `action` field in every `VexResult`. Provide it as a partial object — any omitted keys use their defaults.
+
+```typescript
+const vex = new Vex({
+  apiKey: process.env.VEX_API_KEY!,
+  config: {
+    threshold: {
+      pass: 0.85,
+      flag: 0.60,
+      block: 0.35,
+    },
+  },
+});
+```
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `pass` | `number` | `0.8` | Confidence at or above this value → `action="pass"` |
+| `flag` | `number` | `0.5` | Confidence between `flag` and `pass` → `action="flag"` |
+| `block` | `number` | `0.3` | Confidence below this value → `action="block"` |
+
+<Note>
+The SDK enforces the constraint `block < flag < pass`. A `ConfigurationError` is thrown at construction time if this ordering is violated.
+</Note>
+
+The three-value boundary produces exactly three outcome zones:
+
+```
+0.0 ──────── block ──────── flag ──────── pass ──────── 1.0
+        0.3        0.5              0.8
+```
+
+Confidence scores below `block` produce `action="block"`. Scores between `block` and `flag` also produce `action="block"`. Scores between `flag` and `pass` produce `action="flag"`. Scores at or above `pass` produce `action="pass"`.
+
+## Python SDK differences
+
+<Note>
+If you are migrating from the Python SDK or maintaining both SDKs, note these key naming differences:
+</Note>
+
+| Concept | Python SDK | TypeScript SDK |
+|---|---|---|
+| Correction mode value | `correction="cascade"` | `correction: 'auto'` |
+| Threshold field names | `pass_threshold`, `flag_threshold`, `block_threshold` | `pass`, `flag`, `block` |
+| Timeout setting | `timeout_s` (seconds, float) | `timeoutMs` (milliseconds, number) |
+| Flush interval | `flush_interval_s` (seconds) | `flushIntervalMs` (milliseconds) |
+| Conversation window | `conversation_window_size` | `conversationWindowSize` |
+
+## Common configuration patterns
+
+<AccordionGroup>
+
+<Accordion title="1. Async observability (default — monitoring only)">
+
+The simplest configuration: record everything, verify in the background, never block a response. Use this when you are onboarding Vex and want full visibility before tuning thresholds or enabling guardrails.
+
+```typescript
+import { Vex } from '@vex_dev/sdk';
+
+const vex = new Vex({
+  apiKey: process.env.VEX_API_KEY!,
+  config: {
+    mode: 'async',       // Default — no latency added
+    correction: 'none',  // Default — no correction
+  },
+});
+```
+
+In async mode, `result.confidence` is always `null` and `result.action` is always `"pass"`. Verification results appear in the dashboard but do not affect your application's behavior.
+
+</Accordion>
+
+<Accordion title="2. Sync verification — guardrails, no correction">
+
+Enables inline verification so your code can inspect the confidence score and action before delivering the output. Blocked outputs throw `VexBlockError` and your code is responsible for the fallback. No correction is attempted.
+
+```typescript
+import { Vex } from '@vex_dev/sdk';
+
+const vex = new Vex({
+  apiKey: process.env.VEX_API_KEY!,
+  config: {
+    mode: 'sync',
+    correction: 'none',
+  },
+});
+```
+
+Use this when you want hard guardrails and prefer to control the fallback logic yourself rather than relying on automatic correction.
+
+</Accordion>
+
+<Accordion title="3. Sync + auto correction — full protection">
+
+The most protective configuration. Low-confidence outputs are automatically corrected before being returned. If correction fails, `VexBlockError` is thrown.
+
+```typescript
+import { Vex } from '@vex_dev/sdk';
+
+const vex = new Vex({
+  apiKey: process.env.VEX_API_KEY!,
+  config: {
+    mode: 'sync',
+    correction: 'auto',
+    transparency: 'transparent', // Expose both original and corrected output
+  },
+});
+```
+
+With `transparency: 'transparent'`, `result.originalOutput` contains the agent's raw response and `result.output` contains the corrected version. With `transparency: 'opaque'` (the default), only `result.output` is set and the correction is invisible to callers.
+
+<Note>
+The TypeScript SDK uses `correction: 'auto'` where the Python SDK uses `correction: 'cascade'`. Both refer to the same Vex correction cascade behavior.
+</Note>
+
+</Accordion>
+
+<Accordion title="4. Custom confidence thresholds">
+
+Tune the thresholds based on data from your async observability phase. Use tighter thresholds for high-stakes agents and looser thresholds for internal or low-risk ones.
+
+```typescript
+import { Vex } from '@vex_dev/sdk';
+
+// Tight thresholds for a customer-facing agent handling financial data.
+const vex = new Vex({
+  apiKey: process.env.VEX_API_KEY!,
+  config: {
+    mode: 'sync',
+    correction: 'auto',
+    threshold: {
+      pass: 0.90,
+      flag: 0.70,
+      block: 0.50,
+    },
+  },
+});
+```
+
+```typescript
+// Relaxed thresholds for an internal summarization tool.
+const vexInternal = new Vex({
+  apiKey: process.env.VEX_API_KEY!,
+  config: {
+    mode: 'async',
+    threshold: {
+      pass: 0.70,
+      flag: 0.40,
+      block: 0.20,
+    },
+  },
+});
+```
+
+</Accordion>
+
+</AccordionGroup>
+
+## Environment variable pattern
+
+Keep all sensitive values out of source code by reading configuration from environment variables:
+
+```typescript
+import { Vex } from '@vex_dev/sdk';
+
+const vex = new Vex({
+  apiKey: process.env.VEX_API_KEY!,
+  config: {
+    mode: (process.env.VEX_MODE as 'async' | 'sync') ?? 'async',
+    correction: (process.env.VEX_CORRECTION as 'none' | 'auto') ?? 'none',
+    apiUrl: process.env.VEX_API_URL ?? 'https://api.tryvex.dev',
+  },
+});
+```
+
+This pattern lets you use `mode: 'async'` in development and `mode: 'sync'` in production without code changes — configure the environment instead.
+
+## TypeScript types
+
+The full `VexConfig` and `VexConfigInput` types are exported for use in your own code:
+
+```typescript
+import type { VexConfig, VexConfigInput } from '@vex_dev/sdk';
+
+function buildConfig(env: NodeJS.ProcessEnv): VexConfigInput {
+  return {
+    mode: env.VEX_MODE === 'sync' ? 'sync' : 'async',
+    correction: env.VEX_CORRECTION === 'auto' ? 'auto' : 'none',
+    threshold: {
+      pass: parseFloat(env.VEX_THRESHOLD_PASS ?? '0.8'),
+      flag: parseFloat(env.VEX_THRESHOLD_FLAG ?? '0.5'),
+      block: parseFloat(env.VEX_THRESHOLD_BLOCK ?? '0.3'),
+    },
+  };
+}
+
+const vex = new Vex({
+  apiKey: process.env.VEX_API_KEY!,
+  config: buildConfig(process.env),
+});
+```

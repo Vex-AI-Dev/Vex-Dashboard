@@ -1,0 +1,257 @@
+---
+title: "Sessions"
+description: "Track multi-turn conversations with sessions in TypeScript."
+---
+
+A `Session` groups a sequence of related executions under a single conversation thread. Each turn in the session carries its position in the sequence, and the SDK automatically injects recent conversation history into each trace so the verifier can check for coherence, topic drift, and contradictions across turns.
+
+## Creating a session
+
+```typescript
+import { Vex } from '@vex_dev/sdk';
+
+const vex = new Vex({ apiKey: process.env.VEX_API_KEY! });
+
+const session = vex.session({ agentId: 'chat-bot' });
+console.log(session.sessionId); // Auto-generated UUID
+```
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `agentId` | `string` | Yes | Identifies the agent. All turns in this session appear under this agent in the dashboard. |
+| `sessionId` | `string` | No | Custom session identifier. If omitted, a UUID is generated automatically. |
+| `metadata` | `Record<string, unknown>` | No | Key-value pairs attached to the session (e.g. user ID, channel, locale). Inherited by every trace in the session. |
+
+## Running a turn
+
+Use `session.trace()` to execute each conversational turn. The API accepts the same callback pattern as `vex.trace()`, but without the `agentId` parameter (it is inherited from the session).
+
+```typescript
+const result = await session.trace(
+  {
+    task: 'Answer customer support questions',
+    input: { message: userMessage },
+  },
+  async (ctx) => {
+    const response = await llm.complete(userMessage);
+    ctx.record(response);
+  },
+);
+
+console.log(result.output);
+console.log(result.action);
+```
+
+### SessionTraceOptions
+
+| Parameter | Type | Description |
+|---|---|---|
+| `task` | `string` | Task description for this turn. Can differ across turns if the agent's goal changes. |
+| `input` | `unknown` | The user's message or structured input for this turn. |
+| `parentExecutionId` | `string` | Execution ID of a parent trace to create a tree relationship. See [Tree tracing](#tree-tracing). |
+
+## Auto-incrementing sequence
+
+Each call to `session.trace()` increments `session.sequence` by 1. The sequence number is recorded on every execution and is visible in the dashboard trace list, making it easy to reconstruct the full conversation order.
+
+```typescript
+const session = vex.session({ agentId: 'chat-bot' });
+console.log(session.sequence); // 0
+
+await session.trace({ input: 'Hello' }, async (ctx) => {
+  ctx.record(await llm.complete('Hello'));
+});
+console.log(session.sequence); // 1
+
+await session.trace({ input: 'What are your hours?' }, async (ctx) => {
+  ctx.record(await llm.complete('What are your hours?'));
+});
+console.log(session.sequence); // 2
+```
+
+## Conversation history injection
+
+The session automatically maintains a window of recent `(input, output)` pairs from previous turns. This history is included in every trace sent to the Vex API, enabling the coherence verifier to detect:
+
+- Contradictions between the current response and previous answers
+- Topic drift across the conversation
+- Persona changes across turns
+
+The window size is controlled by `conversationWindowSize` in `VexConfig` (default: `10`). Older turns are dropped from the window automatically.
+
+```typescript
+import { Vex } from '@vex_dev/sdk';
+
+const vex = new Vex({
+  apiKey: process.env.VEX_API_KEY!,
+  config: {
+    conversationWindowSize: 5, // Keep last 5 turns
+  },
+});
+```
+
+## Custom session IDs
+
+Pass a `sessionId` to correlate Vex sessions with your own conversation identifiers (database IDs, chat thread IDs, etc.):
+
+```typescript
+// Your system already has a conversation ID — reuse it.
+const conversationId = await db.createConversation({ userId: user.id });
+
+const session = vex.session({
+  agentId: 'chat-bot',
+  sessionId: conversationId.toString(),
+});
+```
+
+Custom session IDs appear in the dashboard and can be used to look up a specific conversation in the Traces view.
+
+## Session metadata
+
+Attach metadata at session creation time. This metadata is inherited by every trace in the session, so you do not need to call `ctx.setMetadata()` on each turn for common fields.
+
+```typescript
+const session = vex.session({
+  agentId: 'chat-bot',
+  sessionId: conversationId,
+  metadata: {
+    userId: user.id,
+    channel: 'web',
+    locale: request.headers.get('accept-language') ?? 'en-US',
+    plan: user.subscriptionTier,
+  },
+});
+```
+
+## Tree tracing
+
+Pass `parentExecutionId` to create a parent-child relationship between traces. This is useful when a single turn in the conversation triggers sub-agents or tool-calling chains that you want to trace independently.
+
+```typescript
+const mainResult = await session.trace(
+  { task: 'Handle customer request', input: userMessage },
+  async (ctx) => {
+    const orchestratorOutput = await orchestrator.run(userMessage);
+
+    // The parent execution ID is available from the outer result after it completes.
+    // For sub-agent tracing within the same turn, use a separate vex.trace() call.
+    ctx.record(orchestratorOutput);
+  },
+);
+
+// Sub-agent trace linked as a child of the parent execution.
+const subResult = await session.trace(
+  {
+    task: 'Fetch order status from the database',
+    input: { orderId: parsedOrderId },
+    parentExecutionId: mainResult.executionId,
+  },
+  async (ctx) => {
+    const status = await orderDb.getStatus(parsedOrderId);
+    ctx.record(status);
+  },
+);
+```
+
+## Full multi-turn chat example
+
+```typescript
+import { Vex, VexBlockError } from '@vex_dev/sdk';
+import * as readline from 'node:readline/promises';
+
+const vex = new Vex({
+  apiKey: process.env.VEX_API_KEY!,
+  config: {
+    mode: 'sync',
+    conversationWindowSize: 10,
+  },
+});
+
+process.on('SIGTERM', async () => {
+  await vex.close();
+  process.exit(0);
+});
+
+async function runChatSession(userId: string, conversationId: string): Promise<void> {
+  const session = vex.session({
+    agentId: 'customer-support-chat',
+    sessionId: conversationId,
+    metadata: {
+      userId,
+      channel: 'web',
+    },
+  });
+
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  console.log("Chat started. Type 'quit' to exit.");
+
+  while (true) {
+    const userMessage = (await rl.question('You: ')).trim();
+
+    if (userMessage.toLowerCase() === 'quit') {
+      rl.close();
+      break;
+    }
+
+    try {
+      const result = await session.trace(
+        {
+          task: 'Answer customer support questions accurately and helpfully',
+          input: { message: userMessage },
+        },
+        async (ctx) => {
+          const response = await openai.chat.completions.create({
+            model: 'gpt-4o',
+            messages: [
+              { role: 'system', content: 'You are a helpful support agent.' },
+              { role: 'user', content: userMessage },
+            ],
+          });
+          const answer = response.choices[0].message.content ?? '';
+          ctx.setTokenCount(response.usage?.total_tokens ?? 0);
+          ctx.record(answer);
+        },
+      );
+
+      if (result.action === 'flag') {
+        // Deliver the response but queue it for human review.
+        console.warn('Flagged turn', {
+          executionId: result.executionId,
+          sequence: session.sequence,
+          confidence: result.confidence,
+        });
+      }
+
+      console.log(`Bot: ${result.output}`);
+    } catch (err) {
+      if (err instanceof VexBlockError) {
+        console.error('Turn blocked', {
+          executionId: err.result.executionId,
+          sequence: session.sequence,
+        });
+        console.log(
+          "Bot: I'm sorry, I'm unable to respond to that. Please rephrase your question.",
+        );
+      } else {
+        throw err;
+      }
+    }
+  }
+}
+
+runChatSession('user-123', 'conv-456').then(() => vex.close());
+```
+
+## Concurrency considerations
+
+`Session` is designed for sequential use within a single conversation context. Calling `session.trace()` concurrently from multiple async tasks on the same session instance will produce undefined sequence ordering. Create one session per conversation context.
+
+<Warning>
+Do not call `session.trace()` concurrently on the same `Session` instance. Create a new session per independent conversation context.
+</Warning>

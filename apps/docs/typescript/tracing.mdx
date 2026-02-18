@@ -1,0 +1,394 @@
+---
+title: "Tracing"
+description: "Trace agent executions with vex.trace() for observability and verification."
+---
+
+`vex.trace()` is the primary integration pattern in the TypeScript SDK. It wraps your agent logic in a callback, captures the input and output, and submits an execution record to the Vex API. In sync mode it returns the verification result inline; in async mode it fires and returns immediately.
+
+## Basic usage
+
+```typescript
+import { Vex } from '@vex_dev/sdk';
+
+const vex = new Vex({ apiKey: process.env.VEX_API_KEY! });
+
+const result = await vex.trace(
+  { agentId: 'support-bot', task: 'Answer customer support questions' },
+  async (ctx) => {
+    const response = await llm.complete(userMessage);
+    ctx.record(response);
+  },
+);
+
+console.log(result.output);     // The agent's response
+console.log(result.action);     // "pass", "flag", or "block"
+console.log(result.confidence); // 0–1 float (null in async mode)
+```
+
+<Note>
+There is no decorator equivalent in the TypeScript SDK. The callback pattern is the single integration point for all tracing. This is by design — it works cleanly with TypeScript's type system without requiring decorators or metadata reflection.
+</Note>
+
+## vex.trace() signature
+
+```typescript
+async trace(
+  opts: TraceOptions,
+  fn: (ctx: TraceContext) => Promise<void> | void,
+): Promise<VexResult>
+```
+
+### TraceOptions
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `agentId` | `string` | Yes | Identifies which agent this execution belongs to. Used for grouping traces in the dashboard. |
+| `task` | `string` | No | Human-readable description of what the agent is supposed to do. This string is the primary input to task-drift detection. Omitting it disables drift scoring. |
+| `input` | `unknown` | No | The input to the agent execution. Recorded as-is. Pass the user's message, structured request, or any serializable value. |
+
+## TraceContext API
+
+The `ctx` object passed to your callback exposes methods for recording output and enriching the trace with additional data.
+
+### ctx.record(output)
+
+Records the agent's output. This is the value that will be verified, corrected if needed, and returned as `result.output`. Call `record()` exactly once per trace.
+
+```typescript
+const result = await vex.trace(
+  { agentId: 'summarizer', task: 'Summarize documents accurately' },
+  async (ctx) => {
+    const summary = await llm.summarize(document);
+    ctx.record(summary);
+  },
+);
+```
+
+### ctx.setGroundTruth(data)
+
+Attaches ground-truth data to the trace. The verifier uses this as a reference when checking factual accuracy.
+
+```typescript
+async (ctx) => {
+  ctx.setGroundTruth({ expectedAnswer: 'Paris', source: 'geography-db' });
+  const answer = await llm.answer(question);
+  ctx.record(answer);
+}
+```
+
+### ctx.setSchema(schema)
+
+Attaches a JSON Schema object that the verifier uses to check structural correctness of the output.
+
+```typescript
+async (ctx) => {
+  ctx.setSchema({
+    type: 'object',
+    required: ['name', 'price', 'sku'],
+    properties: {
+      name: { type: 'string' },
+      price: { type: 'number', minimum: 0 },
+      sku: { type: 'string', pattern: '^[A-Z]{3}-\\d{4}$' },
+    },
+  });
+  const product = await llm.extractProduct(rawText);
+  ctx.record(product);
+}
+```
+
+### ctx.setTokenCount(count)
+
+Records the number of tokens consumed by this execution. Surfaced in the dashboard for cost and usage analytics.
+
+```typescript
+async (ctx) => {
+  const response = await openai.chat.completions.create({ ... });
+  ctx.setTokenCount(response.usage?.total_tokens ?? 0);
+  ctx.record(response.choices[0].message.content);
+}
+```
+
+### ctx.setCostEstimate(cost)
+
+Records the estimated monetary cost (in USD) for this execution.
+
+```typescript
+async (ctx) => {
+  const response = await openai.chat.completions.create({ model: 'gpt-4o', ... });
+  const inputCost = (response.usage?.prompt_tokens ?? 0) / 1_000_000 * 2.50;
+  const outputCost = (response.usage?.completion_tokens ?? 0) / 1_000_000 * 10.00;
+  ctx.setCostEstimate(inputCost + outputCost);
+  ctx.record(response.choices[0].message.content);
+}
+```
+
+### ctx.setMetadata(key, value)
+
+Attaches an arbitrary key-value pair to the trace. Useful for request IDs, user IDs, feature flags, or any other contextual data.
+
+```typescript
+async (ctx) => {
+  ctx.setMetadata('requestId', requestId);
+  ctx.setMetadata('userId', userId);
+  ctx.setMetadata('model', 'gpt-4o');
+  const response = await llm.complete(prompt);
+  ctx.record(response);
+}
+```
+
+### ctx.step(opts)
+
+Records a discrete step within the trace. Use this to capture individual tool calls, retrieval operations, or LLM hops in a multi-step agent pipeline.
+
+```typescript
+interface StepOpts {
+  type: string;       // e.g. 'llm', 'tool', 'retrieval', 'function'
+  name: string;       // human-readable step name
+  input?: unknown;    // step input (optional)
+  output?: unknown;   // step output (optional)
+  durationMs?: number; // execution time in milliseconds (optional)
+}
+```
+
+```typescript
+async (ctx) => {
+  const start = Date.now();
+  const docs = await vectorDb.search(query);
+  ctx.step({
+    type: 'retrieval',
+    name: 'vector-search',
+    input: { query },
+    output: { count: docs.length },
+    durationMs: Date.now() - start,
+  });
+
+  const answer = await llm.complete({ context: docs, question: query });
+  ctx.step({
+    type: 'llm',
+    name: 'answer-generation',
+    input: { docCount: docs.length, question: query },
+    output: answer,
+  });
+
+  ctx.record(answer);
+}
+```
+
+### Read methods
+
+The context object also exposes read methods for inspecting state within the callback:
+
+| Method | Return type | Description |
+|---|---|---|
+| `ctx.getOutput()` | `unknown` | The value passed to `ctx.record()`, or `undefined` if not yet called. |
+| `ctx.getGroundTruth()` | `unknown` | The value passed to `ctx.setGroundTruth()`. |
+| `ctx.getSchema()` | `Record<string, unknown> \| undefined` | The schema set via `ctx.setSchema()`. |
+| `ctx.getSteps()` | `StepRecord[]` | All steps recorded via `ctx.step()`. |
+| `ctx.getTokenCount()` | `number \| undefined` | Token count set via `ctx.setTokenCount()`. |
+| `ctx.getCostEstimate()` | `number \| undefined` | Cost estimate set via `ctx.setCostEstimate()`. |
+| `ctx.getMetadata()` | `Record<string, unknown>` | All metadata set via `ctx.setMetadata()`. |
+
+## Async vs sync mode
+
+The `mode` setting in `VexConfig` controls whether verification happens inline or in the background.
+
+<CodeGroup>
+
+```typescript Async mode (default)
+import { Vex } from '@vex_dev/sdk';
+
+const vex = new Vex({
+  apiKey: process.env.VEX_API_KEY!,
+  config: { mode: 'async' },
+});
+
+const result = await vex.trace(
+  { agentId: 'chat-bot', task: 'Answer user questions', input: userMessage },
+  async (ctx) => {
+    const response = await llm.complete(userMessage);
+    ctx.record(response);
+  },
+);
+
+// In async mode:
+// - result.output      → the agent's raw output (pass-through)
+// - result.confidence  → null (verification happens in background)
+// - result.action      → "pass" (optimistic default)
+console.log(result.output);
+```
+
+```typescript Sync mode
+import { Vex } from '@vex_dev/sdk';
+
+const vex = new Vex({
+  apiKey: process.env.VEX_API_KEY!,
+  config: { mode: 'sync' },
+});
+
+const result = await vex.trace(
+  { agentId: 'chat-bot', task: 'Answer user questions', input: userMessage },
+  async (ctx) => {
+    const response = await llm.complete(userMessage);
+    ctx.record(response);
+  },
+);
+
+// In sync mode:
+// - result.output      → verified output (or corrected if correction is enabled)
+// - result.confidence  → real 0–1 score from the verifier
+// - result.action      → "pass", "flag", or "block" based on thresholds
+console.log(result.confidence);
+console.log(result.action);
+```
+
+</CodeGroup>
+
+<Info>
+Async mode adds zero latency to the user-facing response. Sync mode adds approximately 100–200 ms per call but enables active guardrails — blocking or correcting low-confidence outputs before they reach users.
+</Info>
+
+## Complete multi-step agent example
+
+The following example shows a RAG (retrieval-augmented generation) agent with full step recording, token tracking, schema validation, and sync mode error handling.
+
+```typescript
+import { Vex, VexBlockError } from '@vex_dev/sdk';
+
+const vex = new Vex({
+  apiKey: process.env.VEX_API_KEY!,
+  config: {
+    mode: 'sync',
+    correction: 'auto',
+    threshold: { pass: 0.85, flag: 0.60, block: 0.35 },
+  },
+});
+
+async function answerQuestion(
+  userId: string,
+  question: string,
+  requestId: string,
+): Promise<string> {
+  try {
+    const result = await vex.trace(
+      {
+        agentId: 'knowledge-base-agent',
+        task: 'Answer user questions accurately using the knowledge base',
+        input: { question },
+      },
+      async (ctx) => {
+        // Attach trace-level metadata
+        ctx.setMetadata('userId', userId);
+        ctx.setMetadata('requestId', requestId);
+
+        // Step 1: Query rewriting
+        const stepStart = Date.now();
+        const refinedQuery = await llm.rewrite(question);
+        ctx.step({
+          type: 'llm',
+          name: 'query-rewriting',
+          input: { raw: question },
+          output: { refined: refinedQuery },
+          durationMs: Date.now() - stepStart,
+        });
+
+        // Step 2: Vector retrieval
+        const retrievalStart = Date.now();
+        const docs = await vectorDb.search(refinedQuery, { topK: 5 });
+        ctx.step({
+          type: 'retrieval',
+          name: 'vector-search',
+          input: { query: refinedQuery, topK: 5 },
+          output: { count: docs.length, ids: docs.map((d) => d.id) },
+          durationMs: Date.now() - retrievalStart,
+        });
+
+        // Step 3: Answer generation
+        const llmStart = Date.now();
+        const response = await openai.chat.completions.create({
+          model: 'gpt-4o',
+          messages: [
+            { role: 'system', content: buildSystemPrompt(docs) },
+            { role: 'user', content: question },
+          ],
+        });
+        const answer = response.choices[0].message.content ?? '';
+
+        ctx.step({
+          type: 'llm',
+          name: 'answer-generation',
+          input: { docCount: docs.length },
+          output: { length: answer.length },
+          durationMs: Date.now() - llmStart,
+        });
+
+        // Record token usage and cost
+        ctx.setTokenCount(response.usage?.total_tokens ?? 0);
+        const cost =
+          ((response.usage?.prompt_tokens ?? 0) / 1_000_000) * 2.5 +
+          ((response.usage?.completion_tokens ?? 0) / 1_000_000) * 10.0;
+        ctx.setCostEstimate(cost);
+
+        // Attach answer schema for structural verification
+        ctx.setSchema({ type: 'string', minLength: 1 });
+
+        // Record the final output
+        ctx.record(answer);
+      },
+    );
+
+    if (result.action === 'flag') {
+      console.warn('Flagged answer queued for review', {
+        executionId: result.executionId,
+        confidence: result.confidence,
+        userId,
+      });
+    }
+
+    return result.output as string;
+  } catch (err) {
+    if (err instanceof VexBlockError) {
+      console.error('Answer blocked by verifier', {
+        executionId: err.result.executionId,
+        confidence: err.result.confidence,
+        userId,
+      });
+      return "I wasn't able to find a confident answer to your question. Please try rephrasing or contact support.";
+    }
+    throw err;
+  }
+}
+```
+
+## Exception propagation
+
+If your callback throws an exception, `vex.trace()` re-throws it unchanged. Vex does not swallow agent errors. The failed execution is still recorded in the Vex dashboard so you can observe failure rates alongside quality metrics.
+
+```typescript
+const result = await vex.trace(
+  { agentId: 'data-agent' },
+  async (ctx) => {
+    // This throws — vex.trace() will re-throw it
+    const data = await fetchExternalApi();
+    ctx.record(data);
+  },
+);
+// ^ throws the original error from fetchExternalApi()
+```
+
+## What's next?
+
+<CardGroup cols={2}>
+
+<Card title="Sessions" icon="messages" href="/typescript/sessions">
+  Track multi-turn conversations with session-scoped tracing.
+</Card>
+
+<Card title="Configuration" icon="sliders" href="/typescript/configuration">
+  Full VexConfig and ThresholdConfig reference.
+</Card>
+
+<Card title="Error Handling" icon="shield-exclamation" href="/typescript/error-handling">
+  Handle VexBlockError and inspect verification results.
+</Card>
+
+</CardGroup>
