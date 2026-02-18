@@ -49,7 +49,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={cn(className, 'overflow-x-hidden')}>
       <body className="relative overflow-x-hidden">
-        {/* Chevron V-pattern background — full page */}
+        {/* Chevron V-pattern background */}
         <div
           aria-hidden="true"
           className="pointer-events-none fixed inset-0 z-0"
@@ -65,7 +65,20 @@ export default function RootLayout({
           className="pointer-events-none fixed inset-0 z-0"
           style={{
             background:
-              'radial-gradient(ellipse 90% 70% at 50% 30%, transparent 0%, hsl(0 0% 3%) 100%)',
+              'radial-gradient(ellipse 90% 70% at 50% 30%, transparent 0%, #0a0a0a 100%)',
+          }}
+        />
+
+        {/* Subtle emerald accent glow */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed top-1/4 left-1/2 z-0 -translate-x-1/2"
+          style={{
+            width: '800px',
+            height: '500px',
+            background:
+              'radial-gradient(ellipse at center, rgba(16,185,129,0.06) 0%, transparent 70%)',
+            filter: 'blur(80px)',
           }}
         />
 

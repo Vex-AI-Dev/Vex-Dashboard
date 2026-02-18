@@ -4,7 +4,7 @@ import { AppLogo } from '~/components/app-logo';
 
 export function SiteHeader() {
   return (
-    <div className="sticky top-0 z-50 w-full border-b border-white/[0.08] bg-black/60 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 w-full border-b border-[#252525] bg-[#0a0a0a]/90 backdrop-blur-md">
       <div className="container">
         <div className="flex h-16 items-center justify-between">
           <AppLogo href="/" />
@@ -12,15 +12,21 @@ export function SiteHeader() {
           <nav className="hidden items-center gap-8 md:flex">
             <a
               href="#how-it-works"
-              className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+              className="text-sm text-[#a2a2a2] transition-colors hover:text-white"
             >
               How It Works
+            </a>
+            <a
+              href="#code"
+              className="text-sm text-[#a2a2a2] transition-colors hover:text-white"
+            >
+              Quick Start
             </a>
             <a
               href="https://docs.tryvex.dev"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+              className="text-sm text-[#a2a2a2] transition-colors hover:text-white"
             >
               Docs
             </a>
@@ -28,7 +34,7 @@ export function SiteHeader() {
               href="https://github.com/Vex-AI-Dev/Python-SDK"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+              className="text-sm text-[#a2a2a2] transition-colors hover:text-white"
             >
               GitHub
             </a>
@@ -39,7 +45,7 @@ export function SiteHeader() {
               href="https://github.com/Vex-AI-Dev/Python-SDK"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-muted-foreground hover:border-muted-foreground hidden items-center gap-1.5 rounded-md border px-3 py-1.5 text-[13px] transition-colors lg:flex"
+              className="hidden items-center gap-1.5 rounded-md border border-[#252525] px-3 py-1.5 text-[13px] text-[#a2a2a2] transition-colors hover:border-[#585858] hover:text-white lg:flex"
             >
               <svg
                 width="16"
@@ -52,24 +58,15 @@ export function SiteHeader() {
               Star
             </a>
 
-            <a
-              href="https://cal.com/tryvex/demo"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden items-center rounded-md border border-white/[0.15] bg-white/[0.08] px-3 py-1.5 text-[13px] font-medium text-white/80 backdrop-blur-md transition-all hover:border-white/[0.25] hover:bg-white/[0.14] hover:text-white md:flex"
-            >
-              Book a Demo
-            </a>
-
             <Link
               href="https://app.tryvex.dev"
-              className="inline-flex h-8 items-center rounded-md bg-white px-3 text-xs font-medium text-black shadow-sm transition-all duration-150 hover:scale-[1.04] hover:bg-white/90 hover:shadow-md"
+              className="inline-flex h-9 items-center rounded-md bg-emerald-500 px-4 text-sm font-medium text-white transition-colors hover:bg-emerald-400"
             >
               Get Started
             </Link>
           </div>
         </div>
       </div>
-    </div>
+    </header>
   );
 }

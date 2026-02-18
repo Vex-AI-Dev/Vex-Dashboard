@@ -1,5 +1,3 @@
-import { Footer } from '@kit/ui/marketing';
-
 import { AppLogo } from '~/components/app-logo';
 
 const sections = [
@@ -30,16 +28,44 @@ const sections = [
 
 export function SiteFooter() {
   return (
-    <Footer
-      logo={<AppLogo href="/" />}
-      description="Runtime reliability for AI agents in production."
-      copyright={
-        <>
+    <footer className="border-t border-[#252525]">
+      <div className="container py-16">
+        <div className="grid gap-12 md:grid-cols-4">
+          <div>
+            <AppLogo href="/" />
+            <p className="mt-4 text-sm leading-relaxed text-[#a2a2a2]">
+              Runtime reliability for AI agents in production.
+            </p>
+          </div>
+
+          {sections.map((section) => (
+            <div key={section.heading}>
+              <h3 className="mb-4 text-sm font-semibold text-white">
+                {section.heading}
+              </h3>
+              <ul className="space-y-3">
+                {section.links.map((link) => (
+                  <li key={link.label}>
+                    <a
+                      href={link.href}
+                      target={link.href.startsWith('http') ? '_blank' : undefined}
+                      rel={link.href.startsWith('http') ? 'noopener noreferrer' : undefined}
+                      className="text-sm text-[#a2a2a2] transition-colors hover:text-white"
+                    >
+                      {link.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-16 border-t border-[#252525] pt-8 text-sm text-[#a2a2a2]">
           &copy; {new Date().getFullYear()} Vex. Built by the team behind
           Oppla.ai &amp; IMQA.
-        </>
-      }
-      sections={sections}
-    />
+        </div>
+      </div>
+    </footer>
   );
 }

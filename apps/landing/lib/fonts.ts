@@ -1,26 +1,13 @@
-import {
-  JetBrains_Mono,
-  Playfair_Display,
-  Space_Grotesk,
-} from 'next/font/google';
+import { Inter, JetBrains_Mono } from 'next/font/google';
 
 import { cn } from '@kit/ui/utils';
 
-const sans = Space_Grotesk({
+const sans = Inter({
   subsets: ['latin'],
   variable: '--font-sans-fallback',
   fallback: ['system-ui', 'Helvetica Neue', 'Helvetica', 'Arial'],
   preload: true,
-  weight: ['300', '400', '500', '600', '700'],
-});
-
-const heading = Playfair_Display({
-  subsets: ['latin'],
-  variable: '--font-heading',
-  fallback: ['Georgia', 'serif'],
-  preload: true,
-  weight: ['400', '500', '600', '700'],
-  style: ['normal', 'italic'],
+  weight: ['300', '400', '500', '600', '700', '800', '900'],
 });
 
 const mono = JetBrains_Mono({
@@ -32,5 +19,5 @@ const mono = JetBrains_Mono({
 });
 
 export function getFontsClassName() {
-  return cn(sans.variable, heading.variable, mono.variable, 'dark');
+  return cn(sans.variable, mono.variable, 'dark');
 }

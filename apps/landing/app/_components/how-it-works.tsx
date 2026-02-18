@@ -2,15 +2,12 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-import { cn } from '@kit/ui/utils';
-
 interface TerminalLine {
   time: string;
   agent: string;
   details: string;
   status: 'pass' | 'block' | 'warn';
   extra?: string;
-  /** Which layer (1-indexed) this line corresponds to */
   layer: number;
 }
 
@@ -90,7 +87,7 @@ export function HowItWorks() {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   const [activeLayer, setActiveLayer] = useState<number>(0);
-  const [shownLines, setShownLines] = useState(2); // pre-fill first 2
+  const [shownLines, setShownLines] = useState(2);
 
   useEffect(() => {
     const el = ref.current;
@@ -110,14 +107,12 @@ export function HowItWorks() {
     return () => observer.disconnect();
   }, []);
 
-  // When visible, progressively reveal lines and highlight corresponding layer
   useEffect(() => {
     if (!visible) return;
 
-    // Set initial active layer from pre-filled lines
     setActiveLayer(lines[1]?.layer ?? 1);
 
-    let lineIndex = 2; // start after pre-filled
+    let lineIndex = 2;
     const interval = setInterval(() => {
       if (lineIndex >= lines.length) {
         clearInterval(interval);
@@ -137,44 +132,32 @@ export function HowItWorks() {
   return (
     <div className="mt-12 grid gap-12 lg:grid-cols-2 lg:gap-16">
       {/* Layers */}
-      <div className="flex flex-col justify-center gap-6">
+      <div className="flex flex-col justify-center gap-4">
         {layers.map((layer) => {
           const isActive = activeLayer === Number(layer.num);
           return (
             <div
               key={layer.num}
-              className={cn(
-                'flex gap-4 rounded-lg border p-3 transition-all duration-300',
+              className={`flex gap-4 border p-4 transition-all duration-300 ${
                 isActive
-                  ? 'border-emerald-500/20 bg-emerald-500/[0.06]'
-                  : 'border-transparent',
-              )}
+                  ? 'border-emerald-500/30 bg-emerald-500/[0.06]'
+                  : 'border-[#252525] bg-transparent'
+              }`}
             >
               <div
-                className={cn(
-                  'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-sm font-semibold transition-all duration-300',
+                className={`flex h-8 w-8 shrink-0 items-center justify-center border text-sm font-semibold transition-all duration-300 ${
                   isActive
-                    ? 'border-emerald-500/50 bg-emerald-500/25 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.3)]'
-                    : 'border-emerald-500/30 bg-emerald-500/15 text-emerald-500',
-                )}
+                    ? 'border-emerald-500/50 bg-emerald-500/25 text-emerald-400'
+                    : 'border-[#252525] bg-[#161616] text-emerald-500'
+                }`}
               >
                 {layer.num}
               </div>
               <div>
-                <h3
-                  className={cn(
-                    'mb-1 text-[17px] font-semibold transition-colors duration-300',
-                    isActive ? 'text-white' : 'text-foreground',
-                  )}
-                >
+                <h3 className="mb-1 text-[15px] font-semibold text-white">
                   {layer.title}
                 </h3>
-                <p
-                  className={cn(
-                    'text-[15px] leading-relaxed transition-colors duration-300',
-                    isActive ? 'text-white/70' : 'text-muted-foreground',
-                  )}
-                >
+                <p className="text-sm leading-relaxed text-[#a2a2a2]">
                   {layer.desc}
                 </p>
               </div>
@@ -186,13 +169,13 @@ export function HowItWorks() {
       {/* Terminal */}
       <div
         ref={ref}
-        className="overflow-hidden rounded-xl border border-white/[0.12] bg-white/[0.06] font-mono text-[13px] leading-relaxed shadow-lg shadow-black/20 backdrop-blur-xl"
+        className="overflow-hidden border border-[#252525] bg-[#161616] font-mono text-[13px] leading-relaxed"
       >
-        <div className="flex items-center gap-1.5 border-b px-4 py-3">
+        <div className="flex items-center gap-1.5 border-b border-[#252525] px-4 py-3">
           <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
           <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
           <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-          <span className="text-muted-foreground ml-2 text-xs">
+          <span className="ml-2 text-xs text-[#a2a2a2]">
             vex — verification feed
           </span>
         </div>
@@ -209,15 +192,11 @@ export function HowItWorks() {
                     ? 'mb-3'
                     : 'mb-3 animate-[termLine_0.4s_cubic-bezier(0.16,1,0.3,1)_forwards] opacity-0'
                 }
-                style={
-                  isPreFilled ? undefined : { animationDelay: '0ms' }
-                }
+                style={isPreFilled ? undefined : { animationDelay: '0ms' }}
               >
                 <pre className="m-0 font-mono text-[13px] leading-relaxed">
-                  <span className="text-muted-foreground">
-                    [{line.time}]
-                  </span>{' '}
-                  <span className="text-foreground">{line.agent}</span>
+                  <span className="text-[#585858]">[{line.time}]</span>{' '}
+                  <span className="text-white">{line.agent}</span>
                   {'\n  '}
                   <span className={statusColor[line.status]}>
                     {line.details}

@@ -33,18 +33,18 @@ const rows = [
 
 export function ComparisonTable() {
   return (
-    <div className="-webkit-overflow-scrolling-touch mt-12 overflow-x-auto rounded-xl border border-white/[0.12] bg-white/[0.04] shadow-lg shadow-black/20 backdrop-blur-xl">
+    <div className="mt-12 overflow-x-auto border border-[#252525] bg-[#0a0a0a]">
       <table className="w-full min-w-[640px] border-collapse text-sm">
         <thead>
           <tr>
-            <th className="text-muted-foreground border-b px-5 py-3.5 text-left text-[13px] font-semibold" />
-            <th className="text-muted-foreground border-b px-5 py-3.5 text-left text-[13px] font-semibold">
+            <th className="border-b border-[#252525] px-5 py-3.5 text-left text-[13px] font-semibold text-[#a2a2a2]" />
+            <th className="border-b border-[#252525] px-5 py-3.5 text-left text-[13px] font-semibold text-[#a2a2a2]">
               Evals / Testing
             </th>
-            <th className="text-muted-foreground border-b px-5 py-3.5 text-left text-[13px] font-semibold">
+            <th className="border-b border-[#252525] px-5 py-3.5 text-left text-[13px] font-semibold text-[#a2a2a2]">
               Tracing (LangSmith etc.)
             </th>
-            <th className="border-b border-l-2 border-l-emerald-500/40 bg-emerald-500/[0.08] px-5 py-3.5 text-left text-[13px] font-semibold text-emerald-500">
+            <th className="border-b border-l border-[#252525] border-l-emerald-500/40 bg-emerald-500/[0.08] px-5 py-3.5 text-left text-[13px] font-semibold text-emerald-500">
               Vex
             </th>
           </tr>
@@ -53,18 +53,18 @@ export function ComparisonTable() {
           {rows.map((row) => (
             <tr
               key={row.feature}
-              className="hover:bg-muted/30 transition-colors"
+              className="transition-colors hover:bg-[#161616]"
             >
-              <td className="text-foreground border-b border-border/50 px-5 py-3.5 font-medium">
+              <td className="border-b border-[#252525] px-5 py-3.5 font-medium text-white">
                 {row.feature}
               </td>
-              <td className="text-muted-foreground border-b border-border/50 px-5 py-3.5">
+              <td className="border-b border-[#252525] px-5 py-3.5 text-[#a2a2a2]">
                 {row.evals}
               </td>
-              <td className="text-muted-foreground border-b border-border/50 px-5 py-3.5">
+              <td className="border-b border-[#252525] px-5 py-3.5 text-[#a2a2a2]">
                 {row.tracing}
               </td>
-              <td className="border-b border-border/50 border-l-2 border-l-emerald-500/40 bg-emerald-500/[0.08] px-5 py-3.5 font-semibold text-emerald-500">
+              <td className="border-b border-l border-[#252525] border-l-emerald-500/40 bg-emerald-500/[0.08] px-5 py-3.5 font-semibold text-emerald-500">
                 {row.vex}
               </td>
             </tr>

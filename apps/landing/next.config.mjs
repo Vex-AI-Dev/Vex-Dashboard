@@ -4,7 +4,7 @@ const config = {
   transpilePackages: ['@kit/ui'],
   typescript: { ignoreBuildErrors: true },
   experimental: {
-    optimizePackageImports: ['@kit/ui', 'lucide-react'],
+    optimizePackageImports: ['@kit/ui', 'lucide-react', '@codesandbox/sandpack-react'],
   },
 };
 

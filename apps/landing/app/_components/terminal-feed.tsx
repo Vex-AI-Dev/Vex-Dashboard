@@ -76,20 +76,19 @@ export function TerminalFeed() {
     );
 
     observer.observe(el);
-
     return () => observer.disconnect();
   }, []);
 
   return (
     <div
       ref={ref}
-      className="overflow-hidden rounded-xl border border-white/[0.12] bg-white/[0.06] font-mono text-[13px] leading-relaxed shadow-lg shadow-black/20 backdrop-blur-xl"
+      className="overflow-hidden border border-[#252525] bg-[#161616] font-mono text-[13px] leading-relaxed"
     >
-      <div className="flex items-center gap-1.5 border-b px-4 py-3">
+      <div className="flex items-center gap-1.5 border-b border-[#252525] px-4 py-3">
         <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
         <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
         <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-        <span className="text-muted-foreground ml-2 text-xs">
+        <span className="ml-2 text-xs text-[#a2a2a2]">
           vex — verification feed
         </span>
       </div>
@@ -102,14 +101,24 @@ export function TerminalFeed() {
           return (
             <div
               key={i}
-              className={isPreFilled ? 'mb-3' : 'mb-3 animate-[termLine_0.4s_cubic-bezier(0.16,1,0.3,1)_forwards] opacity-0'}
-              style={isPreFilled ? undefined : { animationDelay: `${(i - 2) * 150}ms` }}
+              className={
+                isPreFilled
+                  ? 'mb-3'
+                  : 'mb-3 animate-[termLine_0.4s_cubic-bezier(0.16,1,0.3,1)_forwards] opacity-0'
+              }
+              style={
+                isPreFilled
+                  ? undefined
+                  : { animationDelay: `${(i - 2) * 150}ms` }
+              }
             >
               <pre className="m-0 font-mono text-[13px] leading-relaxed">
-                <span className="text-muted-foreground">[{line.time}]</span>{' '}
-                <span className="text-foreground">{line.agent}</span>
+                <span className="text-[#585858]">[{line.time}]</span>{' '}
+                <span className="text-white">{line.agent}</span>
                 {'\n  '}
-                <span className={statusColor[line.status]}>{line.details}</span>
+                <span className={statusColor[line.status]}>
+                  {line.details}
+                </span>
                 {line.extra && (
                   <>
                     {'\n  '}

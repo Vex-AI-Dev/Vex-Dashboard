@@ -2,8 +2,6 @@
 
 import { useCallback, useState } from 'react';
 
-import { cn } from '@kit/ui/utils';
-
 const commands = {
   python: 'pip install vex-sdk',
   typescript: 'npm install @vex_dev/sdk',
@@ -24,17 +22,17 @@ export function InstallBox() {
 
   return (
     <div className="mx-auto w-full max-w-[480px]">
-      <div className="overflow-hidden rounded-xl border border-white/[0.12] bg-white/[0.06] shadow-lg shadow-black/20 backdrop-blur-xl">
-        <div className="flex border-b">
+      <div className="overflow-hidden border border-[#252525] bg-[#161616]">
+        <div className="flex border-b border-[#252525]">
           {(['python', 'typescript'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setLang(tab)}
-              className={cn(
-                'text-muted-foreground flex-1 border-b-2 border-transparent px-4 py-2.5 text-[13px] font-medium transition-colors',
-                lang === tab && 'text-foreground border-b-emerald-500',
-                lang !== tab && 'hover:text-secondary-foreground',
-              )}
+              className={`flex-1 border-b-2 px-4 py-2.5 text-[13px] font-medium transition-colors ${
+                lang === tab
+                  ? 'border-b-emerald-500 text-white'
+                  : 'border-transparent text-[#a2a2a2] hover:text-white'
+              }`}
             >
               {tab === 'python' ? 'Python' : 'TypeScript'}
             </button>
@@ -42,13 +40,13 @@ export function InstallBox() {
         </div>
 
         <div className="flex items-center justify-between px-5 py-4">
-          <code className="text-muted-foreground font-mono text-sm">
+          <code className="font-mono text-sm text-[#a2a2a2]">
             <span className="text-emerald-500">$</span> {commands[lang]}
           </code>
           <button
             onClick={handleCopy}
             aria-label="Copy install command"
-            className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-md p-1.5 transition-colors"
+            className="rounded-md p-1.5 text-[#a2a2a2] transition-colors hover:bg-[#252525] hover:text-white"
           >
             {copied ? (
               <svg
@@ -79,13 +77,13 @@ export function InstallBox() {
         </div>
       </div>
 
-      <p className="text-muted-foreground mt-3 text-center text-[13px]">
+      <p className="mt-3 text-center text-[13px] text-[#a2a2a2]">
         Open source &middot; Apache 2.0 &middot; Zero vendor lock-in &middot;{' '}
         <a
           href="https://github.com/Vex-AI-Dev/Python-SDK"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-secondary-foreground underline underline-offset-2 hover:text-foreground"
+          className="underline underline-offset-2 hover:text-white"
         >
           Python SDK
         </a>{' '}
@@ -94,7 +92,7 @@ export function InstallBox() {
           href="https://github.com/Vex-AI-Dev/Typescript-sdk"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-secondary-foreground underline underline-offset-2 hover:text-foreground"
+          className="underline underline-offset-2 hover:text-white"
         >
           TypeScript SDK
         </a>
