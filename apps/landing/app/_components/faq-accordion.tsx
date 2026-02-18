@@ -1,15 +1,11 @@
-'use client';
-
-import { useState } from 'react';
-
 const faqs = [
   {
     q: 'What is Vex?',
-    a: 'Vex is an open-source runtime reliability layer for AI agents. It detects when your agent\'s behavior silently changes in production — hallucinations, drift, schema violations — and auto-corrects before your users notice.',
+    a: "Vex is an open-source runtime reliability layer for AI agents. It detects when your agent's behavior silently changes in production — hallucinations, drift, schema violations — and auto-corrects before your users notice.",
   },
   {
     q: 'How is Vex different from evals or tracing?',
-    a: 'Evals test your agent before deployment. Tracing shows you what happened after something breaks. Vex runs continuously in production, catching behavioral drift in real-time and auto-correcting on the fly. They\'re complementary — Vex fills the gap between pre-deploy testing and post-mortem analysis.',
+    a: "Evals test your agent before deployment. Tracing shows you what happened after something breaks. Vex runs continuously in production, catching behavioral drift in real-time and auto-correcting on the fly. They're complementary — Vex fills the gap between pre-deploy testing and post-mortem analysis.",
   },
   {
     q: 'How long does it take to set up?',
@@ -30,8 +26,6 @@ const faqs = [
 ];
 
 export function FaqAccordion() {
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
-
   return (
     <section id="faq" className="border-t border-[#252525] py-20">
       <div className="container">
@@ -43,47 +37,33 @@ export function FaqAccordion() {
         </h2>
 
         <div className="mx-auto max-w-[800px]">
-          {faqs.map((faq, i) => {
-            const isOpen = openIndex === i;
-            return (
-              <div key={i} className="border-b border-[#252525]">
-                <button
-                  onClick={() => setOpenIndex(isOpen ? null : i)}
-                  className="flex w-full items-center justify-between py-5 text-left"
+          {faqs.map((faq, i) => (
+            <details
+              key={i}
+              className="group border-b border-[#252525]"
+            >
+              <summary className="flex cursor-pointer list-none items-center justify-between py-5 text-left [&::-webkit-details-marker]:hidden">
+                <span className="pr-4 text-[15px] font-medium text-white">
+                  {faq.q}
+                </span>
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  className="shrink-0 text-[#585858] transition-transform duration-200 group-open:rotate-45"
                 >
-                  <span className="pr-4 text-[15px] font-medium text-white">
-                    {faq.q}
-                  </span>
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    className={`shrink-0 text-[#585858] transition-transform duration-200 ${
-                      isOpen ? 'rotate-45' : ''
-                    }`}
-                  >
-                    <line x1="10" y1="4" x2="10" y2="16" />
-                    <line x1="4" y1="10" x2="16" y2="10" />
-                  </svg>
-                </button>
-                <div
-                  className="grid transition-all duration-200"
-                  style={{
-                    gridTemplateRows: isOpen ? '1fr' : '0fr',
-                  }}
-                >
-                  <div className="overflow-hidden">
-                    <p className="pb-5 text-sm leading-relaxed text-[#a2a2a2]">
-                      {faq.a}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+                  <line x1="10" y1="4" x2="10" y2="16" />
+                  <line x1="4" y1="10" x2="16" y2="10" />
+                </svg>
+              </summary>
+              <p className="pb-5 text-sm leading-relaxed text-[#a2a2a2]">
+                {faq.a}
+              </p>
+            </details>
+          ))}
         </div>
       </div>
     </section>

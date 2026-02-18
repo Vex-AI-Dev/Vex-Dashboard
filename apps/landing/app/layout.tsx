@@ -13,9 +13,25 @@ import '../styles/globals.css';
 const CHEVRON_TILE = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='48'%3E%3Cpath d='M0 0 L40 32 L80 0' fill='none' stroke='rgba(255,255,255,0.12)' stroke-width='1'/%3E%3Cpath d='M0 16 L40 48 L80 16' fill='none' stroke='rgba(255,255,255,0.06)' stroke-width='0.5'/%3E%3C/svg%3E")`;
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://tryvex.dev'),
   title: 'Vex — Runtime reliability for AI agents',
   description:
     "Vex is the open-source runtime reliability layer that detects when your AI agent's behavior silently changes in production. Before your customers notice.",
+  keywords: [
+    'AI agent monitoring',
+    'runtime reliability',
+    'LLM observability',
+    'agent drift detection',
+    'hallucination detection',
+    'AI guardrails',
+    'LangChain monitoring',
+    'CrewAI monitoring',
+    'OpenAI agent monitoring',
+    'production AI agents',
+  ],
+  alternates: {
+    canonical: 'https://tryvex.dev',
+  },
   icons: {
     icon: '/favicon.ico',
   },
@@ -23,12 +39,14 @@ export const metadata: Metadata = {
     title: 'Vex — Runtime reliability for AI agents',
     description:
       "Detect when your AI agent's behavior silently changes in production. Before your customers notice.",
+    url: 'https://tryvex.dev',
     images: [{ url: '/images/og-image.png', width: 800, height: 800 }],
     siteName: 'Vex',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
+    site: '@tryvex',
     title: 'Vex — Runtime reliability for AI agents',
     description:
       "Detect when your AI agent's behavior silently changes in production.",
@@ -49,6 +67,102 @@ export default function RootLayout({
   return (
     <html lang="en" className={cn(className, 'overflow-x-hidden')}>
       <body className="relative overflow-x-hidden">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify([
+              {
+                '@context': 'https://schema.org',
+                '@type': 'SoftwareApplication',
+                name: 'Vex',
+                description:
+                  'Open-source runtime reliability layer that detects when AI agent behavior silently drifts in production. Observes every LLM call, corrects hallucinations and policy violations in real time.',
+                url: 'https://tryvex.dev',
+                applicationCategory: 'DeveloperApplication',
+                operatingSystem: 'Any',
+                offers: {
+                  '@type': 'Offer',
+                  price: '0',
+                  priceCurrency: 'USD',
+                  description: 'Free tier available',
+                },
+                softwareHelp: {
+                  '@type': 'WebPage',
+                  url: 'https://docs.tryvex.dev',
+                },
+                downloadUrl: 'https://pypi.org/project/vex-sdk/',
+                codeRepository: 'https://github.com/Vex-AI-Dev/Python-SDK',
+                license: 'https://opensource.org/licenses/Apache-2.0',
+              },
+              {
+                '@context': 'https://schema.org',
+                '@type': 'Organization',
+                name: 'Vex',
+                url: 'https://tryvex.dev',
+                logo: 'https://tryvex.dev/images/og-image.png',
+                sameAs: [
+                  'https://github.com/Vex-AI-Dev',
+                  'https://x.com/tryvex',
+                ],
+              },
+              {
+                '@context': 'https://schema.org',
+                '@type': 'FAQPage',
+                mainEntity: [
+                  {
+                    '@type': 'Question',
+                    name: 'What is Vex?',
+                    acceptedAnswer: {
+                      '@type': 'Answer',
+                      text: "Vex is an open-source runtime reliability layer for AI agents. It detects when your agent's behavior silently changes in production — hallucinations, drift, schema violations — and auto-corrects before your users notice.",
+                    },
+                  },
+                  {
+                    '@type': 'Question',
+                    name: 'How is Vex different from evals or tracing?',
+                    acceptedAnswer: {
+                      '@type': 'Answer',
+                      text: "Evals test your agent before deployment. Tracing shows you what happened after something breaks. Vex runs continuously in production, catching behavioral drift in real-time and auto-correcting on the fly. They're complementary — Vex fills the gap between pre-deploy testing and post-mortem analysis.",
+                    },
+                  },
+                  {
+                    '@type': 'Question',
+                    name: 'How long does it take to set up?',
+                    acceptedAnswer: {
+                      '@type': 'Answer',
+                      text: 'About 5 minutes. Install the SDK (pip install vex-sdk or npm install @vex_dev/sdk), add 3 lines of code to wrap your agent function, and deploy. Vex starts learning from the first request.',
+                    },
+                  },
+                  {
+                    '@type': 'Question',
+                    name: 'What frameworks does Vex support?',
+                    acceptedAnswer: {
+                      '@type': 'Answer',
+                      text: 'Vex works with LangChain, CrewAI, OpenAI Assistants, and any custom Python or TypeScript agent. If your code calls an LLM, Vex can watch it.',
+                    },
+                  },
+                  {
+                    '@type': 'Question',
+                    name: 'Is Vex open source?',
+                    acceptedAnswer: {
+                      '@type': 'Answer',
+                      text: 'Yes. Vex is fully open source under the Apache 2.0 license. Both the Python SDK and TypeScript SDK are available on GitHub.',
+                    },
+                  },
+                  {
+                    '@type': 'Question',
+                    name: 'Does Vex add latency?',
+                    acceptedAnswer: {
+                      '@type': 'Answer',
+                      text: 'In async mode (default), Vex adds zero latency — verification happens in the background. In sync mode, Vex adds a verification step before returning the output, which typically takes 200-500ms depending on the checks enabled.',
+                    },
+                  },
+                ],
+              },
+            ]),
+          }}
+        />
+
         {/* Chevron V-pattern background */}
         <div
           aria-hidden="true"

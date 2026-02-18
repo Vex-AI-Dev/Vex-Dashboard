@@ -26,9 +26,9 @@ export default function LandingPage() {
                 </h1>
 
                 <p className="mb-10 max-w-[460px] text-[17px] leading-relaxed text-[#a2a2a2]">
-                  Secure and Elastic Infrastructure for
+                  Detect drift. Correct hallucinations.
                   <br />
-                  Running Your AI-Generated Code.
+                  Reliable AI agents in production.
                 </p>
 
                 <div className="flex items-center gap-3">
