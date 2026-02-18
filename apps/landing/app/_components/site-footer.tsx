@@ -13,7 +13,7 @@ const sections = [
   {
     heading: 'Company',
     links: [
-      { href: 'https://oppla.ai', label: 'About' },
+      { href: 'https://tryvex.dev', label: 'About' },
       { href: 'mailto:info@tryvex.dev', label: 'info@tryvex.dev' },
     ],
   },
@@ -61,10 +61,6 @@ export function SiteFooter() {
           ))}
         </div>
 
-        <div className="mt-16 border-t border-[#252525] pt-8 text-sm text-[#a2a2a2]">
-          &copy; {new Date().getFullYear()} Vex. Built by the team behind
-          Oppla.ai &amp; IMQA.
-        </div>
       </div>
     </footer>
   );
