@@ -1,0 +1,183 @@
+---
+title: "Alerts"
+description: "Manage alert rules and review triggered alerts."
+---
+
+The Alerts page has two functions: it is where you define the conditions under which Vex notifies your team, and where you review the full history of alerts that have fired. Alerts are evaluated continuously against incoming execution data — no polling interval means you receive notifications within seconds of a condition being met.
+
+Navigate to **Alerts** from the left sidebar at [app.tryvex.dev](https://app.tryvex.dev).
+
+---
+
+## Alert types
+
+Vex supports four categories of alert, each targeting a different failure mode.
+
+### Confidence drop
+
+Fires when an agent's rolling average confidence falls below a configured threshold within a specified evaluation window.
+
+**Configurable parameters:**
+- Agent — specific agent or all agents
+- Threshold — the confidence value (0–1) that triggers the alert (e.g., 0.75)
+- Evaluation window — the rolling period over which the average is computed (5m, 15m, 1h, 6h)
+- Minimum executions — the alert suppresses if fewer than this many executions have occurred in the window, to avoid noise from low-traffic periods
+
+**Example use case:** Alert when `billing-agent` has an average confidence below 0.75 over any 15-minute rolling window with at least 10 executions.
+
+### Block rate spike
+
+Fires when the proportion of executions receiving a `block` action exceeds a threshold within an evaluation window.
+
+**Configurable parameters:**
+- Agent — specific agent or all agents
+- Block rate threshold — percentage (e.g., 10%)
+- Evaluation window — rolling period (5m, 15m, 1h, 6h)
+- Minimum executions — suppression floor
+
+**Example use case:** Alert when any single agent has a block rate above 10% over a 5-minute window with at least 5 executions. This catches sudden regressions caused by bad deployments.
+
+### Agent offline
+
+Fires when an agent that was previously sending executions has not sent any execution within a configurable inactivity window. This catches integration failures — SDK errors, expired API keys, or service outages — that would otherwise be invisible because an offline agent produces no data at all.
+
+**Configurable parameters:**
+- Agent — must be a specific agent (this alert type does not apply to "all agents")
+- Inactivity threshold — time without any execution before the alert fires (15m, 30m, 1h, 6h, 24h)
+
+<Note>
+Agent offline alerts should only be created for agents that are expected to process traffic continuously. Do not create offline alerts for batch agents that run on a schedule — those agents will appear offline between runs and generate false positives.
+</Note>
+
+### Reliability score drop
+
+Fires when the fleet-wide Reliability Score (the same metric shown on the Overview page) falls below a configured value. This is a fleet-level signal, not an agent-level one, and is useful as a top-level health check in situations where you want a single alert that covers any agent degradation.
+
+**Configurable parameters:**
+- Threshold — Reliability Score value (0–100) that triggers the alert
+- Evaluation window — rolling period
+
+---
+
+## Severity levels
+
+Each alert rule is assigned a severity level at creation time. Severity controls how the alert is surfaced in the dashboard and, if webhooks are configured, which severity levels are routed to which endpoints.
+
+| Severity | Color | Recommended use |
+|----------|-------|-----------------|
+| **Critical** | Red | Production-impacting failures requiring immediate human attention — e.g., block rate > 25%, billing agent offline. |
+| **High** | Orange | Significant degradation that needs investigation within the hour — e.g., confidence drop below 0.70 on a customer-facing agent. |
+| **Medium** | Amber | Quality trend worth monitoring but not immediately actionable — e.g., fleet reliability score below 85%. |
+| **Low** | Blue | Informational signals that do not require action — e.g., an agent has had no traffic for 24 hours. |
+
+---
+
+## Alert list
+
+The main section of the Alerts page shows a combined view of alert rules (configured conditions) and fired alerts (instances where a rule condition was met).
+
+### Filters
+
+| Filter | Options |
+|--------|---------|
+| **View** | Rules / Fired alerts / Both |
+| **Severity** | All / Critical / High / Medium / Low |
+| **Agent** | All agents / specific agent |
+| **Status** | All / Active (condition still met) / Resolved (condition no longer met) / Acknowledged |
+
+### Columns — rules view
+
+| Column | Description |
+|--------|-------------|
+| **Rule name** | Human-readable name you assigned at creation. |
+| **Type** | Alert type (Confidence Drop / Block Rate Spike / Agent Offline / Reliability Score Drop). |
+| **Agent** | Agent scope of the rule. |
+| **Condition** | Threshold and window summary (e.g., "confidence < 0.75 over 15m"). |
+| **Severity** | Severity badge. |
+| **Status** | Enabled / Disabled toggle. |
+
+### Columns — fired alerts view
+
+| Column | Description |
+|--------|-------------|
+| **Fired at** | UTC timestamp when the alert condition was first met. |
+| **Alert name** | The rule name that generated this alert. |
+| **Agent** | Affected agent. |
+| **Severity** | Severity badge. |
+| **Condition met** | The actual metric value at the time the alert fired (e.g., "avg confidence: 0.68"). |
+| **Resolution** | Timestamp when the condition was no longer met, or **Active** if it is still ongoing. |
+| **Acknowledged** | Whether a team member has acknowledged the alert. |
+
+---
+
+## Alert detail
+
+Click any fired alert row to open the alert detail panel:
+
+- **Trigger condition** — the exact rule configuration that fired the alert, including the threshold and evaluation window.
+- **Affected agent** — the `agent_id` with a link to the agent's detail page on the Agents page.
+- **Fired at** — precise UTC timestamp.
+- **Metric value at trigger** — the value of the metric at the moment the condition was met.
+- **Resolution status** — Active or resolved, with resolution timestamp if applicable.
+- **Resolution time** — duration the condition remained met before the metric recovered.
+- **Acknowledge button** — marks the alert as reviewed by the current user, with a timestamp and user identity recorded.
+
+---
+
+## Delivery
+
+Alerts are delivered through two channels:
+
+### Dashboard notifications
+
+All fired alerts appear in the alert summary panel on the Overview page and in the Alerts page list in real time. A notification badge on the Alerts sidebar item shows the count of unacknowledged alerts.
+
+### Webhooks
+
+You can configure one or more webhook endpoints to receive alert payloads when an alert fires or resolves. Webhooks are configured in **Settings → Webhooks**. Each webhook endpoint can be scoped to specific severity levels — for example, route Critical and High alerts to PagerDuty and Medium and Low alerts to a Slack channel.
+
+Webhook payloads are JSON objects with the following structure:
+
+```json
+{
+  "event": "alert.fired",
+  "alert_id": "alr_01hx...",
+  "rule_name": "billing-agent confidence drop",
+  "type": "confidence_drop",
+  "severity": "high",
+  "agent_id": "billing-agent",
+  "condition": {
+    "metric": "avg_confidence",
+    "threshold": 0.75,
+    "window_minutes": 15,
+    "actual_value": 0.68
+  },
+  "fired_at": "2026-02-18T14:32:00Z"
+}
+```
+
+Vex retries failed webhook deliveries up to 3 times with exponential backoff (5s, 25s, 125s). Failed deliveries after all retries are logged in the webhook delivery history in **Settings → Webhooks**.
+
+---
+
+## Related pages
+
+<CardGroup cols={2}>
+
+<Card title="Dashboard Overview" icon="gauge" href="/dashboard/overview">
+  The alert summary panel on the Overview page shows the five most recent alerts at a glance.
+</Card>
+
+<Card title="Failures" icon="triangle-exclamation" href="/dashboard/failures">
+  When a block rate alert fires, use the Failures page to identify the specific executions driving the spike.
+</Card>
+
+<Card title="Agents" icon="robot" href="/dashboard/agents">
+  Use the agent detail view to investigate confidence trends after a confidence drop alert fires.
+</Card>
+
+<Card title="API Reference — Webhooks" icon="webhook" href="/api-reference/webhooks">
+  Full schema reference for all webhook event types and delivery behavior.
+</Card>
+
+</CardGroup>

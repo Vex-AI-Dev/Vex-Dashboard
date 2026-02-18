@@ -1,0 +1,145 @@
+---
+title: "Dashboard Overview"
+description: "Monitor your AI agents' reliability at a glance."
+---
+
+The Overview page is the first screen you see after signing in to [app.tryvex.dev](https://app.tryvex.dev). It aggregates real-time and historical signals from every agent in your account into a single operational view, giving you an immediate read on fleet health without navigating into individual agents or executions.
+
+---
+
+## Time range selector
+
+All metrics and charts on the Overview page are scoped to a selected time window. The selector is in the top-right corner and offers five presets:
+
+| Preset | Window |
+|--------|--------|
+| **1h** | Rolling last 60 minutes |
+| **6h** | Rolling last 6 hours |
+| **24h** | Rolling last 24 hours (default) |
+| **7d** | Rolling last 7 days |
+| **30d** | Rolling last 30 days |
+
+Changing the range updates all four KPI cards, the activity chart, the agent health grid, and the alert summary panel simultaneously. The selected range is preserved in the URL, so you can bookmark or share a specific view.
+
+---
+
+## KPI cards
+
+Four metric cards appear at the top of the page. Each card shows the current value for the selected time range and a delta indicator (up/down arrow with percentage) comparing the current window to the equivalent preceding window.
+
+### Reliability Score
+
+A single weighted percentage that summarises overall agent quality across your entire fleet for the period.
+
+**How it is calculated:** Each execution contributes its confidence score (0–1) to a weighted average. Executions with a `block` action are weighted 3×, `flag` executions 1.5×, and `pass` executions 1×. The weighted average is then expressed as a percentage. Blocked executions drag the score down more than flagged ones.
+
+**What it means in practice:**
+
+- **90–100%** — Fleet is operating within normal parameters.
+- **75–90%** — Elevated flag or block rate; one or more agents merit investigation.
+- **Below 75%** — Systemic reliability problem. Check the agent health grid and failure table.
+
+<Tip>
+A Reliability Score below 90% is the primary signal that something needs attention. Start with the agent health grid to identify which agents are pulling the score down, then navigate to that agent's detail view.
+</Tip>
+
+### Verifications
+
+Total number of executions processed by the Vex verification pipeline in the selected period. Each call to `guard.watch` (Python) or `vex.trace` (TypeScript) that completes the verify phase increments this counter.
+
+This is your throughput signal. A sudden drop in Verifications often indicates an SDK integration issue (such as an expired API key or a network timeout) rather than an agent quality problem.
+
+### Issues Caught
+
+The sum of executions that received a `flag` or `block` action in the period. This is the raw count of outputs that did not meet your pass threshold before any correction was applied.
+
+A rising Issues Caught count while Verifications stays flat means your agents are producing lower-quality outputs — not that they are handling more traffic.
+
+### Auto-Corrected
+
+The number of executions where the correction cascade ran and successfully produced an output that passed the block threshold. This counter only increments when correction is enabled (`correction="cascade"` / `correction: 'auto'`) and at least one correction layer succeeded.
+
+A high Auto-Corrected count relative to Issues Caught indicates the correction cascade is absorbing problems before they reach your users. If Auto-Corrected is much lower than Issues Caught, more outputs are being permanently blocked — check the Failures page for the patterns.
+
+---
+
+## Activity chart
+
+A 24-segment bar chart (one bar per hour for the 24h range, scaled proportionally for other ranges) showing verification volume over time. Bars are color-coded by outcome:
+
+| Color | Meaning |
+|-------|---------|
+| Green | Pass — output met the pass threshold |
+| Amber | Flag — output was marginal, logged for review |
+| Red | Block — output was below block threshold |
+| Blue | Corrected — block that was repaired by the cascade |
+
+Hover over any bar to see the exact counts for that time segment broken down by action.
+
+**Reading the chart:**
+
+- A spike of red bars indicates a period when a specific agent or workload was producing low-quality outputs. Cross-reference the timestamp with deployment history.
+- A long stretch of blue bars during a red period means correction is working as intended.
+- Amber bars that never convert to red suggest your flag threshold may be set too conservatively.
+
+---
+
+## Agent health grid
+
+Below the activity chart, each agent in your account is represented by a compact status card showing:
+
+- **Agent name** — as provided in the `agent_id` field of your SDK configuration
+- **Health badge** — derived from average confidence across all executions in the period
+- **Execution count** — total verifications for the agent in the period
+- **Last seen** — timestamp of the most recent execution
+
+Health badges use the same thresholds as the individual Agents page:
+
+| Badge | Condition | Color |
+|-------|-----------|-------|
+| **Healthy** | Average confidence ≥ 0.8 | Green |
+| **Degraded** | Average confidence 0.5–0.8 | Amber |
+| **No Data** | No executions in the period | Gray |
+
+Click any agent card to navigate directly to that agent's detail view on the Agents page.
+
+---
+
+## Alert summary panel
+
+The right column of the Overview page shows the five most recent alerts across all agents, regardless of severity. Each row shows:
+
+- Severity icon (Critical / High / Medium / Low)
+- Alert type (e.g., "Confidence Drop", "Block Rate Spike")
+- Affected agent name
+- Time since the alert fired
+
+Click **View all alerts** to navigate to the full Alerts page with filtering options.
+
+<Note>
+The alert summary panel reflects all alerts in the account, not just those in the selected time range. This ensures critical alerts are always visible even if they fired outside the currently selected window.
+</Note>
+
+---
+
+## Related pages
+
+<CardGroup cols={2}>
+
+<Card title="Agents" icon="robot" href="/dashboard/agents">
+  Drill into individual agent performance, confidence trends, and execution history.
+</Card>
+
+<Card title="Failures" icon="triangle-exclamation" href="/dashboard/failures">
+  Investigate every flagged and blocked execution with filters and batch export.
+</Card>
+
+<Card title="Alerts" icon="bell" href="/dashboard/alerts">
+  Manage alert rules and review all triggered alerts with full resolution history.
+</Card>
+
+<Card title="Executions" icon="magnifying-glass" href="/dashboard/executions">
+  Deep-dive into individual execution traces with per-check scoring and correction timelines.
+</Card>
+
+</CardGroup>

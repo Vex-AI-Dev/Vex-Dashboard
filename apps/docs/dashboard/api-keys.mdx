@@ -1,0 +1,149 @@
+---
+title: "API Keys"
+description: "Create and manage API keys for SDK authentication."
+---
+
+API keys authenticate your SDK instances and direct API calls to the Vex platform. Each key carries a set of scopes that restrict what it can do. Keys are shown in full exactly once — at creation — and are masked thereafter. Managing keys carefully is a baseline security practice for any production deployment.
+
+Navigate to **Settings → API Keys** at [app.tryvex.dev](https://app.tryvex.dev).
+
+---
+
+## Creating a key
+
+Click **New API key** to open the key creation form.
+
+### Fields
+
+**Name** (required)
+
+A human-readable label that identifies the key's purpose. Names must be unique within the account. Use names that make the key's origin and scope obvious to other team members — for example: `prod-billing-agent`, `staging-ingest`, or `ci-read-only`.
+
+**Scopes** (required)
+
+Select one or more scopes. A key can only perform operations covered by its scopes — attempting an operation outside the key's scope returns a `403 Forbidden` response.
+
+| Scope | Permitted operations | Typical use |
+|-------|---------------------|-------------|
+| **ingest** | `POST /v1/ingest` — submit execution telemetry asynchronously | Async-mode SDK deployments that send telemetry without waiting for verification results |
+| **verify** | `POST /v1/verify` — submit an execution and receive a synchronous verification result | Sync-mode SDK deployments that require inline confidence scores and correction |
+| **read** | `GET /v1/executions`, `GET /v1/agents`, `GET /v1/sessions`, `GET /v1/alerts` — query stored data | Dashboards, reporting scripts, CI checks that read data without writing |
+
+Assign the minimum set of scopes needed. An agent that operates in async mode needs only `ingest`. An agent in sync mode needs only `verify`. A script that exports data needs only `read`. A key with all three scopes should be reserved for integration tests that exercise the full pipeline.
+
+**Rate limit** (optional)
+
+Set a per-key rate limit in requests per minute. If left blank, the key inherits the account-level rate limit. Setting a lower limit on a specific key prevents a single agent or script from exhausting the account's quota. For example, a batch script that replays archived events could be limited to 60 req/min to avoid displacing live agent traffic.
+
+**Expiry** (optional)
+
+Set an expiry date for the key. After the expiry date, the key is automatically revoked and any SDK using it will receive `401 Unauthorized` responses. Expiring keys are useful for short-lived integrations, contractor access, or CI environments where you want automatic cleanup.
+
+If no expiry is set, the key does not expire until manually revoked.
+
+---
+
+## Key display and storage
+
+After clicking **Create**, the key is shown exactly once in a modal dialog:
+
+```
+vex_live_aK9mX2pQwR7sLnYd4jFbVcTe8uHzG1oN
+```
+
+<Warning>
+Copy the API key now and store it in your secrets manager. This is the only time the full key value is shown. After you close this dialog, the key is masked and cannot be retrieved. If the key is lost, revoke it and create a new one.
+</Warning>
+
+After creation, the key appears in the key list with its value masked:
+
+```
+vex_live_aK9m...N1oN
+```
+
+Only the first eight and last four characters are shown. The masking is permanent — it is not a permission restriction that can be lifted.
+
+---
+
+## Key list
+
+The API Keys page shows all keys in the account in a table:
+
+| Column | Description |
+|--------|-------------|
+| **Name** | The label assigned at creation. |
+| **Scopes** | Scope badges (ingest / verify / read). |
+| **Rate limit** | Requests per minute, or **Account default** if no per-key limit was set. |
+| **Created** | UTC date the key was created. |
+| **Expires** | Expiry date, or **Never** if no expiry was set. |
+| **Last used** | UTC date of the most recent authenticated request using this key. Useful for identifying unused keys. |
+| **Status** | Active (green) or Revoked (red). |
+
+---
+
+## Revoking a key
+
+Click the **Revoke** button in the key's row, then confirm the action in the dialog. Revocation is immediate and permanent:
+
+- All SDK instances using the key receive `401 Unauthorized` responses on their next request.
+- The key cannot be re-activated. To restore access, create a new key and update the secret in your deployment environment.
+- Revoked keys remain visible in the key list with a **Revoked** status for audit trail purposes. They can be deleted from the list entirely by clicking **Delete**.
+
+<Warning>
+Revoking a key cannot be undone. Ensure you have updated your environment variables or secrets manager with a replacement key before revoking the old one to avoid service interruption.
+</Warning>
+
+---
+
+## Rate limiting
+
+Rate limits are enforced at the key level. When a key exceeds its rate limit, the API returns:
+
+```
+HTTP 429 Too Many Requests
+Retry-After: 12
+```
+
+The `Retry-After` header indicates the number of seconds to wait before retrying. Both the Python and TypeScript SDKs handle `429` responses with automatic exponential backoff by default — no application-level retry logic is required for transient rate limit hits during traffic spikes.
+
+Rate limit usage is visible in **Settings → API Keys → [key name] → Usage**. The usage panel shows requests per minute over the last 24 hours, so you can identify whether a key is routinely near its limit and needs to be raised.
+
+---
+
+## Best practices
+
+**Use separate keys per environment.** Create distinct keys for development, staging, and production environments. This makes it possible to revoke a compromised key from one environment without affecting others, and makes the **Last used** timestamp meaningful for identifying unused environments.
+
+**Grant least-privilege scopes.** Production agents operating in async mode need only `ingest`. Production agents in sync mode need only `verify`. Read access for reporting should use a separate `read`-only key. Never use a key with all three scopes in production unless the workload genuinely requires all three operations.
+
+**Set expiry for temporary access.** If you are giving a contractor or a short-lived CI job access to the Vex API, set an expiry date. You will not need to remember to revoke the key manually.
+
+**Rotate keys regularly.** For high-security environments, rotate production keys on a regular schedule (quarterly, or per your organization's security policy). The rotation process — create new key, deploy new key, verify traffic, revoke old key — takes under five minutes.
+
+<Warning>
+Never commit an API key to version control. Use environment variables or a secrets manager (AWS Secrets Manager, HashiCorp Vault, GitHub Actions secrets, etc.) to inject keys at runtime. If you accidentally commit a key, revoke it immediately — assume it has been compromised regardless of whether the repository is private.
+</Warning>
+
+---
+
+## Related pages
+
+<CardGroup cols={2}>
+
+<Card title="Quickstart" icon="bolt" href="/quickstart">
+  Step-by-step guide to creating your first key and sending your first trace.
+</Card>
+
+<Card title="Python SDK Configuration" icon="python" href="/python/configuration">
+  How to pass the API key to the Python SDK via environment variable or constructor argument.
+</Card>
+
+<Card title="TypeScript SDK Configuration" icon="js" href="/typescript/configuration">
+  How to pass the API key to the TypeScript SDK via environment variable or config object.
+</Card>
+
+<Card title="API Reference" icon="code" href="/api-reference/introduction">
+  Full reference for the REST API that the SDKs call on your behalf.
+</Card>
+
+</CardGroup>

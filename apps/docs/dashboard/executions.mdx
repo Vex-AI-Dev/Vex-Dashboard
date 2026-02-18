@@ -1,0 +1,169 @@
+---
+title: "Execution Inspector"
+sidebarTitle: "Executions"
+description: "Deep-dive into individual execution traces with check-by-check scoring."
+---
+
+The Execution Inspector gives you full visibility into every execution Vex has recorded — the inputs and outputs, each step the agent took, the score from each of the five verification checks, any correction layers that ran, and the raw event payload. It is the primary tool for root-cause analysis when an agent produces a flagged or blocked output.
+
+You can reach the Execution Inspector from several places in the dashboard: by clicking a row in the Failures table, by clicking a row in an agent's recent executions table, by clicking a turn in the Sessions detail view, or by navigating directly to **Executions** in the left sidebar and searching by execution ID.
+
+---
+
+## Metadata card
+
+At the top of every execution page is a metadata card summarising the key identifiers and resource usage for the execution:
+
+| Field | Description |
+|-------|-------------|
+| **Execution ID** | Globally unique identifier for this execution (`exec_01hx...`). Use this ID when filing a support request or referencing a specific execution in your own logs. |
+| **Agent ID** | The `agent_id` string provided in the SDK call. Links to the agent's detail page on the Agents page. |
+| **Session ID** | Present if the execution was part of a multi-turn session. Links to the session detail on the Sessions page. Omitted for standalone (non-session) executions. |
+| **Timestamp** | UTC time when the execution event was received by the Vex API. |
+| **Latency** | Wall-clock duration of the agent's own execution (not including Vex verification time), in milliseconds. |
+| **Token count** | Total tokens consumed by LLM calls within the execution, as reported by the SDK step recording. |
+| **Estimated cost** | Token-based cost estimate in USD, calculated using the model pricing at the time of the execution. |
+| **Action** | The final action taken: **Pass**, **Flag**, or **Block**, displayed as a color-coded badge. |
+| **Confidence** | The final confidence score (0–1) after verification (and after correction, if correction ran). |
+
+---
+
+## Trace steps
+
+Below the metadata card, a collapsible list shows each step recorded during the execution. Steps are ordered chronologically and correspond to `ctx.step()` calls in your agent code, plus automatically captured steps for LLM completions and tool calls.
+
+Each step row shows:
+
+- **Step type** — one of `llm_completion`, `tool_call`, `retrieval`, or `custom` (for manual `ctx.step()` calls).
+- **Step name** — the name you provided to `ctx.step()`, or the tool name / model name for automatic steps.
+- **Duration** — wall-clock time for this step in milliseconds.
+- **Status** — Success or Error. Error steps are highlighted in red.
+
+Click a step row to expand it and see:
+
+- **Input** — the input to the step (prompt, tool arguments, retrieval query), formatted as JSON or plain text depending on the step type.
+- **Output** — the output from the step (completion text, tool return value, retrieved documents).
+
+Long inputs and outputs are truncated with a **Show more** control to keep the view manageable for high-token steps.
+
+<Info>
+Steps only appear if your agent code records them. The SDK automatically captures LLM completions and tool calls for supported frameworks (LangChain, CrewAI, OpenAI Assistants). For custom agents, use `ctx.step()` to record intermediate steps manually. See the relevant SDK documentation for details.
+</Info>
+
+---
+
+## Check results
+
+The check results table is the core of the Execution Inspector. It shows the outcome of each of the five verification checks run against this execution.
+
+| Check | Description | Score range |
+|-------|-------------|-------------|
+| **Schema Validation** | Validates the agent's output against the schema provided via `ctx.set_schema()`. Checks for missing required fields, wrong types, and unexpected nulls. | Pass / Fail (binary) |
+| **Hallucination Detection** | Compares the output against retrieved context and tool call results captured in the execution trace. Claims not grounded in the recorded evidence are flagged. | 0–1 |
+| **Task Drift** | Scores the semantic alignment of the output with the `task` string declared in the SDK call. Lower scores indicate the agent's response is diverging from its stated purpose. | 0–1 |
+| **Confidence Scoring** | The weighted combination of all check scores that produces the single `confidence` value. | 0–1 |
+| **Coherence** | For session executions: measures consistency with previous turns in the same session. Flags topic shifts, contradictions, and persona drift. For standalone executions, this check is skipped and displayed as **N/A**. | 0–1 or N/A |
+
+Each check row shows:
+
+- **Result** — Pass (green checkmark) or Fail (red cross) for binary checks; a numeric score with a colored progress bar for scored checks.
+- **Weight** — the weighting of this check in the confidence calculation (shown as a percentage).
+- **Details** — a short plain-text explanation of the check result. For failures, this explains specifically what was detected (e.g., "Output contains the claim 'X' which is not supported by any retrieved context").
+
+Click **Expand details** on any check row to see the full diagnostic output from the check, including the evidence excerpts used for hallucination detection and the semantic similarity breakdown for task drift.
+
+---
+
+## Correction timeline
+
+The correction timeline section appears only if the correction cascade ran for this execution. If correction was disabled, or if the execution received a `pass` or `flag` action (which does not trigger correction), this section is hidden.
+
+The timeline shows each correction layer that was attempted, in order:
+
+| Column | Description |
+|--------|-------------|
+| **Layer** | Layer 1 (Surgical Repair), Layer 2 (Constrained Regeneration), or Layer 3 (Full Re-prompt). |
+| **Model** | The model used for the correction attempt (`gpt-4o-mini` for Layer 1, `gpt-4o` for Layers 2 and 3). |
+| **Confidence after** | The confidence score of the corrected output after re-verification. |
+| **Result** | **Passed** (green — this layer's output met the pass threshold and the cascade stopped here) or **Failed** (red — this layer's output did not meet the threshold and the cascade escalated). |
+| **Latency** | Time taken by this correction layer, in milliseconds. |
+
+If all three layers failed, the timeline shows all three rows with **Failed** status, and the final `action` on the metadata card remains **Block**.
+
+---
+
+## Output diff view
+
+When a correction layer succeeded, the output diff view shows a side-by-side comparison of the original agent output and the corrected output produced by the cascade.
+
+- **Left panel** — the original output from your agent, before any correction.
+- **Right panel** — the corrected output returned in `result.output`.
+- **Highlighted lines** — additions (green) and removals (red) following standard diff conventions.
+
+For short outputs (under 500 characters), both panels are shown in full. For longer outputs, the diff is collapsed to show only the changed sections, with a **Show full diff** toggle.
+
+<Note>
+The output diff view is only populated when `transparency` is set to `"transparent"` in your SDK configuration. With the default `"opaque"` transparency mode, the original output is not retained after correction and the diff panel will indicate this. See [Correction Cascade](/concepts/correction-cascade) for details on transparency modes.
+</Note>
+
+---
+
+## Raw JSON viewer
+
+At the bottom of the page, a **Raw JSON** collapsible section contains the complete execution event as it was stored by the Vex API. This is the full payload including all fields — useful for debugging SDK integration issues, verifying that steps were recorded correctly, or extracting data for custom analysis.
+
+The JSON is syntax-highlighted and searchable. A **Copy** button copies the full JSON to the clipboard. A **Download** button saves the JSON as a `.json` file named `execution-{execution_id}.json`.
+
+The raw event schema includes:
+
+```json
+{
+  "execution_id": "exec_01hx...",
+  "agent_id": "your-agent-id",
+  "session_id": "sess_01hx...",
+  "task": "The task string from your SDK call",
+  "input": "...",
+  "output": "...",
+  "original_output": "...",
+  "steps": [...],
+  "checks": {
+    "schema": { "passed": true },
+    "hallucination": { "score": 0.92, "details": "..." },
+    "task_drift": { "score": 0.87, "details": "..." },
+    "confidence": { "score": 0.89 },
+    "coherence": { "score": 0.91, "details": "..." }
+  },
+  "action": "pass",
+  "confidence": 0.89,
+  "corrected": false,
+  "corrections": [],
+  "latency_ms": 1243,
+  "token_count": 847,
+  "cost_usd": 0.0021,
+  "recorded_at": "2026-02-18T14:32:00Z"
+}
+```
+
+---
+
+## Related pages
+
+<CardGroup cols={2}>
+
+<Card title="Failures" icon="triangle-exclamation" href="/dashboard/failures">
+  Filter all flagged and blocked executions and navigate to the inspector from there.
+</Card>
+
+<Card title="Sessions" icon="messages" href="/dashboard/sessions">
+  View the execution in context as part of a multi-turn conversation.
+</Card>
+
+<Card title="Correction Cascade" icon="rotate" href="/concepts/correction-cascade">
+  Understand the three-layer correction strategy shown in the correction timeline.
+</Card>
+
+<Card title="How Vex Works" icon="book-open" href="/how-vex-works">
+  End-to-end overview of the observe, verify, and correct pipeline.
+</Card>
+
+</CardGroup>

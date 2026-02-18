@@ -1,0 +1,109 @@
+---
+title: "Failures"
+description: "Investigate flagged and blocked agent outputs."
+---
+
+The Failures page is the primary triage interface for quality issues. It surfaces every execution that received a `flag` or `block` action across all agents and time ranges, and provides the filtering, inspection, and export tools you need to understand and act on those failures.
+
+Navigate to **Failures** from the left sidebar at [app.tryvex.dev](https://app.tryvex.dev).
+
+---
+
+## Filters
+
+Four filters at the top of the page control which failures are shown in the table. All filters are applied simultaneously and update the table in real time.
+
+### Action
+
+| Option | Shows |
+|--------|-------|
+| **All** | Both flagged and blocked executions |
+| **Flagged** | Executions where `action = "flag"` only (confidence between flag and pass threshold) |
+| **Blocked** | Executions where `action = "block"` only (confidence below block threshold, before any correction) |
+
+### Agent
+
+A dropdown listing every `agent_id` in your account. Select a specific agent to narrow the table to failures from that agent only. Defaults to **All agents**.
+
+### Time range
+
+The same five presets used across the dashboard: **1h**, **6h**, **24h** (default), **7d**, **30d**. You can also select a custom date range using the date picker that opens when you click the time range control.
+
+### Correction status
+
+| Option | Shows |
+|--------|-------|
+| **All** | Failures regardless of whether correction ran |
+| **Corrected** | Failures where the correction cascade ran and succeeded (the cascade produced an output that passed the block threshold) |
+| **Uncorrected** | Failures where correction either did not run (correction disabled, async mode, or flag action which does not trigger correction) or ran and failed to produce a passing output |
+
+---
+
+## Failures table
+
+The failures table shows all executions matching the current filter set, sorted by timestamp descending (most recent first). The table is paginated with 50 rows per page.
+
+### Columns
+
+| Column | Description |
+|--------|-------------|
+| **Timestamp** | UTC time the execution was recorded. |
+| **Agent** | The `agent_id` that produced this execution. |
+| **Task** | The `task` string provided in the SDK call, truncated to 80 characters. Hover to see the full task string in a tooltip. |
+| **Action** | A color-coded badge: amber **Flag** or red **Block**. |
+| **Confidence** | The final confidence score (0–1) for this execution, displayed to two decimal places. Lower scores are highlighted in progressively darker red. |
+| **Correction status** | A badge indicating whether correction ran: **Corrected** (green, cascade succeeded), **Not corrected** (gray, correction did not run or was disabled), or **Failed correction** (red, cascade ran through all layers without producing a passing output). |
+
+Click any row to navigate to the Execution Inspector for that execution.
+
+---
+
+## Execution detail navigation
+
+Clicking a row opens the Execution Inspector in a slide-out panel while keeping the failures table visible in the background. This lets you review details without losing your current filter context and navigate forward and backward through the filtered list using the arrow buttons at the top of the slide-out.
+
+To open the full Execution Inspector page for a given failure (for deep investigation including the raw JSON viewer), click the **Open full page** icon in the top-right of the slide-out panel.
+
+---
+
+## Batch operations
+
+Two batch operations are available via the checkbox column on the left of the table. Select one or more rows (or use the header checkbox to select all rows on the current page) to activate the batch action bar.
+
+### Export CSV
+
+Downloads the selected rows as a CSV file. The export includes all visible columns plus the full execution ID, session ID (if present), and the complete task string without truncation. The filename uses the format `vex-failures-{date}.csv`.
+
+Use CSV export to feed failure data into external reporting tools, spreadsheet-based triage workflows, or incident postmortem documentation.
+
+### Bulk acknowledge
+
+Marks the selected failures as **Acknowledged** in the dashboard. Acknowledged failures continue to appear in the table by default but can be hidden by toggling the **Show acknowledged** switch in the filter bar. Acknowledging a failure does not change its action or confidence score — it is purely a workflow marker to indicate your team has reviewed the item.
+
+<Tip>
+A high block rate concentrated on a single agent — visible by filtering the Action to **Blocked** and the Agent to that specific agent — almost always indicates a systemic issue: a prompt regression, a model update, or a change in the distribution of inputs the agent receives. Investigate that agent's confidence trend chart (Agents page) to identify when the degradation began, then cross-reference with your deployment history.
+</Tip>
+
+---
+
+## Related pages
+
+<CardGroup cols={2}>
+
+<Card title="Executions" icon="magnifying-glass" href="/dashboard/executions">
+  Deep-dive into a single failure with per-check scoring, correction timeline, and output diff.
+</Card>
+
+<Card title="Agents" icon="robot" href="/dashboard/agents">
+  Identify which agents are generating the most failures using the fleet health view.
+</Card>
+
+<Card title="Alerts" icon="bell" href="/dashboard/alerts">
+  Configure alert rules that notify your team when block rates or flag rates exceed thresholds.
+</Card>
+
+<Card title="Correction Cascade" icon="rotate" href="/concepts/correction-cascade">
+  Understand the three correction layers and how to tune them to reduce permanent blocks.
+</Card>
+
+</CardGroup>

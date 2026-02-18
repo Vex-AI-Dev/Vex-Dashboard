@@ -1,0 +1,145 @@
+---
+title: "Agents"
+description: "Monitor fleet health and drill into individual agent performance."
+---
+
+The Agents page gives you two levels of visibility: a fleet-wide summary that surfaces aggregate health across all of your agents, and a per-agent detail view where you can investigate confidence trends, execution distributions, and individual execution records.
+
+Navigate to **Agents** from the left sidebar at [app.tryvex.dev](https://app.tryvex.dev).
+
+---
+
+## Time range selector
+
+The time range selector at the top-right of the page controls all metrics, charts, and tables on both the fleet view and the agent detail view. The same five presets available on the Overview page apply here: **1h**, **6h**, **24h** (default), **7d**, **30d**.
+
+---
+
+## Fleet health view
+
+The fleet health section appears at the top of the Agents page before any individual agent is selected.
+
+### Fleet KPI cards
+
+Five cards summarise the state of your entire fleet in the selected period:
+
+| Card | Definition |
+|------|-----------|
+| **Total Agents** | Count of distinct `agent_id` values that produced at least one execution in the period. Agents with no executions in the selected window do not appear in this count. |
+| **Avg Confidence** | The mean confidence score across all executions from all agents in the period, expressed as a decimal (0–1). |
+| **Total Executions** | Sum of all verifications processed across the fleet. |
+| **Flagged Rate** | Percentage of all executions that received a `flag` action. Calculated as `(flagged executions / total executions) × 100`. |
+| **Block Rate** | Percentage of all executions that received a `block` action before any correction. A block rate above 5% across the fleet is a strong signal that threshold tuning or agent improvement is needed. |
+
+### Execution chart
+
+A time-series bar chart below the KPI cards shows execution volume over time for the entire fleet. Bars are segmented and color-coded by action taken:
+
+- **Green** — Pass
+- **Amber** — Flag
+- **Red** — Block (before correction)
+- **Blue** — Corrected (block resolved by the cascade)
+
+An agent-name filter above the chart lets you isolate the chart to one or more specific agents without navigating into the agent detail view. This is useful for comparing traffic patterns side by side.
+
+---
+
+## Agent cards
+
+Below the fleet chart, each agent is displayed as a card in a responsive grid. Cards are sorted by execution count (highest first) within the selected time range. Agents with no executions in the period appear at the end of the grid with a **No Data** badge.
+
+Each card shows:
+
+- **Agent name** — The `agent_id` string from your SDK configuration.
+- **Health badge** — A status derived from the agent's average confidence in the period.
+- **Execution count** — Total verifications for this agent in the period.
+- **Avg confidence** — Mean confidence score (0–1), formatted to two decimal places.
+- **Last active** — Timestamp of the most recent execution recorded for this agent.
+
+### Health badge definitions
+
+| Badge | Condition | Color | Meaning |
+|-------|-----------|-------|---------|
+| **Healthy** | Average confidence ≥ 0.8 | Green | Agent is producing consistently high-quality outputs within your pass threshold. |
+| **Degraded** | Average confidence 0.5–0.8 | Amber | Confidence is dropping or the agent has an elevated flag rate. Investigation is recommended. |
+| **No Data** | No executions in the period | Gray | The agent has not sent any executions within the selected time window. This may indicate an integration issue or that the agent is simply not handling traffic in this window. |
+
+<Note>
+The health badge is computed from the selected time range. An agent showing **No Data** on the 1h view may be **Healthy** on the 7d view if it processes traffic in batches rather than continuously.
+</Note>
+
+Click any agent card to open that agent's detail view.
+
+---
+
+## Agent detail view
+
+Clicking an agent card loads the detail view in place of the fleet grid. A breadcrumb at the top of the page (`Agents > agent-name`) lets you navigate back to the fleet view.
+
+The detail view has four sections:
+
+### Confidence trend chart
+
+A line chart showing the agent's average confidence score over time within the selected range. Each data point represents one time bucket (the bucket size scales with the range: 5-minute buckets for 1h, 1-hour buckets for 24h, 1-day buckets for 30d).
+
+**Interpreting the chart:**
+
+- A flat line in the 0.85–1.0 range is ideal.
+- A gradual downward slope across several days indicates drift — the agent's quality is degrading, likely due to data or prompt changes.
+- A sudden drop at a specific timestamp often correlates with a deployment, a model update, or a change in input distribution. Cross-reference with your deployment logs.
+
+### Action distribution
+
+A pie chart showing the proportion of executions that received each action (`pass`, `flag`, `block`) in the selected period. Hover over a segment to see the exact count and percentage.
+
+A healthy agent has a large green (pass) segment. An agent with a large amber (flag) segment may have a flag threshold that is too conservative. An agent with any significant red (block) segment warrants immediate investigation — open the Failures page filtered to this agent.
+
+### Recent executions table
+
+A paginated table of the most recent executions for the agent, sorted by timestamp descending. Columns:
+
+| Column | Description |
+|--------|-------------|
+| **Timestamp** | UTC time the execution was recorded. |
+| **Execution ID** | Truncated `execution_id`. Click to open the Execution Inspector for this record. |
+| **Task** | The `task` string provided in the SDK call. |
+| **Action** | Pass / Flag / Block badge. |
+| **Confidence** | Numeric confidence score (0–1). |
+| **Latency** | End-to-end wall-clock duration of the agent execution (not including verification time). |
+| **Corrected** | Checkmark if a correction layer ran and succeeded. |
+
+Click any row to navigate to the full Execution Inspector for that execution.
+
+### Agent metadata
+
+A collapsible panel showing static metadata associated with this agent as recorded from the most recent execution:
+
+- `agent_id` — exact string as provided in the SDK
+- SDK version — the `vex-sdk` version that sent the execution
+- Mode — `async` or `sync`
+- Correction config — `cascade`, `auto`, or `none`
+- Custom metadata — any key-value pairs attached via `ctx.set_metadata` / `ctx.setMetadata` in the most recent execution
+
+---
+
+## Related pages
+
+<CardGroup cols={2}>
+
+<Card title="Executions" icon="magnifying-glass" href="/dashboard/executions">
+  Inspect individual execution traces, per-check scores, and correction timelines.
+</Card>
+
+<Card title="Failures" icon="triangle-exclamation" href="/dashboard/failures">
+  Filter and export all flagged and blocked outputs for a specific agent.
+</Card>
+
+<Card title="Sessions" icon="messages" href="/dashboard/sessions">
+  Replay multi-turn conversations and analyze turn-by-turn quality for this agent.
+</Card>
+
+<Card title="Confidence & Thresholds" icon="chart-line" href="/concepts/confidence">
+  Understand how confidence scores are calculated and how to tune your thresholds.
+</Card>
+
+</CardGroup>

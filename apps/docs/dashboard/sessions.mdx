@@ -1,0 +1,127 @@
+---
+title: "Sessions"
+description: "Replay multi-turn conversations and analyze turn-by-turn quality."
+---
+
+The Sessions page lets you inspect multi-turn conversations as a unit. Where the Executions page shows a single input-output pair, the Sessions page groups a sequence of turns belonging to the same conversation, lets you replay them in order, and surfaces cross-turn quality signals such as coherence drift and confidence degradation across a dialogue.
+
+Sessions are created automatically when you use the SDK session APIs — `guard.session()` in Python or `vex.session()` in TypeScript. Each individual turn in the session is also a standalone execution and appears on the Executions and Failures pages in its own right.
+
+Navigate to **Sessions** from the left sidebar at [app.tryvex.dev](https://app.tryvex.dev).
+
+---
+
+## Session list
+
+The session list is the default view. It shows all sessions recorded in the selected time range with a set of column-based filters.
+
+### Filters
+
+| Filter | Options |
+|--------|---------|
+| **Agent** | Dropdown of all `agent_id` values that have sessions in the account. Select one to narrow the list to sessions from that agent. |
+| **Status** | All / Active (session still open) / Completed (session ended) / Flagged (at least one turn received a `flag` action) / Blocked (at least one turn received a `block` action) |
+| **Date range** | Custom date-range picker, or one of the quick presets (Today, Last 7 days, Last 30 days) |
+
+Filters are additive — selecting both an agent and a status applies both constraints simultaneously.
+
+### Session list columns
+
+| Column | Description |
+|--------|-------------|
+| **Session ID** | Truncated session identifier. The full ID is visible in the detail view tooltip. |
+| **Agent** | The `agent_id` of the agent that handled the session. |
+| **Status** | Session-level status derived from the worst action across all turns (Pass / Flagged / Blocked). |
+| **Turns** | Total number of completed turns in the session. |
+| **Duration** | Wall-clock time from the first turn to the last turn, formatted as `Xm Ys`. |
+| **Avg Confidence** | Mean confidence score across all turns. |
+| **Started** | UTC timestamp of the first turn. |
+
+Click any row to open the session detail view for that session.
+
+---
+
+## Session detail view
+
+The session detail view loads a conversation replay for the selected session. A breadcrumb at the top (`Sessions > session-id`) lets you navigate back to the list.
+
+The detail view has three sections that can be toggled using the tabs at the top of the panel.
+
+### Conversation replay
+
+The default tab renders the session as a chat interface. Each turn is presented as a pair of message bubbles:
+
+- **User bubble** (left-aligned, gray) — the input to the agent for this turn.
+- **Assistant bubble** (right-aligned, white) — the agent's output for this turn.
+
+Above each assistant bubble is a thin **verification bar** indicating the verification outcome for that turn:
+
+| Bar color | Meaning |
+|-----------|---------|
+| Green | Turn passed verification (confidence ≥ pass threshold). |
+| Amber | Turn was flagged (confidence between flag and pass threshold). |
+| Red | Turn was blocked (confidence below block threshold). |
+| Blue | Turn was blocked but successfully corrected by the cascade. |
+
+The confidence score is shown as a numeric overlay on the right end of each verification bar (e.g., `0.87`). Click the score to open the full Execution Inspector for that individual turn.
+
+### Tool call expansion
+
+If a turn included tool calls, a **Tools** disclosure toggle appears beneath the assistant bubble. Clicking it expands an inline panel showing each tool call in the turn:
+
+- Tool name
+- Input arguments (formatted JSON, collapsible for long payloads)
+- Tool output / return value (formatted JSON)
+- Duration of the tool call
+
+Tool call data is sourced from the steps recorded by the SDK via `ctx.step()` calls during the execution.
+
+### Turn timeline
+
+The second tab provides a fallback timeline view that is useful for sessions with many turns or sessions where the chat-bubble view becomes unwieldy due to long outputs.
+
+The timeline renders each turn as a row on a horizontal axis, with:
+
+- Turn number and timestamp
+- Action badge (pass / flag / block / corrected)
+- Confidence score
+- A sparkline showing confidence across all turns so you can see the trend at a glance
+
+A click on any turn row in the timeline opens the Execution Inspector for that turn in a slide-out panel, so you can inspect the per-check breakdown without leaving the session view.
+
+### Coherence indicators
+
+Vex's coherence check runs across turns and computes cross-turn drift scores. When a turn's coherence score falls below a threshold, a **drift marker** is shown on the conversation replay and on the timeline:
+
+- A small amber or red diamond icon on the verification bar of the affected turn.
+- A tooltip explaining the type of drift detected: topic shift, contradiction with a prior turn, or persona drift.
+
+Drift markers are informational — they do not change the `action` for the individual turn unless the overall confidence score including the coherence component falls below your thresholds. They are most useful for diagnosing sessions where individual turn scores look acceptable but overall conversation quality is degrading.
+
+<Info>
+Cross-turn coherence scoring requires that all turns in the session share the same `session_id`. If you see sessions with many flagged turns but no drift markers, confirm that your SDK session API is being used correctly and that `session_id` values are consistent across the conversation. See [Sessions concepts](/concepts/sessions) for the correct usage pattern.
+</Info>
+
+---
+
+## Related pages
+
+<CardGroup cols={2}>
+
+<Card title="Executions" icon="magnifying-glass" href="/dashboard/executions">
+  Inspect an individual turn with full per-check scoring, correction timeline, and raw JSON.
+</Card>
+
+<Card title="Agents" icon="robot" href="/dashboard/agents">
+  See overall agent health and confidence trends that may explain session-level degradation.
+</Card>
+
+<Card title="Sessions (SDK concept)" icon="book-open" href="/concepts/sessions">
+  How to instrument multi-turn sessions with the Python and TypeScript SDKs.
+</Card>
+
+<Card title="Failures" icon="triangle-exclamation" href="/dashboard/failures">
+  Review all flagged and blocked turns across sessions in a filterable table.
+</Card>
+
+</CardGroup>
