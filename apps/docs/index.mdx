@@ -1,0 +1,66 @@
+---
+title: "What is Vex?"
+sidebarTitle: "Introduction"
+description: "Runtime reliability for AI agents in production. Detect drift, verify outputs, and auto-correct failures — before your customers notice."
+---
+
+Your AI agent doesn't crash. It **drifts**.
+
+Model updates change behavior. Prompts degrade over time. Tool calls return unexpected data. Your agent still runs — it just stops being _right_.
+
+**Vex** is the open-source runtime reliability layer that catches this. It sits between your agent and your users, continuously verifying that outputs meet your quality bar.
+
+<CardGroup cols={2}>
+
+<Card title="Drift Detection" icon="radar">
+  Continuously monitors agent behavior for silent changes in output quality,
+  consistency, and task adherence.
+</Card>
+
+<Card title="Execution Tracing" icon="route">
+  Records every step of your agent's execution — tool calls, LLM responses,
+  intermediate reasoning — for full observability.
+</Card>
+
+<Card title="Sync Verification" icon="shield-check">
+  Inline quality gates that score confidence and take action (pass, flag, block)
+  before the response reaches your users.
+</Card>
+
+<Card title="Correction Cascade" icon="rotate">
+  Three-layer auto-correction: surgical repair → constrained regeneration →
+  full re-prompt. Each layer progressively more aggressive.
+</Card>
+
+</CardGroup>
+
+## Why not just use evals or tracing?
+
+| | Evals | Tracing | **Vex** |
+|---|---|---|---|
+| **When** | Before deploy | After deploy | **During execution** |
+| **Catches** | Known failure modes | Performance issues | **Behavioral drift** |
+| **Action** | Manual iteration | Manual investigation | **Automatic correction** |
+| **Latency** | Offline | Passive | **< 200ms (sync)** |
+
+## Get started
+
+<CardGroup cols={2}>
+
+<Card title="Quickstart" icon="rocket" href="/quickstart">
+  Install the SDK and send your first trace in 5 minutes.
+</Card>
+
+<Card title="How Vex Works" icon="diagram-project" href="/how-vex-works">
+  Understand the observe → verify → correct loop.
+</Card>
+
+<Card title="Python SDK" icon="python" href="/python/installation">
+  Integration guide for Python applications.
+</Card>
+
+<Card title="TypeScript SDK" icon="js" href="/typescript/installation">
+  Integration guide for Node.js / TypeScript applications.
+</Card>
+
+</CardGroup>

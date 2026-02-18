@@ -1,0 +1,109 @@
+---
+title: "How Vex Works"
+description: "Understand the observe → verify → correct pipeline that protects your AI agents in production."
+---
+
+Vex wraps your agent's execution in a three-phase loop. Each phase is independent — you can use Vex purely for observability, add verification on top, and opt into correction only where it matters.
+
+## What is drift?
+
+Behavioral change without errors. Your agent still returns 200 OK, still produces valid JSON, but the answers aren't right anymore.
+
+This happens because the inputs to your agent — model weights, prompt templates, tool responses, retrieved context — change over time in ways that are invisible to conventional monitoring. A model provider silently updates a fine-tuned model. A knowledge base is refreshed with stale data. A system prompt is edited to fix one issue and inadvertently breaks another.
+
+Error rates stay flat. Latency stays flat. Users start getting wrong answers.
+
+Vex detects this by verifying every output against your agent's declared task, not just checking that a response was returned.
+
+## The pipeline
+
+<Steps>
+
+<Step title="Observe">
+
+The SDK captures the full execution context and sends it to the Vex API.
+
+**What is recorded:**
+
+- Agent input and final output
+- Intermediate steps: tool calls, LLM completions, retrieval results, any `ctx.step(...)` calls your code makes
+- Timing: wall-clock duration per step and total execution time
+- Metadata: token counts, cost estimates, and any custom key-value pairs attached via `ctx.set_metadata` / `ctx.setMetadata`
+- Ground truth, if provided via `ctx.set_ground_truth` / `ctx.setGroundTruth`
+- Output schema, if provided via `ctx.set_schema` / `ctx.setSchema`
+
+In async mode this happens after the agent returns, adding zero latency to the user-facing response. In sync mode this happens inline before the result is returned to your code.
+
+</Step>
+
+<Step title="Verify">
+
+The Vex server runs five checks against the recorded execution:
+
+**Schema Validation** — If you supplied an output schema, the response is validated against it. Structural mismatches (missing fields, wrong types, unexpected nulls) are caught here before downstream consumers see them.
+
+**Hallucination Detection** — The output is compared against retrieved context and tool call results that were part of the execution. Claims that are not grounded in the provided evidence are flagged.
+
+**Task Drift** — The output is scored for semantic alignment with the `task` string you passed when wrapping the agent. This is the primary signal for catching behavioral drift: an agent that was asked to "Answer customer questions about billing" but starts responding with general marketing copy will score low here.
+
+**Confidence Scoring** — All check scores are combined into a single confidence value between 0 and 1. This score is compared against your configured thresholds (`pass_threshold`, `flag_threshold`, `block_threshold`) to determine the `action`.
+
+**Coherence (multi-turn)** — For sessions, the current response is checked for consistency with previous turns. Topic shifts, contradictions, and persona drift across a conversation are surfaced here.
+
+The server returns the confidence score, the action (`pass` / `flag` / `block`), and a per-check breakdown.
+
+</Step>
+
+<Step title="Correct">
+
+If the confidence score falls below your block threshold and correction is enabled (`correction="cascade"` in Python, `correction: 'auto'` in TypeScript), Vex attempts to repair the output automatically before returning it to your code.
+
+The correction cascade has three layers, each more aggressive than the last:
+
+| Layer | Trigger | Model | Strategy |
+|---|---|---|---|
+| **Layer 1 — Surgical Repair** | confidence > 0.5 | gpt-4o-mini | Targeted edits to the specific failing sections identified by the verifier. The rest of the output is preserved as-is. |
+| **Layer 2 — Constrained Regeneration** | confidence 0.3 – 0.5 | gpt-4o | Full regeneration with the original prompt plus explicit constraints derived from the failed checks. |
+| **Layer 3 — Full Re-prompt** | confidence < 0.3 | gpt-4o | Complete re-execution of the agent task with an augmented system prompt that addresses the detected failure modes. |
+
+Each layer re-verifies the corrected output. If the corrected output passes the block threshold, it is returned in `result.output` and `result.corrected` is set to `True` / `true`. The original unmodified output is always available in `result.original_output` / `result.originalOutput`.
+
+If all three layers fail to produce an output above the block threshold, the result is returned with `action: "block"` and your application code is responsible for handling it — typically by returning a fallback response or escalating to a human.
+
+</Step>
+
+</Steps>
+
+## Async vs sync mode
+
+The mode controls when verification happens relative to your agent's response.
+
+**Async mode** (`mode="async"` / `mode: 'async'`) is fire-and-forget. Your agent runs, the output is returned to your code immediately, and verification happens in the background. This adds zero latency to the user-facing path and is appropriate for observability-only use cases or high-throughput workloads where you want to monitor quality trends without blocking responses.
+
+**Sync mode** (`mode="sync"` / `mode: 'sync'`) runs verification inline. Your code awaits the verification result before the output is returned. This adds approximately 100–200 ms to every call and enables active guardrails: low-confidence outputs can be corrected or blocked before they reach your users.
+
+Most production deployments start with async mode for full observability, then selectively switch high-stakes agent functions to sync mode once thresholds are calibrated.
+
+For a detailed breakdown of the trade-offs and configuration options, see [Async vs Sync](/concepts/async-vs-sync).
+
+## Continue reading
+
+<CardGroup cols={2}>
+
+<Card title="Configuration" icon="sliders" href="/concepts/configuration">
+  Tune confidence thresholds, correction mode, transparency, and mode per agent.
+</Card>
+
+<Card title="Sessions" icon="messages" href="/concepts/sessions">
+  How multi-turn conversation tracing works and when to use sessions.
+</Card>
+
+<Card title="Correction Cascade" icon="rotate" href="/concepts/correction">
+  Deep dive into how each correction layer works and how to tune them.
+</Card>
+
+<Card title="Async vs Sync" icon="timer" href="/concepts/async-vs-sync">
+  When to use each mode and the latency trade-offs involved.
+</Card>
+
+</CardGroup>

@@ -1,0 +1,123 @@
+---
+title: "Quickstart"
+description: "Install the SDK and send your first trace in 5 minutes."
+---
+
+<Steps>
+
+<Step title="Install the SDK">
+
+<CodeGroup>
+
+```bash Python
+pip install vex-sdk
+```
+
+```bash TypeScript
+npm install @vex_dev/sdk
+```
+
+</CodeGroup>
+
+</Step>
+
+<Step title="Add your API key">
+
+Get your API key from the [Vex dashboard](https://app.tryvex.dev). Navigate to **Settings → API Keys** and create a new key.
+
+Set it as an environment variable so you never hard-code credentials in source:
+
+<CodeGroup>
+
+```bash bash
+export VEX_API_KEY=your-api-key
+```
+
+</CodeGroup>
+
+Both SDKs automatically read `VEX_API_KEY` from the environment. You can also pass the key explicitly via the `api_key` constructor argument (Python) or `apiKey` option (TypeScript) — useful for environments where environment variables are managed through a secrets manager.
+
+</Step>
+
+<Step title="Add tracing to your agent">
+
+Wrap your agent function with a single call. Vex records inputs, outputs, and intermediate steps, then returns a `VexResult` with the original output and a verification verdict.
+
+<CodeGroup>
+
+```python Python
+from vex import Vex
+
+guard = Vex(api_key="your-api-key")
+
+@guard.watch(agent_id="support-bot", task="Answer customer questions")
+def handle_support(query: str) -> str:
+    return my_agent.run(query)
+
+result = handle_support("How do I reset my password?")
+print(result.output)     # The agent's response
+print(result.action)     # "pass", "flag", or "block"
+```
+
+```typescript TypeScript
+import { Vex } from '@vex_dev/sdk';
+
+const vex = new Vex({ apiKey: 'your-api-key' });
+
+const result = await vex.trace(
+  { agentId: 'support-bot', task: 'Answer customer questions' },
+  async (ctx) => {
+    const response = await myAgent.run('How do I reset my password?');
+    ctx.record(response);
+  }
+);
+
+console.log(result.output);     // The agent's response
+console.log(result.action);     // "pass", "flag", or "block"
+```
+
+</CodeGroup>
+
+<Note>
+The `action` field tells you what Vex decided: `"pass"` means the output met your quality threshold, `"flag"` means it was marginal and logged for review, and `"block"` means it was below threshold and (if correction is enabled) a corrected output was returned instead.
+</Note>
+
+</Step>
+
+<Step title="See results in the dashboard">
+
+Open [app.tryvex.dev](https://app.tryvex.dev) and navigate to **Traces**. Every call to `guard.watch` or `vex.trace` appears here with:
+
+- The full input and output recorded for the execution
+- Confidence score and the action taken (pass / flag / block)
+- Breakdown of each verification check (schema, hallucination, task drift, coherence)
+- Latency and token usage per step
+- Any corrections that were applied, and which correction layer was triggered
+
+Flagged traces are surfaced in the **Review** queue so your team can inspect and annotate them without writing any additional tooling.
+
+</Step>
+
+</Steps>
+
+## What's next?
+
+<CardGroup cols={2}>
+
+<Card title="Core Concepts" icon="book-open" href="/how-vex-works">
+  Learn how the observe → verify → correct pipeline works under the hood.
+</Card>
+
+<Card title="Python SDK" icon="python" href="/python/installation">
+  Full reference for the Python SDK — decorators, context managers, sessions, and config.
+</Card>
+
+<Card title="TypeScript SDK" icon="js" href="/typescript/installation">
+  Full reference for the TypeScript SDK — trace, sessions, config, and result types.
+</Card>
+
+<Card title="Configuration" icon="sliders" href="/concepts/configuration">
+  Tune thresholds, correction mode, transparency, and sync vs async behavior.
+</Card>
+
+</CardGroup>
