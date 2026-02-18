@@ -1,0 +1,125 @@
+---
+title: "Webhooks"
+sidebarTitle: "Webhooks"
+description: "Receive real-time notifications for agent events."
+---
+
+Vex can deliver HTTP POST notifications to an endpoint you control whenever significant events occur in your agent pipelines. Webhooks allow you to build real-time integrations — for example, alerting on-call engineers when an execution is blocked, logging flagged outputs to a review queue, or triggering downstream workflows when a correction is applied.
+
+## Configuration
+
+Set your webhook URL in the Vex Dashboard under **Settings → Webhooks**. You can register multiple endpoints and choose which event types each endpoint receives.
+
+After saving, Vex will immediately begin delivering matching events to your endpoint. You can also use the **Send Test Event** button in the dashboard to verify your endpoint is reachable.
+
+## Event Types
+
+| Event Type | When It Fires |
+|------------|---------------|
+| `execution.blocked` | An execution received an `action` of `block` from verification. |
+| `execution.flagged` | An execution received an `action` of `flag` from verification. |
+| `execution.corrected` | Verification corrected the output before returning it. |
+| `alert.triggered` | A monitoring alert rule matched one or more executions. |
+
+## Payload Structure
+
+Every webhook delivery is an HTTP POST with a JSON body and the `Content-Type: application/json` header. The top-level fields are the same for all event types; the `data` field varies.
+
+```json
+{
+  "type": "execution.blocked",
+  "timestamp": "2024-11-15T10:30:05.000Z",
+  "signature": "sha256=abc123...",
+  "data": {
+    "execution_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "agent_id": "my-research-agent",
+    "session_id": "session-abc-123",
+    "action": "block",
+    "confidence": 0.31,
+    "checks": {
+      "hallucination": {"pass": false, "score": 0.22},
+      "toxicity": {"pass": true, "score": 0.98}
+    }
+  }
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `type` | string | The event type (see table above). |
+| `timestamp` | ISO 8601 | When the event was generated on the Vex side. |
+| `signature` | string | HMAC-SHA256 signature for verifying the payload (see below). |
+| `data` | object | Event-specific payload. Always includes `execution_id` and `agent_id`. |
+
+## Signature Verification
+
+Every webhook delivery includes an `X-Vex-Signature` header containing an HMAC-SHA256 signature computed over the raw request body using your webhook secret. You must verify this signature before processing any webhook payload to ensure the request originated from Vex.
+
+Your webhook secret is displayed once when you create the endpoint in the dashboard. Store it securely (e.g. in an environment variable) — it cannot be retrieved again.
+
+**Verification algorithm:**
+
+1. Read the raw request body as bytes (do not parse JSON first).
+2. Compute `HMAC-SHA256(secret, body)`.
+3. Hex-encode the result.
+4. Prefix with `sha256=`.
+5. Compare to the `X-Vex-Signature` header using a constant-time comparison function to prevent timing attacks.
+
+**Example (Python):**
+
+```python
+import hashlib
+import hmac
+
+def verify_signature(body: bytes, secret: str, header: str) -> bool:
+    expected = "sha256=" + hmac.new(
+        secret.encode("utf-8"),
+        body,
+        hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(expected, header)
+```
+
+**Example (Node.js):**
+
+```javascript
+import crypto from "crypto";
+
+function verifySignature(body, secret, header) {
+  const expected =
+    "sha256=" +
+    crypto.createHmac("sha256", secret).update(body).digest("hex");
+  return crypto.timingSafeEqual(
+    Buffer.from(expected),
+    Buffer.from(header)
+  );
+}
+```
+
+Reject any request where signature verification fails with a `403 Forbidden` response.
+
+## Retry Behavior
+
+Vex considers a delivery successful when your endpoint returns a `2xx` response within **10 seconds**. If the delivery times out, returns a `5xx` status, or encounters a network error, Vex will retry up to **3 times** using exponential backoff:
+
+| Attempt | Delay Before Retry |
+|---------|--------------------|
+| 1st retry | 30 seconds |
+| 2nd retry | 5 minutes |
+| 3rd retry | 30 minutes |
+
+After 3 failed retries the delivery is marked as permanently failed. You can inspect and manually replay failed deliveries from the **Settings → Webhooks → Delivery Logs** page in the dashboard.
+
+`4xx` responses (other than `429`) are not retried — they indicate a problem on your end (e.g. invalid signature rejection) that retrying would not fix.
+
+## Best Practices
+
+**Verify the signature.** Always authenticate the payload before processing it. Skipping this step allows anyone who knows your endpoint URL to inject arbitrary webhook events.
+
+**Respond immediately with 200.** Your endpoint should return a `200 OK` as soon as it has received and validated the payload. Do not block the response on downstream processing. If your handler takes longer than 10 seconds, Vex will time out and retry.
+
+**Process asynchronously.** Enqueue the event payload in an internal queue (e.g. a database table, Redis stream, or message queue) and process it in a background worker. This keeps your webhook handler fast and idempotent.
+
+**Handle duplicates.** Due to the retry mechanism, your endpoint may occasionally receive the same event more than once. Use the `execution_id` and `type` combination as an idempotency key to deduplicate deliveries.
+
+**Use HTTPS.** Only register HTTPS endpoints. Webhook payloads may contain sensitive execution data, and the signature verification relies on transport integrity.

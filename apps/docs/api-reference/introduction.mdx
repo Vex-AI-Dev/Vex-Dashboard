@@ -1,0 +1,65 @@
+---
+title: "API Reference"
+sidebarTitle: "Introduction"
+description: "Authenticate and interact with the Vex REST API."
+---
+
+The Vex REST API provides two endpoints for integrating agent verification and ingestion into your infrastructure. Most users should interact with Vex through the [Python SDK](/python) or [TypeScript SDK](/typescript) rather than calling the API directly — the SDKs handle authentication, retries, batching, and serialization.
+
+## Base URL
+
+```
+https://api.tryvex.dev
+```
+
+All requests must be made over HTTPS.
+
+## Authentication
+
+Every request must include your API key in the `X-Vex-Key` header.
+
+```http
+X-Vex-Key: vex_live_...
+```
+
+You can find your API key in the [Vex Dashboard](https://app.tryvex.dev) under **Settings → API Keys**. Keep your key secret — do not expose it in client-side code or commit it to source control.
+
+## Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/v1/verify` | Synchronously verify a single agent execution and receive a pass/flag/block decision with optional correction. |
+| `POST` | `/v1/ingest/batch` | Asynchronously ingest a batch of execution events for observability and analysis without blocking the agent. |
+
+## Rate Limiting
+
+Rate limits are enforced per API key. When a limit is exceeded the API returns a `429 Too Many Requests` response. The response includes a `Retry-After` header indicating the number of seconds to wait before retrying.
+
+If you need a higher rate limit for production workloads, contact [support@tryvex.dev](mailto:support@tryvex.dev).
+
+## Error Responses
+
+All errors return a JSON body with the following structure:
+
+```json
+{
+  "error": "string",
+  "message": "Human-readable description of the error"
+}
+```
+
+| Status Code | Meaning | Common Causes |
+|-------------|---------|---------------|
+| `400` | Bad Request | Missing required fields (e.g. `agent_id`), malformed JSON, invalid field types |
+| `401` | Unauthorized | Missing `X-Vex-Key` header, invalid API key, or key has been revoked |
+| `429` | Too Many Requests | Per-key rate limit exceeded; check the `Retry-After` header |
+| `500` | Internal Server Error | Unexpected error on the Vex side; safe to retry with exponential backoff |
+
+## SDK Recommendation
+
+For most use cases we recommend using the official SDKs:
+
+- **Python** — `pip install vex-sdk` — see the [Python quickstart](/python)
+- **TypeScript / Node.js** — `npm install @vex/sdk` — see the [TypeScript quickstart](/typescript)
+
+The SDKs wrap both endpoints, handle authentication and retries automatically, and provide typed models for all request and response payloads.
