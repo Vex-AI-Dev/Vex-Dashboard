@@ -225,13 +225,23 @@ export const loadPlanUsage = cache(
         .select('vex_plan, vex_plan_overrides')
         .eq('slug', accountSlug)
         .single(),
-      pool.query<{ total_executions: string }>(
-        `SELECT COALESCE(SUM(execution_count), 0) AS total_executions
-         FROM hourly_agent_stats
-         WHERE org_id = $1
-           AND bucket >= date_trunc('month', NOW())`,
-        [orgId],
-      ),
+      pool
+        .query<{ total_executions: string }>(
+          `SELECT COALESCE(SUM(execution_count), 0) AS total_executions
+           FROM hourly_agent_stats
+           WHERE org_id = $1
+             AND bucket >= date_trunc('month', NOW())`,
+          [orgId],
+        )
+        .catch(() =>
+          pool.query<{ total_executions: string }>(
+            `SELECT COUNT(*) AS total_executions
+             FROM executions
+             WHERE org_id = $1
+               AND timestamp >= date_trunc('month', NOW())`,
+            [orgId],
+          ),
+        ),
       pool.query<{ agent_count: string }>(
         'SELECT COUNT(*) AS agent_count FROM agents WHERE org_id = $1',
         [orgId],
