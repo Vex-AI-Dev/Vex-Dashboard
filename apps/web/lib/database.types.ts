@@ -114,6 +114,8 @@ export type Database = {
           slug: string | null
           updated_at: string | null
           updated_by: string | null
+          vex_plan: string
+          vex_plan_overrides: Json | null
         }
         Insert: {
           created_at?: string | null
@@ -133,6 +135,8 @@ export type Database = {
           slug?: string | null
           updated_at?: string | null
           updated_by?: string | null
+          vex_plan?: string
+          vex_plan_overrides?: Json | null
         }
         Update: {
           created_at?: string | null
@@ -152,6 +156,8 @@ export type Database = {
           slug?: string | null
           updated_at?: string | null
           updated_by?: string | null
+          vex_plan?: string
+          vex_plan_overrides?: Json | null
         }
         Relationships: []
       }

@@ -3,6 +3,7 @@ import 'server-only';
 import { cache } from 'react';
 
 import { getAgentGuardPool } from '~/lib/agentguard/db';
+import { getSupabaseServerClient } from '@kit/supabase/server-client';
 import type {
   AgentHealthTile,
   AlertSeveritySummary,
@@ -199,5 +200,54 @@ export const loadRecentActivity = cache(
     );
 
     return result.rows;
+  },
+);
+
+/**
+ * Load current month usage counts and plan info for the usage meters.
+ * Plan data: Supabase accounts table (source of truth).
+ * Usage data: TimescaleDB hourly_agent_stats (analytics).
+ */
+export const loadPlanUsage = cache(
+  async (orgId: string, accountSlug: string): Promise<{
+    plan: string;
+    planOverrides: Record<string, number> | null;
+    observationsUsed: number;
+    verificationsUsed: number;
+    agentCount: number;
+  }> => {
+    const pool = getAgentGuardPool();
+    const supabase = getSupabaseServerClient();
+
+    const [accountResult, usageResult, agentResult] = await Promise.all([
+      supabase
+        .from('accounts')
+        .select('vex_plan, vex_plan_overrides')
+        .eq('slug', accountSlug)
+        .single(),
+      pool.query<{ total_executions: string }>(
+        `SELECT COALESCE(SUM(execution_count), 0) AS total_executions
+         FROM hourly_agent_stats
+         WHERE org_id = $1
+           AND bucket >= date_trunc('month', NOW())`,
+        [orgId],
+      ),
+      pool.query<{ agent_count: string }>(
+        'SELECT COUNT(*) AS agent_count FROM agents WHERE org_id = $1',
+        [orgId],
+      ),
+    ]);
+
+    const account = accountResult.data;
+    const totalExecs = parseInt(usageResult.rows[0]?.total_executions ?? '0', 10);
+    const agentCount = parseInt(agentResult.rows[0]?.agent_count ?? '0', 10);
+
+    return {
+      plan: account?.vex_plan ?? 'free',
+      planOverrides: (account?.vex_plan_overrides as Record<string, number>) ?? null,
+      observationsUsed: totalExecs,
+      verificationsUsed: 0,
+      agentCount,
+    };
   },
 );

@@ -41,8 +41,8 @@ export const resolveOrgId = cache(
     // Auto-provision: create a new organization for this account
     const orgId = accountSlug;
     const inserted = await pool.query<{ org_id: string }>(
-      `INSERT INTO organizations (org_id, name, api_keys, plan, account_slug)
-       VALUES ($1, $2, '[]'::jsonb, 'free', $3)
+      `INSERT INTO organizations (org_id, name, api_keys, account_slug)
+       VALUES ($1, $2, '[]'::jsonb, $3)
        ON CONFLICT (org_id) DO UPDATE SET account_slug = EXCLUDED.account_slug
        RETURNING org_id`,
       [orgId, accountSlug, accountSlug],

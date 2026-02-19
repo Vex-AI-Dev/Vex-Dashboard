@@ -65,26 +65,52 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
     retentionDays: 90,
     overageAllowed: true,
   },
+  enterprise: {
+    observationsPerMonth: 10_000_000,
+    verificationsPerMonth: 1_000_000,
+    maxRpm: 10_000,
+    maxAgents: -1, // unlimited
+    maxSeats: -1,  // unlimited
+    correctionsEnabled: true,
+    webhookAlerts: true,
+    slackAlerts: true,
+    retentionDays: 365,
+    overageAllowed: true,
+  },
 };
 
 /**
  * Return the PlanLimits for the given plan name.
  * Falls back to "free" for unknown plan values.
+ * Optional overrides (non-null values only) are merged on top of the base limits.
  */
-export function getPlanLimits(plan: string): PlanLimits {
-  return PLAN_LIMITS[plan] ?? PLAN_LIMITS.free!;
+export function getPlanLimits(
+  plan: string,
+  overrides?: Partial<PlanLimits> | null,
+): PlanLimits {
+  const base = PLAN_LIMITS[plan] ?? PLAN_LIMITS.free!;
+  if (!overrides) return base;
+  return { ...base, ...Object.fromEntries(
+    Object.entries(overrides).filter(([, v]) => v != null)
+  ) } as PlanLimits;
 }
 
 /**
  * Check whether a seat can be added given the current member count and plan.
  * Returns `{ allowed: true }` or `{ allowed: false, reason: string }`.
+ * Pass overrides to apply per-account custom limits on top of the base plan.
  */
 export function canAddSeat(
   plan: string,
   currentMemberCount: number,
   seatsToAdd = 1,
+  overrides?: Partial<PlanLimits> | null,
 ): { allowed: true } | { allowed: false; reason: string } {
-  const limits = getPlanLimits(plan);
+  const limits = getPlanLimits(plan, overrides);
+
+  if (limits.maxSeats === -1) {
+    return { allowed: true };
+  }
 
   if (currentMemberCount + seatsToAdd > limits.maxSeats) {
     return {
@@ -99,13 +125,15 @@ export function canAddSeat(
 /**
  * Check whether an agent can be added given the current agent count and plan.
  * Returns `{ allowed: true }` or `{ allowed: false, reason: string }`.
+ * Pass overrides to apply per-account custom limits on top of the base plan.
  */
 export function canAddAgent(
   plan: string,
   currentAgentCount: number,
   agentsToAdd = 1,
+  overrides?: Partial<PlanLimits> | null,
 ): { allowed: true } | { allowed: false; reason: string } {
-  const limits = getPlanLimits(plan);
+  const limits = getPlanLimits(plan, overrides);
 
   // -1 means unlimited
   if (limits.maxAgents === -1) {

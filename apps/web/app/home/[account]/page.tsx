@@ -13,6 +13,7 @@ import {
   loadAlertSummary,
   loadHomepageKpis,
   loadHomepageTrend,
+  loadPlanUsage,
 } from './_lib/server/homepage.loader';
 
 interface TeamAccountHomePageProps {
@@ -32,11 +33,12 @@ async function TeamAccountHomePage({ params }: TeamAccountHomePageProps) {
   const { account } = await params;
   const orgId = await resolveOrgId(account);
 
-  const [kpis, agentHealth, alertSummary, trend] = await Promise.all([
+  const [kpis, agentHealth, alertSummary, trend, planUsage] = await Promise.all([
     loadHomepageKpis(orgId),
     loadAgentHealth(orgId),
     loadAlertSummary(orgId),
     loadHomepageTrend(orgId),
+    loadPlanUsage(orgId, account),
   ]);
 
   return (
@@ -54,6 +56,7 @@ async function TeamAccountHomePage({ params }: TeamAccountHomePageProps) {
           alertSummary={alertSummary}
           trend={trend}
           accountSlug={account}
+          planUsage={planUsage}
         />
       </PageBody>
     </>

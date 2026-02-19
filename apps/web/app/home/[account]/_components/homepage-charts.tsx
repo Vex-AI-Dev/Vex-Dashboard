@@ -32,6 +32,7 @@ import { Trans } from '@kit/ui/trans';
 
 import { UsageMeter } from './usage-meter';
 import { formatConfidence } from '~/lib/agentguard/formatters';
+import { getPlanLimits } from '~/lib/agentguard/plan-limits';
 import type {
   AgentHealthTile,
   AlertSeveritySummary,
@@ -46,6 +47,12 @@ interface HomepageChartsProps {
   alertSummary: AlertSeveritySummary;
   trend: HomepageTrendBucket[];
   accountSlug: string;
+  planUsage: {
+    plan: string;
+    planOverrides: Record<string, number> | null;
+    observationsUsed: number;
+    verificationsUsed: number;
+  };
 }
 
 const trendChartConfig = {
@@ -60,8 +67,11 @@ export default function HomepageCharts({
   alertSummary,
   trend,
   accountSlug,
+  planUsage,
 }: HomepageChartsProps) {
   useAgentGuardUpdates();
+
+  const planLimits = getPlanLimits(planUsage.plan, planUsage.planOverrides);
 
   const chartData = trend.map((row) => ({
     bucket: format(new Date(row.bucket), 'HH:mm'),
@@ -115,7 +125,7 @@ export default function HomepageCharts({
           </div>
           <div className="flex items-center gap-3">
             <Badge variant="outline" className="text-xs">
-              <Trans i18nKey="agentguard:homepage.freePlan" defaults="Free" />
+              {planUsage.plan.charAt(0).toUpperCase() + planUsage.plan.slice(1)}
             </Badge>
             <Link
               href={`/home/${accountSlug}/billing`}
@@ -128,8 +138,8 @@ export default function HomepageCharts({
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2">
-            <UsageMeter label="Observations" current={0} limit={10000} />
-            <UsageMeter label="Verifications" current={0} limit={500} />
+            <UsageMeter label="Observations" current={planUsage.observationsUsed} limit={planLimits.observationsPerMonth} />
+            <UsageMeter label="Verifications" current={planUsage.verificationsUsed} limit={planLimits.verificationsPerMonth} />
           </div>
         </CardContent>
       </Card>
