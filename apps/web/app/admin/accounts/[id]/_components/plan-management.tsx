@@ -73,7 +73,6 @@ export function PlanManagement({
     { key: 'verifications_per_month', label: 'Verifications/month' },
     { key: 'max_rpm', label: 'Max RPM' },
     { key: 'max_agents', label: 'Max Agents (-1 = unlimited)' },
-    { key: 'max_seats', label: 'Max Seats (-1 = unlimited)' },
     { key: 'retention_days', label: 'Retention (days)' },
   ];
 

@@ -1,76 +1,380 @@
-const rows = [
+'use client';
+
+import { Fragment, useState } from 'react';
+import Link from 'next/link';
+
+type Support = 'yes' | 'no' | 'partial' | 'paid' | 'oss';
+
+interface Competitor {
+  name: string;
+  slug: string;
+  tagline: string;
+}
+
+interface FeatureRow {
+  feature: string;
+  tooltip?: string;
+  vex: Support;
+  values: Record<string, Support>;
+}
+
+const competitors: Competitor[] = [
+  { name: 'Guardrails AI', slug: 'guardrails-ai', tagline: 'Schema validation' },
+  { name: 'Galileo', slug: 'galileo', tagline: 'Eval platform' },
+  { name: 'Braintrust', slug: 'braintrust', tagline: 'Observability' },
+  { name: 'Langfuse', slug: 'langfuse', tagline: 'OSS tracing' },
+  { name: 'LangSmith', slug: 'langsmith', tagline: 'LangChain tracing' },
+  { name: 'Sentrial', slug: 'sentrial', tagline: 'Agent monitoring' },
+];
+
+const categories: { label: string; rows: FeatureRow[] }[] = [
   {
-    feature: 'When',
-    evals: 'Before deployment',
-    tracing: 'After something breaks',
-    vex: 'Continuously in production',
+    label: 'Runtime Verification',
+    rows: [
+      {
+        feature: 'Hallucination detection',
+        tooltip: 'Detects fabricated facts by comparing agent output against ground truth data in real-time',
+        vex: 'yes',
+        values: { 'guardrails-ai': 'partial', galileo: 'yes', braintrust: 'partial', langfuse: 'no', langsmith: 'no', sentrial: 'no' },
+      },
+      {
+        feature: 'Behavioral drift detection',
+        tooltip: 'Detects when an agent gradually goes off-task over time, even without errors',
+        vex: 'yes',
+        values: { 'guardrails-ai': 'no', galileo: 'partial', braintrust: 'no', langfuse: 'no', langsmith: 'no', sentrial: 'partial' },
+      },
+      {
+        feature: 'Schema validation',
+        tooltip: 'Validates agent output against JSON Schema to ensure structural correctness',
+        vex: 'yes',
+        values: { 'guardrails-ai': 'yes', galileo: 'no', braintrust: 'no', langfuse: 'no', langsmith: 'no', sentrial: 'no' },
+      },
+      {
+        feature: 'Multi-turn coherence',
+        tooltip: 'Detects contradictions across conversation turns — catches agents that flip-flop on facts',
+        vex: 'yes',
+        values: { 'guardrails-ai': 'no', galileo: 'no', braintrust: 'no', langfuse: 'no', langsmith: 'no', sentrial: 'no' },
+      },
+      {
+        feature: 'Sync verify (real-time)',
+        tooltip: 'Blocks bad output before it reaches users — not just logging after the fact',
+        vex: 'yes',
+        values: { 'guardrails-ai': 'yes', galileo: 'yes', braintrust: 'no', langfuse: 'no', langsmith: 'no', sentrial: 'no' },
+      },
+    ],
   },
   {
-    feature: 'What it tells you',
-    evals: '"Agent was good"',
-    tracing: '"Here\'s what happened"',
-    vex: '"Agent just changed"',
+    label: 'Auto-Correction',
+    rows: [
+      {
+        feature: 'Auto-correction cascade',
+        tooltip: '3-layer automatic fix: L1 Repair → L2 Constrained Regen → L3 Full Reprompt',
+        vex: 'yes',
+        values: { 'guardrails-ai': 'partial', galileo: 'no', braintrust: 'no', langfuse: 'no', langsmith: 'no', sentrial: 'no' },
+      },
+      {
+        feature: 'Graduated correction layers',
+        tooltip: 'Starts with minimal edits, escalates to full regeneration only when needed',
+        vex: 'yes',
+        values: { 'guardrails-ai': 'no', galileo: 'no', braintrust: 'no', langfuse: 'no', langsmith: 'no', sentrial: 'no' },
+      },
+      {
+        feature: 'Transparent / opaque modes',
+        tooltip: 'Choose whether callers see the correction process or just get the fixed output',
+        vex: 'yes',
+        values: { 'guardrails-ai': 'no', galileo: 'no', braintrust: 'no', langfuse: 'no', langsmith: 'no', sentrial: 'no' },
+      },
+    ],
   },
   {
-    feature: 'Catches drift?',
-    evals: 'No',
-    tracing: 'No',
-    vex: 'Yes',
+    label: 'Observability',
+    rows: [
+      {
+        feature: 'Async telemetry ingestion',
+        tooltip: 'Fire-and-forget event recording with zero impact on agent latency',
+        vex: 'yes',
+        values: { 'guardrails-ai': 'no', galileo: 'yes', braintrust: 'yes', langfuse: 'yes', langsmith: 'yes', sentrial: 'yes' },
+      },
+      {
+        feature: 'LLM call tracing',
+        tooltip: 'Detailed traces of every LLM call, tool use, and decision in production',
+        vex: 'yes',
+        values: { 'guardrails-ai': 'no', galileo: 'yes', braintrust: 'yes', langfuse: 'yes', langsmith: 'yes', sentrial: 'yes' },
+      },
+      {
+        feature: 'Cost & token tracking',
+        tooltip: 'Track token usage and cost per agent, per model, per session',
+        vex: 'yes',
+        values: { 'guardrails-ai': 'no', galileo: 'yes', braintrust: 'yes', langfuse: 'yes', langsmith: 'yes', sentrial: 'partial' },
+      },
+      {
+        feature: 'Dashboard & analytics',
+        tooltip: 'Visual dashboards showing agent health, confidence trends, and alert summaries',
+        vex: 'yes',
+        values: { 'guardrails-ai': 'paid', galileo: 'yes', braintrust: 'yes', langfuse: 'yes', langsmith: 'yes', sentrial: 'yes' },
+      },
+    ],
   },
   {
-    feature: 'Auto-corrects?',
-    evals: 'No',
-    tracing: 'No',
-    vex: 'Yes',
+    label: 'Developer Experience',
+    rows: [
+      {
+        feature: 'Python SDK',
+        vex: 'yes',
+        values: { 'guardrails-ai': 'yes', galileo: 'yes', braintrust: 'yes', langfuse: 'yes', langsmith: 'yes', sentrial: 'no' },
+      },
+      {
+        feature: 'TypeScript SDK',
+        vex: 'yes',
+        values: { 'guardrails-ai': 'no', galileo: 'partial', braintrust: 'yes', langfuse: 'yes', langsmith: 'yes', sentrial: 'no' },
+      },
+      {
+        feature: 'Setup complexity',
+        tooltip: 'How many lines of code and config to get started',
+        vex: 'yes',
+        values: { 'guardrails-ai': 'partial', galileo: 'partial', braintrust: 'partial', langfuse: 'partial', langsmith: 'partial', sentrial: 'partial' },
+      },
+      {
+        feature: 'Framework agnostic',
+        tooltip: 'Works with any LLM framework — LangChain, CrewAI, OpenAI, or raw API calls',
+        vex: 'yes',
+        values: { 'guardrails-ai': 'yes', galileo: 'yes', braintrust: 'yes', langfuse: 'yes', langsmith: 'partial', sentrial: 'partial' },
+      },
+    ],
   },
   {
-    feature: 'Setup',
-    evals: 'Test suites, datasets',
-    tracing: 'Instrumentation, dashboards',
-    vex: '3 lines of code',
+    label: 'Pricing & Plans',
+    rows: [
+      {
+        feature: 'Free tier',
+        tooltip: 'Usable free plan with real limits, not just a trial',
+        vex: 'yes',
+        values: { 'guardrails-ai': 'oss', galileo: 'yes', braintrust: 'yes', langfuse: 'oss', langsmith: 'yes', sentrial: 'yes' },
+      },
+      {
+        feature: 'Open source',
+        vex: 'yes',
+        values: { 'guardrails-ai': 'yes', galileo: 'no', braintrust: 'no', langfuse: 'yes', langsmith: 'no', sentrial: 'no' },
+      },
+      {
+        feature: 'Self-hosted option',
+        vex: 'yes',
+        values: { 'guardrails-ai': 'yes', galileo: 'no', braintrust: 'paid', langfuse: 'yes', langsmith: 'no', sentrial: 'no' },
+      },
+    ],
   },
 ];
 
+const setupLabels: Record<string, string> = {
+  vex: '3 lines',
+  'guardrails-ai': 'Moderate',
+  galileo: 'Moderate',
+  braintrust: 'Moderate',
+  langfuse: 'Moderate',
+  langsmith: 'Moderate',
+  sentrial: 'Moderate',
+};
+
+function Badge({ value, slug, feature }: { value: Support; slug?: string; feature?: string }) {
+  if (feature === 'Setup complexity') {
+    const label = slug ? setupLabels[slug] ?? 'Moderate' : '3 lines';
+    const isVex = !slug;
+    return (
+      <span className={`font-mono text-xs ${isVex ? 'text-emerald-500' : 'text-[#a2a2a2]'}`}>
+        {label}
+      </span>
+    );
+  }
+
+  switch (value) {
+    case 'yes':
+      return <span className="text-emerald-500">&#10003;</span>;
+    case 'partial':
+      return <span className="text-amber-400">~</span>;
+    case 'paid':
+      return <span className="text-amber-400 text-xs font-mono">$</span>;
+    case 'oss':
+      return <span className="text-emerald-500">&#10003;</span>;
+    case 'no':
+    default:
+      return <span className="text-[#383838]">&mdash;</span>;
+  }
+}
+
+/* ─── Mobile: "Vex vs X" picker with 3-column layout ─── */
+function MobileComparison() {
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const selected = competitors[selectedIdx]!;
+
+  return (
+    <div className="md:hidden">
+      {/* Competitor picker */}
+      <div className="mb-4 flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+        {competitors.map((c, i) => (
+          <button
+            key={c.slug}
+            onClick={() => setSelectedIdx(i)}
+            className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
+              i === selectedIdx
+                ? 'bg-emerald-500/15 text-emerald-500 ring-1 ring-emerald-500/30'
+                : 'bg-[#161616] text-[#a2a2a2] hover:text-white'
+            }`}
+          >
+            {c.name}
+          </button>
+        ))}
+      </div>
+
+      {/* 3-column table: Feature | Vex | Competitor */}
+      <div className="rounded-xl border border-[#252525] bg-[#0a0a0a] overflow-hidden">
+        {/* Header */}
+        <div className="grid grid-cols-[1fr_56px_56px] bg-[#111111] px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider">
+          <span className="text-[#585858]">Feature</span>
+          <span className="text-center text-emerald-500">Vex</span>
+          <span className="text-center text-[#a2a2a2] truncate">{selected.name.split(' ')[0]}</span>
+        </div>
+
+        {categories.map((cat) => (
+          <div key={cat.label}>
+            {/* Category label */}
+            <div className="bg-[#0f0f0f] px-4 py-2 text-[10px] font-semibold uppercase tracking-widest text-[#444]">
+              {cat.label}
+            </div>
+
+            {cat.rows.map((row) => (
+              <div
+                key={row.feature}
+                className="grid grid-cols-[1fr_56px_56px] border-t border-[#1a1a1a] px-4 py-2.5 text-[13px]"
+              >
+                <span className="text-[#a2a2a2] pr-2">{row.feature}</span>
+                <span className="text-center">
+                  <Badge value={row.vex} feature={row.feature} />
+                </span>
+                <span className="text-center">
+                  <Badge value={row.values[selected.slug] ?? 'no'} slug={selected.slug} feature={row.feature} />
+                </span>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      {/* Deep-dive link */}
+      <Link
+        href={`/compare/${selected.slug}`}
+        className="mt-4 flex items-center justify-center rounded-lg border border-[#252525] py-2.5 text-sm font-medium text-[#a2a2a2] transition-colors hover:border-[#585858] hover:text-white"
+      >
+        Full Vex vs {selected.name} breakdown&ensp;&rarr;
+      </Link>
+
+      {/* All compare links */}
+      <div className="mt-4 flex flex-wrap gap-2">
+        {competitors.map((c) => (
+          <Link
+            key={c.slug}
+            href={`/compare/${c.slug}`}
+            className="inline-flex items-center rounded-md border border-[#252525] px-2.5 py-1 text-[11px] text-[#585858] transition-colors hover:border-[#585858] hover:text-white"
+          >
+            vs {c.name}
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Desktop: full table ─── */
+function DesktopComparison() {
+  return (
+    <div className="hidden md:block">
+      <div className="overflow-x-auto rounded-xl border border-[#252525] bg-[#0a0a0a]">
+        <table className="w-full min-w-[900px] border-collapse text-sm">
+          <thead>
+            <tr>
+              <th className="sticky left-0 z-10 border-b border-[#252525] bg-[#0a0a0a] px-5 py-3.5 text-left text-[13px] font-semibold text-[#585858]">
+                Feature
+              </th>
+              <th className="border-b border-l border-[#252525] border-l-emerald-500/40 bg-emerald-500/[0.08] px-4 py-3.5 text-center text-[13px] font-bold text-emerald-500">
+                Vex
+              </th>
+              {competitors.map((c) => (
+                <th key={c.slug} className="border-b border-[#252525] px-4 py-3.5 text-center">
+                  <Link href={`/compare/${c.slug}`} className="group">
+                    <div className="text-[13px] font-semibold text-[#a2a2a2] transition-colors group-hover:text-white">
+                      {c.name}
+                    </div>
+                    <div className="text-[10px] text-[#585858]">{c.tagline}</div>
+                  </Link>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {categories.map((cat) => (
+              <Fragment key={cat.label}>
+                <tr>
+                  <td
+                    colSpan={2 + competitors.length}
+                    className="border-b border-[#252525] bg-[#111111] px-5 py-2.5 text-[11px] font-semibold uppercase tracking-widest text-[#585858]"
+                  >
+                    {cat.label}
+                  </td>
+                </tr>
+                {cat.rows.map((row) => (
+                  <tr key={row.feature} className="transition-colors hover:bg-[#161616]">
+                    <td className="sticky left-0 z-10 border-b border-[#252525] bg-[#0a0a0a] px-5 py-3 font-medium text-white">
+                      <span>{row.feature}</span>
+                      {row.tooltip && (
+                        <span className="ml-1.5 inline-block cursor-help text-[#585858]" title={row.tooltip}>
+                          ?
+                        </span>
+                      )}
+                    </td>
+                    <td className="border-b border-l border-[#252525] border-l-emerald-500/40 bg-emerald-500/[0.08] px-4 py-3 text-center font-semibold">
+                      <Badge value={row.vex} feature={row.feature} />
+                    </td>
+                    {competitors.map((c) => (
+                      <td key={c.slug} className="border-b border-[#252525] px-4 py-3 text-center">
+                        <Badge value={row.values[c.slug] ?? 'no'} slug={c.slug} feature={row.feature} />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Bottom links */}
+      <div className="mt-6 flex flex-wrap gap-3">
+        {competitors.map((c) => (
+          <Link
+            key={c.slug}
+            href={`/compare/${c.slug}`}
+            className="inline-flex items-center rounded-md border border-[#252525] px-3 py-1.5 text-xs text-[#a2a2a2] transition-colors hover:border-[#585858] hover:text-white"
+          >
+            Vex vs {c.name}&ensp;&rarr;
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function ComparisonTable() {
   return (
-    <div className="mt-12 overflow-x-auto border border-[#252525] bg-[#0a0a0a]">
-      <table className="w-full min-w-[640px] border-collapse text-sm">
-        <thead>
-          <tr>
-            <th className="border-b border-[#252525] px-5 py-3.5 text-left text-[13px] font-semibold text-[#a2a2a2]" />
-            <th className="border-b border-[#252525] px-5 py-3.5 text-left text-[13px] font-semibold text-[#a2a2a2]">
-              Evals / Testing
-            </th>
-            <th className="border-b border-[#252525] px-5 py-3.5 text-left text-[13px] font-semibold text-[#a2a2a2]">
-              Tracing (LangSmith etc.)
-            </th>
-            <th className="border-b border-l border-[#252525] border-l-emerald-500/40 bg-emerald-500/[0.08] px-5 py-3.5 text-left text-[13px] font-semibold text-emerald-500">
-              Vex
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr
-              key={row.feature}
-              className="transition-colors hover:bg-[#161616]"
-            >
-              <td className="border-b border-[#252525] px-5 py-3.5 font-medium text-white">
-                {row.feature}
-              </td>
-              <td className="border-b border-[#252525] px-5 py-3.5 text-[#a2a2a2]">
-                {row.evals}
-              </td>
-              <td className="border-b border-[#252525] px-5 py-3.5 text-[#a2a2a2]">
-                {row.tracing}
-              </td>
-              <td className="border-b border-l border-[#252525] border-l-emerald-500/40 bg-emerald-500/[0.08] px-5 py-3.5 font-semibold text-emerald-500">
-                {row.vex}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="mt-12">
+      {/* Legend */}
+      <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-[#585858]">
+        <span className="flex items-center gap-1.5"><span className="text-emerald-500">&#10003;</span> Supported</span>
+        <span className="flex items-center gap-1.5"><span className="text-amber-400">~</span> Partial</span>
+        <span className="flex items-center gap-1.5"><span className="text-amber-400 font-mono">$</span> Paid only</span>
+        <span className="flex items-center gap-1.5"><span className="text-[#383838]">&mdash;</span> Not available</span>
+      </div>
+
+      <MobileComparison />
+      <DesktopComparison />
     </div>
   );
 }

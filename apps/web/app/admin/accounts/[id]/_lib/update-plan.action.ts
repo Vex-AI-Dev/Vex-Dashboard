@@ -16,7 +16,6 @@ const UpdatePlanSchema = z.object({
       verifications_per_month: z.number().optional(),
       max_rpm: z.number().optional(),
       max_agents: z.number().optional(),
-      max_seats: z.number().optional(),
       retention_days: z.number().optional(),
     })
     .nullable(),

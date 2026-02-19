@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
+import { ComparisonTable } from '../_components/comparison-table';
+
 export const metadata: Metadata = {
   title: 'Pricing — Vex',
   description:
@@ -27,7 +29,6 @@ const plans = [
       { label: 'Verifications', value: '500 / mo' },
       { label: 'Corrections', value: 'None' },
       { label: 'Agents', value: '3' },
-      { label: 'Seats', value: '1' },
       { label: 'Data retention', value: '7 days' },
       { label: 'Rate limit', value: '100 RPM' },
       { label: 'Overage', value: 'Hard limit' },
@@ -49,7 +50,6 @@ const plans = [
       { label: 'Verifications', value: '10,000 / mo' },
       { label: 'Corrections', value: 'Full cascade' },
       { label: 'Agents', value: '15' },
-      { label: 'Seats', value: '5' },
       { label: 'Data retention', value: '30 days' },
       { label: 'Rate limit', value: '1,000 RPM' },
       { label: 'Overage', value: '$0.0005/obs, $0.005/verify' },
@@ -71,7 +71,6 @@ const plans = [
       { label: 'Verifications', value: '100,000 / mo' },
       { label: 'Corrections', value: 'Full cascade + priority' },
       { label: 'Agents', value: 'Unlimited' },
-      { label: 'Seats', value: '15' },
       { label: 'Data retention', value: '90 days' },
       { label: 'Rate limit', value: '5,000 RPM' },
       { label: 'Overage', value: '$0.0004/obs, $0.004/verify' },
@@ -206,6 +205,17 @@ export default function PricingPage() {
             Contact Sales
           </a>
         </div>
+      </div>
+
+      {/* Competitor comparison */}
+      <div className="mx-auto mb-20 max-w-[1100px]">
+        <h2 className="mb-2 text-center text-2xl font-semibold text-white">
+          How Vex Compares
+        </h2>
+        <p className="mx-auto mb-2 max-w-[520px] text-center text-sm text-[#a2a2a2]">
+          See how Vex stacks up against other AI agent reliability tools.
+        </p>
+        <ComparisonTable />
       </div>
 
       {/* FAQ */}
