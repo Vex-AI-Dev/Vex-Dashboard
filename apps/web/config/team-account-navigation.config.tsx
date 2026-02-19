@@ -2,6 +2,7 @@ import {
   Activity,
   AlertTriangle,
   Hexagon,
+  Shield,
   ShieldAlert,
   Sparkles,
 } from 'lucide-react';
@@ -57,6 +58,16 @@ const getRoutes = (account: string) => [
         label: 'agentguard:nav.alerts',
         path: createPath(pathsConfig.app.accountAlerts, account),
         Icon: <AlertTriangle className={iconClasses} />,
+      },
+    ],
+  },
+  {
+    label: 'agentguard:nav.configuration',
+    children: [
+      {
+        label: 'agentguard:nav.guardrails',
+        path: createPath(pathsConfig.app.accountGuardrails, account),
+        Icon: <Shield className={iconClasses} />,
       },
     ],
   },

@@ -30,6 +30,7 @@ const PathsSchema = z.object({
     accountOnboarding: z.string().min(1),
     accountSessions: z.string().min(1),
     accountSessionDetail: z.string().min(1),
+    accountGuardrails: z.string().min(1),
   }),
 });
 
@@ -63,6 +64,7 @@ const pathsConfig = PathsSchema.parse({
     accountOnboarding: '/onboarding',
     accountSessions: '/home/[account]/sessions',
     accountSessionDetail: '/home/[account]/sessions/[sessionId]',
+    accountGuardrails: '/home/[account]/settings/guardrails',
   },
 } satisfies z.infer<typeof PathsSchema>);
 
