@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import {
   AlertTriangle,
+  ArrowUpRight,
   CheckCircle2,
   Hexagon,
   ShieldAlert,
@@ -29,6 +30,7 @@ import {
 } from '@kit/ui/chart';
 import { Trans } from '@kit/ui/trans';
 
+import { UsageMeter } from './usage-meter';
 import { formatConfidence } from '~/lib/agentguard/formatters';
 import type {
   AgentHealthTile,
@@ -96,6 +98,41 @@ export default function HomepageCharts({
           icon={<Wrench className="h-4 w-4 text-[#8C8C8C]" />}
         />
       </div>
+
+      {/* Plan Usage */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <div>
+            <CardTitle className="text-base">
+              <Trans i18nKey="agentguard:homepage.planUsage" defaults="Plan Usage" />
+            </CardTitle>
+            <CardDescription>
+              <Trans
+                i18nKey="agentguard:homepage.planUsageDescription"
+                defaults="Current billing period usage"
+              />
+            </CardDescription>
+          </div>
+          <div className="flex items-center gap-3">
+            <Badge variant="outline" className="text-xs">
+              <Trans i18nKey="agentguard:homepage.freePlan" defaults="Free" />
+            </Badge>
+            <Link
+              href={`/home/${accountSlug}/billing`}
+              className="text-primary flex items-center gap-1 text-sm hover:underline"
+            >
+              <Trans i18nKey="agentguard:homepage.upgrade" defaults="Upgrade" />
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-2">
+            <UsageMeter label="Observations" current={0} limit={10000} />
+            <UsageMeter label="Verifications" current={0} limit={500} />
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Row 2: 24h Activity Chart */}
       {chartData.length > 0 && (
