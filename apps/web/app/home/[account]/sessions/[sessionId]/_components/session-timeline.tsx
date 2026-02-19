@@ -181,6 +181,7 @@ const CHECK_TYPE_LABELS: Record<string, string> = {
   hallucination: 'Hallucination',
   drift: 'Drift',
   coherence: 'Coherence',
+  tool_loop: 'Tool Loop',
 };
 
 function CheckBreakdown({ checks }: { checks: CheckResult[] }) {
