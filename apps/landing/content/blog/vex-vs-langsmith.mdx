@@ -1,0 +1,79 @@
+---
+title: "Vex vs LangSmith: Runtime Reliability vs Tracing"
+description: "LangSmith traces what happened. Vex prevents bad output from reaching users. Here's when to use each — and why most teams need both."
+date: "2026-02-19"
+author: "Vex Team"
+tags: ["comparison", "LangSmith"]
+---
+
+## Two Different Problems
+
+LangSmith and Vex solve fundamentally different problems:
+
+- **LangSmith** answers: *"What did my agent do?"* — It traces LLM calls, logs inputs/outputs, and helps you debug after something goes wrong.
+- **Vex** answers: *"Is my agent still behaving correctly?"* — It monitors behavioral drift in real-time and auto-corrects before bad output reaches users.
+
+They're complementary, not competing. But the distinction matters for how you architect your production stack.
+
+## Feature Comparison
+
+| Capability | LangSmith | Vex |
+|---|---|---|
+| **LLM call tracing** | ✅ Deep tracing with full chain visibility | ✅ Observes all calls |
+| **Production monitoring** | ✅ Logs and dashboards | ✅ Real-time behavioral monitoring |
+| **Drift detection** | ❌ No behavioral baseline comparison | ✅ Continuous drift detection |
+| **Auto-correction** | ❌ Alert only | ✅ Blocks/rewrites bad output in real-time |
+| **Eval integration** | ✅ Strong pre-deploy evals | ✅ Continuous production evals |
+| **Framework support** | Best with LangChain | LangChain, CrewAI, OpenAI, any Python/TS |
+| **Open source** | ❌ Closed source | ✅ Apache 2.0 |
+| **Setup time** | ~30 minutes | ~5 minutes |
+| **Pricing** | Free tier: 5K traces/month | Free tier available |
+
+## When to Use LangSmith
+
+LangSmith is the right choice when you need:
+
+- **Deep debugging** — Step through every chain link, see exactly what each tool returned
+- **LangChain-native development** — If your entire stack is LangChain, the integration is seamless
+- **Pre-production evaluation** — Run datasets against your agent and compare results
+- **Team collaboration** — Share traces with teammates for debugging sessions
+
+## When to Use Vex
+
+Vex is the right choice when you need:
+
+- **Production guardrails** — Prevent hallucinations and policy violations from reaching users
+- **Drift detection** — Know when your agent's behavior changes before customers complain
+- **Auto-correction** — Automatically fix bad output without human intervention
+- **Framework flexibility** — Use any agent framework, not just LangChain
+- **Zero-latency monitoring** — Async mode adds no latency to your agent's responses
+
+## Using Both Together
+
+The strongest production setup uses both:
+
+1. **LangSmith for development** — Debug your agent, run evals, iterate on prompts
+2. **Vex for production** — Monitor drift, catch hallucinations, auto-correct in real-time
+
+```python
+from langchain import ...
+from vex_sdk import guard
+
+# LangSmith traces the chain (configured via env vars)
+# Vex guards the output
+
+@guard.watch()
+def my_agent(input: str) -> str:
+    chain = prompt | llm | parser
+    return chain.invoke({"input": input})
+```
+
+LangSmith tells you what your agent did. Vex makes sure it keeps doing it correctly.
+
+## The Bottom Line
+
+If you're building with LangChain and need debugging tools, start with LangSmith. If you're running agents in production and need to prevent bad output from reaching users, add Vex. If you're serious about production reliability, use both.
+
+---
+
+*Try Vex free — [get started in 5 minutes](https://tryvex.dev).*

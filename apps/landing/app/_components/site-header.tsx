@@ -22,6 +22,12 @@ export function SiteHeader() {
             >
               Quick Start
             </a>
+            <Link
+              href="/blog"
+              className="text-sm text-[#a2a2a2] transition-colors hover:text-white"
+            >
+              Blog
+            </Link>
             <a
               href="https://docs.tryvex.dev"
               target="_blank"

@@ -1,0 +1,81 @@
+---
+title: "What is AI Agent Drift and Why Should You Care?"
+description: "AI agents pass evals, ship to production, then slowly change behavior. Learn what drift is, why it happens, and how to detect it before your users do."
+date: "2026-02-19"
+author: "Vex Team"
+tags: ["drift detection", "production"]
+---
+
+## The Silent Failure Mode
+
+Your AI agent passed every eval. It shipped to production. Users were happy. Then, three weeks later, support tickets start appearing. The agent isn't wrong exactly — it's just... different. Responses are shorter. It skips steps it used to complete. It confidently states things that aren't quite true.
+
+This is **agent drift** — the gradual, undetected change in an AI agent's behavior over time in production.
+
+## Why Agents Drift
+
+Drift happens for several reasons, and none of them trigger traditional error monitoring:
+
+### 1. Model Updates
+
+When your LLM provider ships a new model version (even minor ones), your agent's behavior changes. The same prompt produces subtly different outputs. Your evals might still pass, but the distribution of responses has shifted.
+
+### 2. Context Window Pollution
+
+As agents accumulate conversation history, tool outputs, and retrieval results, the effective context changes. What worked with a clean context degrades as real-world data introduces noise.
+
+### 3. Data Distribution Shift
+
+The inputs your agent sees in production are never identical to your eval dataset. Real users ask questions you didn't anticipate, use phrasing you didn't test, and combine features in ways you didn't consider.
+
+### 4. Compounding Errors in Multi-Agent Systems
+
+In multi-agent pipelines, a small drift in Agent A's output becomes a larger drift in Agent B's input, which cascades through the entire workflow. A 2% drift at each step becomes a 10% drift by the end.
+
+## The Cost of Undetected Drift
+
+Traditional monitoring won't catch drift because:
+
+- **No errors are thrown** — the agent responds successfully
+- **Latency stays normal** — performance metrics look fine
+- **Logs show nothing unusual** — every request completes
+
+The only signal is behavioral: the agent's outputs have changed in ways that matter to your users but don't register in your monitoring stack.
+
+Companies typically discover drift through:
+- Customer complaints (hours to days after drift begins)
+- Manual spot-checks (if you're lucky enough to do them)
+- Downstream metric drops (revenue, NPS, task completion rates)
+
+## How to Detect Drift
+
+Effective drift detection requires monitoring the **distribution of agent behaviors**, not just individual outputs:
+
+1. **Baseline your agent** — Record the distribution of outputs, tool usage patterns, and decision paths during a known-good period
+2. **Monitor continuously** — Compare live behavior against the baseline in real-time
+3. **Set semantic thresholds** — Flag when behavior deviates beyond acceptable bounds
+4. **Auto-correct when possible** — Block or rewrite drifted outputs before they reach users
+
+## What Vex Does
+
+[Vex](https://tryvex.dev) is an open-source runtime reliability layer that automates all four steps. You wrap your agent function with the Vex SDK, and it:
+
+- **Observes** every LLM call, tool use, and decision
+- **Detects** drift by comparing against learned behavioral baselines
+- **Corrects** hallucinations and policy violations in real-time
+- **Optimizes** prompts and thresholds from failure patterns
+
+```python
+from vex_sdk import guard
+
+@guard.watch()
+def my_agent(input: str) -> str:
+    # your agent logic
+    return response
+```
+
+Three lines. Five minutes to set up. Start catching drift from the first request.
+
+---
+
+*Ready to stop drift before your users notice? [Get started with Vex](https://tryvex.dev) — it's free and open source.*

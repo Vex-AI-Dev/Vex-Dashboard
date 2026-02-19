@@ -1,0 +1,130 @@
+import type { Metadata } from 'next';
+import Link from 'next/link';
+
+export const metadata: Metadata = {
+  title: 'Vex vs LangSmith — Runtime Reliability vs Tracing',
+  description:
+    'Compare Vex and LangSmith for AI agent monitoring. LangSmith traces what happened. Vex prevents bad output from reaching users.',
+  keywords: [
+    'LangSmith alternatives',
+    'Vex vs LangSmith',
+    'AI agent monitoring',
+    'LangChain monitoring',
+  ],
+};
+
+const features = [
+  { name: 'LLM call tracing', vex: true, competitor: true },
+  { name: 'Production monitoring', vex: true, competitor: true },
+  { name: 'Behavioral drift detection', vex: true, competitor: false },
+  { name: 'Auto-correction', vex: true, competitor: false },
+  { name: 'Hallucination blocking', vex: true, competitor: false },
+  { name: 'Pre-deploy evals', vex: true, competitor: true },
+  { name: 'Framework agnostic', vex: true, competitor: false },
+  { name: 'Open source', vex: true, competitor: false },
+  { name: 'Zero-latency async mode', vex: true, competitor: false },
+  { name: 'Self-hosted option', vex: true, competitor: true },
+];
+
+export default function CompareLangSmith() {
+  return (
+    <div className="container py-24">
+      <div className="mx-auto max-w-[800px]">
+        <div className="mb-4 text-[13px] font-medium uppercase tracking-widest text-emerald-500">
+          Comparison
+        </div>
+        <h1 className="mb-4 text-3xl font-bold text-white sm:text-4xl">
+          Vex vs LangSmith
+        </h1>
+        <p className="mb-12 max-w-[600px] text-lg text-[#a2a2a2]">
+          LangSmith traces what happened. Vex prevents bad output from reaching
+          users. Here&apos;s how they compare.
+        </p>
+
+        {/* Feature table */}
+        <div className="mb-16 overflow-hidden rounded-xl border border-[#252525]">
+          <div className="grid grid-cols-[1fr_80px_80px] bg-[#161616] px-6 py-3 text-sm font-medium">
+            <span className="text-[#585858]">Feature</span>
+            <span className="text-center text-emerald-500">Vex</span>
+            <span className="text-center text-[#585858]">LangSmith</span>
+          </div>
+          {features.map((f) => (
+            <div
+              key={f.name}
+              className="grid grid-cols-[1fr_80px_80px] border-t border-[#252525] px-6 py-3 text-sm"
+            >
+              <span className="text-[#a2a2a2]">{f.name}</span>
+              <span className="text-center">
+                {f.vex ? (
+                  <span className="text-emerald-500">✓</span>
+                ) : (
+                  <span className="text-[#585858]">—</span>
+                )}
+              </span>
+              <span className="text-center">
+                {f.competitor ? (
+                  <span className="text-white">✓</span>
+                ) : (
+                  <span className="text-[#585858]">—</span>
+                )}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Key differences */}
+        <h2 className="mb-6 text-2xl font-semibold text-white">
+          Key Differences
+        </h2>
+        <div className="mb-16 grid gap-4 md:grid-cols-2">
+          <div className="rounded-xl border border-[#252525] bg-[#0a0a0a] p-6">
+            <h3 className="mb-2 font-mono text-sm font-medium text-emerald-500">
+              Vex
+            </h3>
+            <p className="text-sm leading-relaxed text-[#a2a2a2]">
+              Runtime reliability layer. Monitors agent behavior continuously,
+              detects drift from learned baselines, and auto-corrects
+              hallucinations before they reach users. Works with any framework.
+              Open source (Apache 2.0).
+            </p>
+          </div>
+          <div className="rounded-xl border border-[#252525] bg-[#0a0a0a] p-6">
+            <h3 className="mb-2 font-mono text-sm font-medium text-[#a2a2a2]">
+              LangSmith
+            </h3>
+            <p className="text-sm leading-relaxed text-[#a2a2a2]">
+              Tracing and evaluation platform. Deep visibility into LangChain
+              execution chains. Best for debugging during development and running
+              pre-deploy evaluations. Closed source, best with LangChain.
+            </p>
+          </div>
+        </div>
+
+        {/* Verdict */}
+        <h2 className="mb-4 text-2xl font-semibold text-white">The Verdict</h2>
+        <p className="mb-8 text-[15px] leading-relaxed text-[#a2a2a2]">
+          Use LangSmith for development debugging and pre-deploy evals. Use Vex
+          for production monitoring and real-time guardrails. For the strongest
+          setup, use both — LangSmith tells you what your agent did, Vex makes
+          sure it keeps doing it correctly.
+        </p>
+
+        {/* CTA */}
+        <div className="flex items-center gap-3">
+          <Link
+            href="https://app.tryvex.dev"
+            className="inline-flex h-12 items-center rounded-lg bg-emerald-500 px-7 text-[15px] font-semibold text-white transition-colors hover:bg-emerald-400"
+          >
+            Try Vex Free
+          </Link>
+          <Link
+            href="/blog/vex-vs-langsmith"
+            className="inline-flex h-12 items-center rounded-lg border border-[#252525] px-7 text-[15px] font-medium text-[#a2a2a2] transition-colors hover:border-[#585858] hover:text-white"
+          >
+            Read Full Comparison&ensp;&rarr;
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}

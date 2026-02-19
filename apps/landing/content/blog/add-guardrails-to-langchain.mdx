@@ -1,0 +1,133 @@
+---
+title: "How to Add Guardrails to Your LangChain Agent in 5 Minutes"
+description: "A step-by-step guide to adding runtime guardrails to any LangChain agent using the Vex SDK. Catch hallucinations, drift, and policy violations automatically."
+date: "2026-02-19"
+author: "Vex Team"
+tags: ["tutorial", "LangChain", "guardrails"]
+---
+
+## Why Your LangChain Agent Needs Guardrails
+
+You've built a LangChain agent. It works great in development. Your evals pass. You ship it to production.
+
+Then reality hits:
+
+- A user asks something your evals didn't cover → hallucination
+- The model gets updated → subtle behavioral change
+- Context window fills up → degraded output quality
+
+Evals catch problems before deployment. Guardrails catch problems during deployment. You need both.
+
+## Prerequisites
+
+- A working LangChain agent (Python)
+- A Vex account ([sign up free](https://app.tryvex.dev))
+- 5 minutes
+
+## Step 1: Install the SDK
+
+```bash
+pip install vex-sdk
+```
+
+## Step 2: Get Your API Key
+
+Sign up at [tryvex.dev](https://app.tryvex.dev) and copy your API key from the dashboard.
+
+Set it as an environment variable:
+
+```bash
+export VEX_API_KEY=your_api_key_here
+```
+
+## Step 3: Wrap Your Agent
+
+Here's a typical LangChain agent:
+
+```python
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+
+llm = ChatOpenAI(model="gpt-4o")
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are a helpful support agent for Acme Corp."),
+    ("human", "{input}"),
+])
+chain = prompt | llm
+
+def support_agent(user_input: str) -> str:
+    response = chain.invoke({"input": user_input})
+    return response.content
+```
+
+Add Vex with three lines:
+
+```python
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from vex_sdk import guard  # 1. Import
+
+llm = ChatOpenAI(model="gpt-4o")
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are a helpful support agent for Acme Corp."),
+    ("human", "{input}"),
+])
+chain = prompt | llm
+
+@guard.watch()  # 2. Decorate
+def support_agent(user_input: str) -> str:
+    response = chain.invoke({"input": user_input})
+    return response.content
+```
+
+That's it. Vex now:
+
+- **Observes** every call to `support_agent`
+- **Learns** the baseline behavior from the first requests
+- **Detects** when responses drift from the baseline
+- **Corrects** hallucinations and policy violations automatically
+
+## Step 4: Deploy
+
+Deploy your agent as usual. No infrastructure changes needed. Vex runs alongside your existing setup.
+
+```bash
+python app.py
+# or
+uvicorn app:app --host 0.0.0.0
+```
+
+Check the Vex dashboard to see live monitoring data from the first request.
+
+## What Happens Next
+
+Over the first few hours, Vex learns your agent's normal behavior patterns. After that:
+
+- **Hallucinations** — If the agent states something that contradicts its training or retrieved context, Vex flags and optionally auto-corrects
+- **Drift** — If the agent's response distribution shifts (shorter responses, different tone, skipped steps), Vex alerts you
+- **Policy violations** — If you define policies (e.g., "never discuss competitors"), Vex enforces them at runtime
+
+## Async vs Sync Mode
+
+By default, Vex runs in **async mode** — zero added latency. Verification happens in the background.
+
+For critical paths where you need to block bad output:
+
+```python
+@guard.watch(mode="sync")
+def critical_agent(user_input: str) -> str:
+    response = chain.invoke({"input": user_input})
+    return response.content
+```
+
+Sync mode adds 200-500ms for the verification step, but guarantees no bad output reaches users.
+
+## Next Steps
+
+- [Read the full docs](https://docs.tryvex.dev)
+- [Star us on GitHub](https://github.com/Vex-AI-Dev/Python-SDK)
+- [Join the community](https://x.com/tryvex)
+
+---
+
+*Guardrails in 5 minutes. [Start free](https://tryvex.dev).*
