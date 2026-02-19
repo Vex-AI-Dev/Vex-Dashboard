@@ -28,6 +28,12 @@ export function SiteHeader() {
             >
               Blog
             </Link>
+            <Link
+              href="/pricing"
+              className="text-sm text-[#a2a2a2] transition-colors hover:text-white"
+            >
+              Pricing
+            </Link>
             <a
               href="https://docs.tryvex.dev"
               target="_blank"
