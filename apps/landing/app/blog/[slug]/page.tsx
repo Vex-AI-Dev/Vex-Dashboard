@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { MDXRemote } from 'next-mdx-remote/rsc';
+import remarkGfm from 'remark-gfm';
 
 import { getAllPosts, getPostBySlug } from '~/lib/blog';
 
@@ -120,7 +121,11 @@ export default async function BlogPostPage({ params }: Props) {
 
           {/* Article body */}
           <div className="prose prose-invert max-w-none text-[#a2a2a2] prose-headings:text-white prose-headings:font-semibold prose-h2:text-xl prose-h2:mt-10 prose-h2:mb-4 prose-h3:text-lg prose-h3:mt-8 prose-h3:mb-3 prose-p:leading-relaxed prose-p:text-[#a2a2a2] prose-li:text-[#a2a2a2] prose-strong:text-white prose-a:text-emerald-500 hover:prose-a:text-emerald-400 prose-code:text-emerald-400 prose-code:bg-[#161616] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-pre:bg-[#161616] prose-pre:border prose-pre:border-[#252525]">
-            <MDXRemote source={post.content} components={mdxComponents} />
+            <MDXRemote
+              source={post.content}
+              components={mdxComponents}
+              options={{ mdxOptions: { remarkPlugins: [remarkGfm] } }}
+            />
           </div>
 
           {/* Post footer: author + share */}
