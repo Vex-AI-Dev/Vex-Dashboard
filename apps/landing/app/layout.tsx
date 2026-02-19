@@ -3,6 +3,8 @@ import type { Metadata } from 'next';
 import { cn } from '@kit/ui/utils';
 
 import { getFontsClassName } from '~/lib/fonts';
+import { SiteFooter } from './_components/site-footer';
+import { SiteHeader } from './_components/site-header';
 
 import '../styles/globals.css';
 
@@ -196,7 +198,11 @@ export default function RootLayout({
           }}
         />
 
-        <div className="relative z-10">{children}</div>
+        <div className="relative z-10 flex min-h-screen flex-col">
+          <SiteHeader />
+          <main className="flex-1">{children}</main>
+          <SiteFooter />
+        </div>
       </body>
     </html>
   );

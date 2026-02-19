@@ -4,15 +4,9 @@ import { FaqAccordion } from './_components/faq-accordion';
 import { HeroCodeEditor } from './_components/hero-code-editor';
 import { HowItWorks } from './_components/how-it-works';
 import { LogoBar } from './_components/logo-bar';
-import { SiteFooter } from './_components/site-footer';
-import { SiteHeader } from './_components/site-header';
-
 export default function LandingPage() {
   return (
-    <div className="flex min-h-screen flex-col">
-      <SiteHeader />
-
-      <main className="flex-1">
+    <>
         {/* ===== HERO ===== */}
         <section className="relative pt-24 pb-16 lg:pt-32 lg:pb-24">
           <div className="container">
@@ -554,9 +548,6 @@ export default function LandingPage() {
             </p>
           </div>
         </section>
-      </main>
-
-      <SiteFooter />
-    </div>
+    </>
   );
 }
