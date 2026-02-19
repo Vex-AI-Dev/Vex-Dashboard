@@ -8,6 +8,7 @@ import { withI18n } from '~/lib/i18n/with-i18n';
 
 import { TeamAccountLayoutPageHeader } from '../../_components/team-account-layout-page-header';
 import {
+  loadSessionCheckResults,
   loadSessionDetail,
   loadSessionTracePayloads,
   loadSessionTurns,
@@ -36,8 +37,12 @@ async function SessionDetailPage({ params }: SessionDetailPageProps) {
     loadSessionTurns(sessionId, orgId),
   ]);
 
-  const tracePayloads =
-    turns.length > 0 ? await loadSessionTracePayloads(turns) : {};
+  const [tracePayloads, checkResults] = await Promise.all([
+    turns.length > 0 ? loadSessionTracePayloads(turns) : Promise.resolve({}),
+    turns.length > 0
+      ? loadSessionCheckResults(turns)
+      : Promise.resolve({} as Record<string, never>),
+  ]);
 
   if (!header) {
     return (
@@ -70,6 +75,7 @@ async function SessionDetailPage({ params }: SessionDetailPageProps) {
           header={header}
           turns={turns}
           tracePayloads={tracePayloads}
+          checkResults={checkResults}
           accountSlug={account}
         />
       </PageBody>

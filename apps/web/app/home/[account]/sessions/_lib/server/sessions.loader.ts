@@ -6,6 +6,7 @@ import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 
 import { getAgentGuardPool } from '~/lib/agentguard/db';
 import type {
+  CheckResult,
   SessionDetailHeader,
   SessionListRow,
   SessionTurn,
@@ -294,4 +295,39 @@ export async function loadSessionTracePayloads(
   }
 
   return payloads;
+}
+
+/**
+ * Load check results for all turns in a session.
+ * Returns a map of execution_id → CheckResult[].
+ */
+export async function loadSessionCheckResults(
+  turns: SessionTurn[],
+): Promise<Record<string, CheckResult[]>> {
+  if (turns.length === 0) return {};
+
+  const executionIds = turns.map((t) => t.execution_id);
+  const pool = getAgentGuardPool();
+
+  const result = await pool.query<CheckResult>(
+    `
+    SELECT id, execution_id, check_type, score, passed, details, timestamp
+    FROM check_results
+    WHERE execution_id = ANY($1)
+    ORDER BY id ASC
+    `,
+    [executionIds],
+  );
+
+  const grouped: Record<string, CheckResult[]> = {};
+
+  for (const row of result.rows) {
+    if (!grouped[row.execution_id]) {
+      grouped[row.execution_id] = [];
+    }
+
+    grouped[row.execution_id]!.push(row);
+  }
+
+  return grouped;
 }

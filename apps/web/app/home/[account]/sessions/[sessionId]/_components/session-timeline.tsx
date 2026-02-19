@@ -12,6 +12,7 @@ import {
   ChevronDown,
   ChevronRight,
   Clock,
+  Shield,
   User,
   Wrench,
   XCircle,
@@ -35,6 +36,7 @@ import {
   formatTokens,
 } from '~/lib/agentguard/formatters';
 import type {
+  CheckResult,
   SessionDetailHeader,
   SessionTurn,
   TracePayload,
@@ -44,6 +46,7 @@ interface SessionTimelineProps {
   header: SessionDetailHeader;
   turns: SessionTurn[];
   tracePayloads?: Record<string, TracePayload>;
+  checkResults?: Record<string, CheckResult[]>;
   accountSlug: string;
 }
 
@@ -173,6 +176,97 @@ function ToolCallCard({
   );
 }
 
+const CHECK_TYPE_LABELS: Record<string, string> = {
+  schema: 'Schema',
+  hallucination: 'Hallucination',
+  drift: 'Drift',
+  coherence: 'Coherence',
+};
+
+function CheckBreakdown({ checks }: { checks: CheckResult[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const [expandedDetail, setExpandedDetail] = useState<number | null>(null);
+
+  if (checks.length === 0) return null;
+
+  return (
+    <div className="mx-11">
+      <button
+        type="button"
+        className="text-muted-foreground hover:text-foreground flex w-full items-center gap-1.5 px-3 py-1.5 text-left text-xs transition-colors"
+        onClick={() => setExpanded(!expanded)}
+      >
+        {expanded ? (
+          <ChevronDown className="h-3 w-3 shrink-0" />
+        ) : (
+          <ChevronRight className="h-3 w-3 shrink-0" />
+        )}
+        <Shield className="h-3 w-3 shrink-0" />
+        <span className="font-medium">
+          Verification Checks ({checks.filter((c) => c.passed).length}/
+          {checks.length} passed)
+        </span>
+      </button>
+      {expanded && (
+        <div className="border-muted mt-1 space-y-1 rounded-md border px-3 py-2">
+          {checks.map((check) => (
+            <div key={check.id}>
+              <button
+                type="button"
+                className="hover:bg-muted/50 flex w-full items-center gap-3 rounded px-2 py-1.5 text-left text-xs"
+                onClick={() =>
+                  setExpandedDetail(
+                    expandedDetail === check.id ? null : check.id,
+                  )
+                }
+              >
+                {expandedDetail === check.id ? (
+                  <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
+                ) : (
+                  <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
+                )}
+                <span className="w-24 font-medium">
+                  {CHECK_TYPE_LABELS[check.check_type] ?? check.check_type}
+                </span>
+                <Badge
+                  variant="outline"
+                  className={
+                    check.passed
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                      : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                  }
+                >
+                  {check.passed ? 'Pass' : 'Fail'}
+                </Badge>
+                {check.score != null && (
+                  <span
+                    className={`ml-auto font-mono text-xs font-semibold ${
+                      check.score >= 0.8
+                        ? 'text-green-600 dark:text-green-400'
+                        : check.score >= 0.5
+                          ? 'text-yellow-600 dark:text-yellow-400'
+                          : 'text-red-600 dark:text-red-400'
+                    }`}
+                  >
+                    {(check.score * 100).toFixed(0)}%
+                  </span>
+                )}
+              </button>
+              {expandedDetail === check.id &&
+                check.details &&
+                Object.keys(check.details).length > 0 && (
+                  <pre className="bg-muted/50 mx-2 mt-1 mb-2 max-h-40 overflow-auto rounded p-2 text-xs">
+                    {JSON.stringify(check.details, null, 2)}
+                  </pre>
+                )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function VerificationBar({
   turn,
   accountSlug,
@@ -228,10 +322,12 @@ function ConversationTurnView({
   turn,
   payload,
   accountSlug,
+  checks,
 }: {
   turn: SessionTurn;
   payload: TracePayload;
   accountSlug: string;
+  checks?: CheckResult[];
 }) {
   const inputText = formatPayloadContent(payload.input);
   const outputText = formatPayloadContent(payload.output);
@@ -262,6 +358,7 @@ function ConversationTurnView({
 
       {/* Verification bar */}
       <VerificationBar turn={turn} accountSlug={accountSlug} />
+      {checks && checks.length > 0 && <CheckBreakdown checks={checks} />}
     </div>
   );
 }
@@ -270,10 +367,12 @@ function FallbackTurnView({
   turn,
   index,
   accountSlug,
+  checks,
 }: {
   turn: SessionTurn;
   index: number;
   accountSlug: string;
+  checks?: CheckResult[];
 }) {
   return (
     <div className="relative flex gap-4">
@@ -332,6 +431,11 @@ function FallbackTurnView({
           )}
           <span>{formatTimestamp(turn.timestamp)}</span>
         </div>
+        {checks && checks.length > 0 && (
+          <div className="mt-2">
+            <CheckBreakdown checks={checks} />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -341,6 +445,7 @@ export default function SessionTimeline({
   header,
   turns,
   tracePayloads = {},
+  checkResults = {},
   accountSlug,
 }: SessionTimelineProps) {
   const duration = formatDistanceStrict(
@@ -426,6 +531,7 @@ export default function SessionTimeline({
                       turn={turn}
                       payload={payload}
                       accountSlug={accountSlug}
+                      checks={checkResults[turn.execution_id]}
                     />
                   );
                 }
@@ -436,6 +542,7 @@ export default function SessionTimeline({
                     turn={turn}
                     index={index}
                     accountSlug={accountSlug}
+                    checks={checkResults[turn.execution_id]}
                   />
                 );
               })}
@@ -451,6 +558,7 @@ export default function SessionTimeline({
                     turn={turn}
                     index={index}
                     accountSlug={accountSlug}
+                    checks={checkResults[turn.execution_id]}
                   />
                 </div>
               ))}
