@@ -5,11 +5,11 @@ export function PostCta() {
         Get Started
       </div>
       <h2 className="mb-3 text-2xl font-semibold leading-tight text-white">
-        See what Vex catches in your agent.
+        Start monitoring your AI agents for free.
       </h2>
       <p className="mb-8 max-w-[480px] text-[15px] leading-relaxed text-[#a2a2a2]">
-        5-minute setup. Detects drift, hallucinations, and policy violations in
-        production — automatically.
+        Free tier includes 10k events/month. Detects drift, hallucinations, and
+        policy violations in production — 5-minute setup.
       </p>
       <div className="flex flex-wrap items-center gap-3">
         <a

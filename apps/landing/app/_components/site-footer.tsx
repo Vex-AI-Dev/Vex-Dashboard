@@ -8,6 +8,7 @@ const sections = [
       { href: 'https://github.com/Vex-AI-Dev/Python-SDK', label: 'GitHub' },
       { href: 'https://api.tryvex.dev', label: 'API' },
       { href: '/blog', label: 'Blog' },
+      { href: '/pricing', label: 'Pricing' },
     ],
   },
   {
