@@ -185,18 +185,6 @@ export default function RootLayout({
           }}
         />
 
-        {/* Subtle emerald accent glow */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none fixed top-1/4 left-1/2 z-0 -translate-x-1/2"
-          style={{
-            width: '800px',
-            height: '500px',
-            background:
-              'radial-gradient(ellipse at center, rgba(16,185,129,0.06) 0%, transparent 70%)',
-            filter: 'blur(80px)',
-          }}
-        />
 
         <div className="relative z-10 flex min-h-screen flex-col">
           <SiteHeader />

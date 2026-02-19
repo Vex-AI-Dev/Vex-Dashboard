@@ -20,9 +20,9 @@ export default function LandingPage() {
                 </h1>
 
                 <p className="mb-10 max-w-[460px] text-[17px] leading-relaxed text-[#a2a2a2]">
-                  Detect drift. Correct hallucinations.
+                  Detect drift. Auto-correct hallucinations.
                   <br />
-                  Reliable AI agents in production.
+                  Ship AI agents your users can trust.
                 </p>
 
                 <div className="flex items-center gap-3">
