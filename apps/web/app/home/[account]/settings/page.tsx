@@ -55,7 +55,7 @@ async function TeamAccountSettingsPage(props: TeamAccountSettingsPageProps) {
       />
 
       <PageBody>
-        <div className={'flex max-w-2xl flex-1 flex-col'}>
+        <div className="animate-in fade-in flex flex-col space-y-6 pb-36 duration-500">
           <TeamAccountSettingsContainer
             account={account}
             paths={paths}

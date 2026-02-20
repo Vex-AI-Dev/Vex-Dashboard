@@ -40,7 +40,7 @@ async function ApiKeysPage(props: ApiKeysPageProps) {
       />
 
       <PageBody>
-        <div className="flex max-w-4xl flex-1 flex-col space-y-4">
+        <div className="animate-in fade-in flex flex-col space-y-6 pb-36 duration-500">
           <div className="flex items-center justify-end">
             <CreateKeyDialog
               accountSlug={account}

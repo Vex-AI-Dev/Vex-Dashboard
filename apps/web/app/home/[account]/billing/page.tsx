@@ -11,7 +11,6 @@ import { AppBreadcrumbs } from '@kit/ui/app-breadcrumbs';
 import { If } from '@kit/ui/if';
 import { PageBody } from '@kit/ui/page';
 import { Trans } from '@kit/ui/trans';
-import { cn } from '@kit/ui/utils';
 
 import billingConfig from '~/config/billing.config';
 import { createI18nServerInstance } from '~/lib/i18n/i18n.server';
@@ -72,7 +71,7 @@ async function TeamAccountBillingPage({ params }: TeamAccountBillingPageProps) {
       />
 
       <PageBody>
-        <div className={cn(`flex max-w-2xl flex-col space-y-4`)}>
+        <div className="animate-in fade-in flex flex-col space-y-6 pb-36 duration-500">
           <If condition={!hasBillingData}>
             <If
               condition={canManageBilling}
@@ -85,33 +84,35 @@ async function TeamAccountBillingPage({ params }: TeamAccountBillingPageProps) {
             </If>
           </If>
 
-          <If condition={subscription}>
-            {(subscription) => {
-              return (
-                <CurrentSubscriptionCard
-                  subscription={subscription}
-                  product={subscriptionProductPlan!.product}
-                  plan={subscriptionProductPlan!.plan}
-                />
-              );
-            }}
-          </If>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <If condition={subscription}>
+              {(subscription) => {
+                return (
+                  <CurrentSubscriptionCard
+                    subscription={subscription}
+                    product={subscriptionProductPlan!.product}
+                    plan={subscriptionProductPlan!.plan}
+                  />
+                );
+              }}
+            </If>
 
-          <If condition={order}>
-            {(order) => {
-              return (
-                <CurrentLifetimeOrderCard
-                  order={order}
-                  product={orderProductPlan!.product}
-                  plan={orderProductPlan!.plan}
-                />
-              );
-            }}
-          </If>
+            <If condition={order}>
+              {(order) => {
+                return (
+                  <CurrentLifetimeOrderCard
+                    order={order}
+                    product={orderProductPlan!.product}
+                    plan={orderProductPlan!.plan}
+                  />
+                );
+              }}
+            </If>
 
-          {shouldShowBillingPortal ? (
-            <BillingPortalForm accountId={accountId} account={account} />
-          ) : null}
+            {shouldShowBillingPortal ? (
+              <BillingPortalForm accountId={accountId} account={account} />
+            ) : null}
+          </div>
         </div>
       </PageBody>
     </>

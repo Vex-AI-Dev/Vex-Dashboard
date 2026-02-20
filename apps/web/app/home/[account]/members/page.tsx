@@ -61,7 +61,7 @@ async function TeamAccountMembersPage({ params }: TeamAccountMembersPageProps) {
       />
 
       <PageBody>
-        <div className={'flex w-full max-w-4xl flex-col space-y-4 pb-32'}>
+        <div className="animate-in fade-in flex flex-col space-y-6 pb-36 duration-500">
           <Card>
             <CardHeader className={'flex flex-row justify-between'}>
               <div className={'flex flex-col space-y-1.5'}>
