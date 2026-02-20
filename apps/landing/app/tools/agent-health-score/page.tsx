@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
+
 import Link from 'next/link';
 
 const questions = [
@@ -16,9 +17,9 @@ const questions = [
   },
   {
     category: 'Monitoring',
-    question: 'How do you detect when your agent\'s behavior changes?',
+    question: "How do you detect when your agent's behavior changes?",
     options: [
-      { label: 'We don\'t — we wait for user reports', score: 0 },
+      { label: "We don't — we wait for user reports", score: 0 },
       { label: 'Manual spot-checks', score: 1 },
       { label: 'Automated alerts on output metrics', score: 2 },
       { label: 'Continuous behavioral drift detection', score: 3 },
@@ -88,25 +89,32 @@ const questions = [
 
 const categories = ['Monitoring', 'Safety', 'Testing', 'Operations'] as const;
 
-const recommendations: Record<string, { low: string; medium: string; high: string }> = {
+const recommendations: Record<
+  string,
+  { low: string; medium: string; high: string }
+> = {
   Monitoring: {
     low: 'Your agent is flying blind. Add production monitoring to see what your agent is actually doing. Vex provides real-time behavioral monitoring with zero setup.',
-    medium: 'You have basic visibility, but you\'re missing behavioral drift detection. Vex can detect when your agent\'s behavior shifts before users notice.',
+    medium:
+      "You have basic visibility, but you're missing behavioral drift detection. Vex can detect when your agent's behavior shifts before users notice.",
     high: 'Strong monitoring setup. Consider adding continuous drift detection to catch subtle behavioral changes that metrics alone miss.',
   },
   Safety: {
     low: 'Your agent has no safety net. Hallucinations and bad outputs reach users directly. Add runtime guardrails — Vex auto-corrects bad output in real-time.',
-    medium: 'Good foundation, but validation alone can\'t catch semantic drift. Vex adds behavioral guardrails that go beyond schema validation.',
+    medium:
+      "Good foundation, but validation alone can't catch semantic drift. Vex adds behavioral guardrails that go beyond schema validation.",
     high: 'Solid safety layer. Make sure your guardrails adapt over time — Vex learns baselines and adjusts thresholds automatically.',
   },
   Testing: {
     low: 'No evals means no confidence in production quality. Start with a basic eval suite and consider continuous production testing with Vex.',
-    medium: 'Pre-deploy evals are a good start. Add continuous production evaluations to catch issues that only appear with real-world data.',
+    medium:
+      'Pre-deploy evals are a good start. Add continuous production evaluations to catch issues that only appear with real-world data.',
     high: 'Excellent eval coverage. Pair your test suite with runtime monitoring to close the gap between eval performance and production behavior.',
   },
   Operations: {
     low: 'Direct deploys with no incident response is risky. Add staged deployments and automated alerting. Vex provides instant drift alerts.',
-    medium: 'Staged deploys are good. Add behavioral comparison between versions and automated rollback triggers.',
+    medium:
+      'Staged deploys are good. Add behavioral comparison between versions and automated rollback triggers.',
     high: 'Mature operations. Ensure your deployment pipeline includes behavioral regression checks alongside functional tests.',
   },
 };
@@ -131,15 +139,31 @@ export default function AgentHealthScore() {
       }
     });
 
-    const totalEarned = Object.values(categoryScores).reduce((s, c) => s + c.earned, 0);
-    const totalMax = Object.values(categoryScores).reduce((s, c) => s + c.max, 0);
+    const totalEarned = Object.values(categoryScores).reduce(
+      (s, c) => s + c.earned,
+      0,
+    );
+    const totalMax = Object.values(categoryScores).reduce(
+      (s, c) => s + c.max,
+      0,
+    );
     const overall = Math.round((totalEarned / totalMax) * 100);
 
     return { categoryScores, overall };
   }, [answers]);
 
-  const scoreColor = scores.overall < 40 ? 'text-red-500' : scores.overall < 70 ? 'text-amber-500' : 'text-emerald-500';
-  const scoreLabel = scores.overall < 40 ? 'Needs Attention' : scores.overall < 70 ? 'Getting There' : 'Production Ready';
+  const scoreColor =
+    scores.overall < 40
+      ? 'text-red-500'
+      : scores.overall < 70
+        ? 'text-amber-500'
+        : 'text-emerald-500';
+  const scoreLabel =
+    scores.overall < 40
+      ? 'Needs Attention'
+      : scores.overall < 70
+        ? 'Getting There'
+        : 'Production Ready';
 
   return (
     <div className="container py-24">
@@ -150,18 +174,23 @@ export default function AgentHealthScore() {
             '@context': 'https://schema.org',
             '@type': 'WebApplication',
             name: 'AI Agent Health Score',
-            description: 'Score your AI agent\'s production readiness in 2 minutes.',
+            description:
+              "Score your AI agent's production readiness in 2 minutes.",
             url: 'https://tryvex.dev/tools/agent-health-score',
             applicationCategory: 'DeveloperApplication',
             operatingSystem: 'Web',
             offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-            author: { '@type': 'Organization', name: 'Vex', url: 'https://tryvex.dev' },
+            author: {
+              '@type': 'Organization',
+              name: 'Vex',
+              url: 'https://tryvex.dev',
+            },
           }),
         }}
       />
 
       <div className="mx-auto max-w-[720px]">
-        <div className="mb-4 text-[13px] font-medium uppercase tracking-widest text-emerald-500">
+        <div className="mb-4 text-[13px] font-medium tracking-widest text-emerald-500 uppercase">
           Free Tool
         </div>
         <h1 className="mb-4 text-3xl font-bold text-white sm:text-4xl">
@@ -179,7 +208,7 @@ export default function AgentHealthScore() {
                 key={qi}
                 className="rounded-xl border border-[#252525] bg-[#0a0a0a] p-6"
               >
-                <div className="mb-1 text-[11px] font-medium uppercase tracking-widest text-emerald-500/60">
+                <div className="mb-1 text-[11px] font-medium tracking-widest text-emerald-500/60 uppercase">
                   {q.category}
                 </div>
                 <p className="mb-4 text-[15px] font-medium text-white">
@@ -276,8 +305,8 @@ export default function AgentHealthScore() {
                 Improve Your Score with Vex
               </h3>
               <p className="mb-6 text-sm text-[#a2a2a2]">
-                Vex adds runtime monitoring, drift detection, and auto-correction
-                to any AI agent in 5 minutes.
+                Vex adds runtime monitoring, drift detection, and
+                auto-correction to any AI agent in 5 minutes.
               </p>
               <div className="flex items-center justify-center gap-3">
                 <Link

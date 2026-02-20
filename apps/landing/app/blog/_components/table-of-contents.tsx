@@ -12,7 +12,7 @@ export function TableOfContents({ headings }: TableOfContentsProps) {
       aria-label="Table of contents"
       className="mb-10 rounded-xl border border-[#252525] bg-[#161616] p-5"
     >
-      <p className="mb-3 font-mono text-[11px] font-medium uppercase tracking-widest text-[#585858]">
+      <p className="mb-3 font-mono text-[11px] font-medium tracking-widest text-[#585858] uppercase">
         On this page
       </p>
       <ol className="space-y-2">

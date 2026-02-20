@@ -4,26 +4,36 @@ import { useState } from 'react';
 
 function PythonCode() {
   return (
-    <pre className="whitespace-pre font-mono text-[13px] leading-[1.8]">
+    <pre className="font-mono text-[13px] leading-[1.8] whitespace-pre">
       <span className="text-purple-400">from</span> vex{' '}
       <span className="text-purple-400">import</span> Vex{'\n'}
       {'\n'}
-      guard = <span className="text-blue-400">Vex</span>(api_key=<span className="text-emerald-400">{'"your-api-key"'}</span>){'\n'}
+      guard = <span className="text-blue-400">Vex</span>(api_key=
+      <span className="text-emerald-400">{'"your-api-key"'}</span>){'\n'}
       {'\n'}
-      <span className="text-amber-400">@guard.watch</span>(agent_id=<span className="text-emerald-400">{'"support-bot"'}</span>){'\n'}
+      <span className="text-amber-400">@guard.watch</span>(agent_id=
+      <span className="text-emerald-400">{'"support-bot"'}</span>){'\n'}
       <span className="text-purple-400">def</span>{' '}
       <span className="text-blue-400">handle_ticket</span>(query:{' '}
-      <span className="text-pink-400">str</span>) -{'>'}
-      {' '}<span className="text-pink-400">str</span>:{'\n'}
-      {'    '}<span className="text-purple-400">return</span>{' '}
+      <span className="text-pink-400">str</span>) -{'>'}{' '}
+      <span className="text-pink-400">str</span>:{'\n'}
+      {'    '}
+      <span className="text-purple-400">return</span>{' '}
       <span className="text-blue-400">call_llm</span>(query){'\n'}
       {'\n'}
       result = <span className="text-blue-400">handle_ticket</span>(
-      <span className="text-emerald-400">{'"How do I reset my password?"'}</span>){'\n'}
+      <span className="text-emerald-400">
+        {'"How do I reset my password?"'}
+      </span>
+      ){'\n'}
       <span className="text-blue-400">print</span>(result.action){'      '}
-      <span className="text-neutral-500"># &quot;pass&quot; | &quot;flag&quot; | &quot;block&quot;</span>{'\n'}
+      <span className="text-neutral-500">
+        # &quot;pass&quot; | &quot;flag&quot; | &quot;block&quot;
+      </span>
+      {'\n'}
       <span className="text-blue-400">print</span>(result.confidence){'   '}
-      <span className="text-neutral-500"># 0.92</span>{'\n'}
+      <span className="text-neutral-500"># 0.92</span>
+      {'\n'}
       <span className="text-blue-400">print</span>(result.corrected){'    '}
       <span className="text-neutral-500"># True if auto-corrected</span>
     </pre>
@@ -32,7 +42,7 @@ function PythonCode() {
 
 function TypeScriptCode() {
   return (
-    <pre className="whitespace-pre font-mono text-[13px] leading-[1.8]">
+    <pre className="font-mono text-[13px] leading-[1.8] whitespace-pre">
       <span className="text-purple-400">import</span> {'{ '}Vex{' }'}{' '}
       <span className="text-purple-400">from</span>{' '}
       <span className="text-emerald-400">{`'@vex_dev/sdk'`}</span>;{'\n'}
@@ -41,8 +51,11 @@ function TypeScriptCode() {
       <span className="text-purple-400">new</span>{' '}
       <span className="text-blue-400">Vex</span>({'{'}
       {'\n'}
-      {'  '}apiKey: <span className="text-emerald-400">{`'your-api-key'`}</span>,{'\n'}
-      {'  '}config: {'{ '}mode: <span className="text-emerald-400">{`'sync'`}</span>{' }'}
+      {'  '}apiKey: <span className="text-emerald-400">{`'your-api-key'`}</span>
+      ,{'\n'}
+      {'  '}config: {'{ '}mode:{' '}
+      <span className="text-emerald-400">{`'sync'`}</span>
+      {' }'}
       {'\n'}
       {'}'});{'\n'}
       {'\n'}
@@ -52,13 +65,20 @@ function TypeScriptCode() {
       <span className="text-emerald-400">{`'support-bot'`}</span>,{' '}
       <span className="text-purple-400">async</span> () ={'> {'}
       {'\n'}
-      {'  '}<span className="text-purple-400">return await</span>{' '}
+      {'  '}
+      <span className="text-purple-400">return await</span>{' '}
       <span className="text-blue-400">callLLM</span>(query);{'\n'}
       {'}'});{'\n'}
       {'\n'}
-      console.<span className="text-blue-400">log</span>(result.action);{'     '}
-      <span className="text-neutral-500">// &quot;pass&quot; | &quot;flag&quot; | &quot;block&quot;</span>{'\n'}
-      console.<span className="text-blue-400">log</span>(result.confidence);{' '}
+      console.<span className="text-blue-400">log</span>(result.action);
+      {'     '}
+      <span className="text-neutral-500">
+        // &quot;pass&quot; | &quot;flag&quot; | &quot;block&quot;
+      </span>
+      {'\n'}
+      console.<span className="text-blue-400">
+        log
+      </span>(result.confidence);{' '}
       <span className="text-neutral-500">// 0.92</span>
     </pre>
   );

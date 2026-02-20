@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+
 import Link from 'next/link';
 
 import { ComparisonTable } from '../_components/comparison-table';
@@ -118,7 +119,7 @@ export default function PricingPage() {
     <div className="container py-24">
       {/* Hero */}
       <div className="mx-auto max-w-[1100px] text-center">
-        <div className="mb-4 text-[13px] font-medium uppercase tracking-widest text-emerald-500">
+        <div className="mb-4 text-[13px] font-medium tracking-widest text-emerald-500 uppercase">
           Pricing
         </div>
         <h1 className="mb-4 text-3xl font-bold text-white sm:text-4xl">
@@ -191,9 +192,7 @@ export default function PricingPage() {
       {/* Enterprise CTA */}
       <div className="mx-auto mb-20 max-w-[1100px]">
         <div className="rounded-xl border border-[#252525] bg-[#161616] p-10 text-center">
-          <h2 className="mb-2 text-2xl font-semibold text-white">
-            Enterprise
-          </h2>
+          <h2 className="mb-2 text-2xl font-semibold text-white">Enterprise</h2>
           <p className="mx-auto mb-6 max-w-[480px] text-sm text-[#a2a2a2]">
             Need custom limits, SLAs, SSO, or on-prem deployment? Let&apos;s
             talk.

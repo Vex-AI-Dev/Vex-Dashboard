@@ -182,6 +182,7 @@ const CHECK_TYPE_LABELS: Record<string, string> = {
   drift: 'Drift',
   coherence: 'Coherence',
   tool_loop: 'Tool Loop',
+  guardrails: 'Guardrails',
 };
 
 function CheckBreakdown({ checks }: { checks: CheckResult[] }) {
@@ -222,9 +223,9 @@ function CheckBreakdown({ checks }: { checks: CheckResult[] }) {
                 }
               >
                 {expandedDetail === check.id ? (
-                  <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
+                  <ChevronDown className="text-muted-foreground h-3 w-3 shrink-0" />
                 ) : (
-                  <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
+                  <ChevronRight className="text-muted-foreground h-3 w-3 shrink-0" />
                 )}
                 <span className="w-24 font-medium">
                   {CHECK_TYPE_LABELS[check.check_type] ?? check.check_type}

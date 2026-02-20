@@ -1,11 +1,11 @@
-import type { MDXComponents } from 'mdx/types';
 import Image from 'next/image';
+
+import type { MDXComponents } from 'mdx/types';
 
 import { slugify } from '~/lib/blog';
 
 function Heading2({ children }: { children?: React.ReactNode }) {
-  const text =
-    typeof children === 'string' ? children : String(children ?? '');
+  const text = typeof children === 'string' ? children : String(children ?? '');
   const id = slugify(text);
   return (
     <h2
@@ -14,7 +14,7 @@ function Heading2({ children }: { children?: React.ReactNode }) {
     >
       <a
         href={`#${id}`}
-        className="absolute -left-6 top-0 hidden opacity-0 transition-opacity group-hover:opacity-100 md:block"
+        className="absolute top-0 -left-6 hidden opacity-0 transition-opacity group-hover:opacity-100 md:block"
         aria-hidden="true"
       >
         <span className="text-emerald-500/50">#</span>
@@ -25,8 +25,7 @@ function Heading2({ children }: { children?: React.ReactNode }) {
 }
 
 function Heading3({ children }: { children?: React.ReactNode }) {
-  const text =
-    typeof children === 'string' ? children : String(children ?? '');
+  const text = typeof children === 'string' ? children : String(children ?? '');
   const id = slugify(text);
   return (
     <h3 id={id} className="scroll-mt-24">
@@ -43,12 +42,7 @@ function MdxImage(props: React.ComponentProps<'img'>) {
     return (
       <span className="my-8 block overflow-hidden rounded-xl border border-[#252525]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={src}
-          alt={alt ?? ''}
-          className="w-full"
-          loading="lazy"
-        />
+        <img src={src} alt={alt ?? ''} className="w-full" loading="lazy" />
       </span>
     );
   }
@@ -126,12 +120,16 @@ function MdxPre({ children }: { children?: React.ReactNode }) {
   );
 }
 
-function MdxCode({ children, className }: { children?: React.ReactNode; className?: string }) {
+function MdxCode({
+  children,
+  className,
+}: {
+  children?: React.ReactNode;
+  className?: string;
+}) {
   // If inside a <pre> (has className like "language-*"), render as block code
   if (className) {
-    return (
-      <code className={`${className} text-[#a2a2a2]`}>{children}</code>
-    );
+    return <code className={`${className} text-[#a2a2a2]`}>{children}</code>;
   }
   // Inline code
   return (
@@ -167,9 +165,7 @@ function MdxLi({ children }: { children?: React.ReactNode }) {
 
 function MdxP({ children }: { children?: React.ReactNode }) {
   return (
-    <p className="my-5 text-[16px] leading-[1.8] text-[#a2a2a2]">
-      {children}
-    </p>
+    <p className="my-5 text-[16px] leading-[1.8] text-[#a2a2a2]">{children}</p>
   );
 }
 

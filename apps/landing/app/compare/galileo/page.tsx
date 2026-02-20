@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+
 import Link from 'next/link';
 
 export const metadata: Metadata = {
@@ -36,7 +37,7 @@ export default function CompareGalileo() {
   return (
     <div className="container py-24">
       <div className="mx-auto max-w-[800px]">
-        <div className="mb-4 text-[13px] font-medium uppercase tracking-widest text-emerald-500">
+        <div className="mb-4 text-[13px] font-medium tracking-widest text-emerald-500 uppercase">
           Comparison
         </div>
         <h1 className="mb-4 text-3xl font-bold text-white sm:text-4xl">

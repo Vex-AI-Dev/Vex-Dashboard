@@ -140,10 +140,6 @@ export function AnimatedLogo({
   }, [width, height, fontSize, numParticles]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      className={className}
-      style={{ width, height }}
-    />
+    <canvas ref={canvasRef} className={className} style={{ width, height }} />
   );
 }

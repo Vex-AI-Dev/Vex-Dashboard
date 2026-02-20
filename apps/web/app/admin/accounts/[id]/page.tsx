@@ -32,7 +32,9 @@ async function AccountPage(props: Params) {
         <PlanManagement
           accountId={account.id}
           currentPlan={account.vex_plan ?? 'free'}
-          currentOverrides={account.vex_plan_overrides as Record<string, number> | null}
+          currentOverrides={
+            account.vex_plan_overrides as Record<string, number> | null
+          }
         />
       </div>
     </>

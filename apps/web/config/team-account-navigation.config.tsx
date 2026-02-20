@@ -5,6 +5,7 @@ import {
   Shield,
   ShieldAlert,
   Sparkles,
+  Wrench,
 } from 'lucide-react';
 
 import { NavigationConfigSchema } from '@kit/ui/navigation-schema';
@@ -58,6 +59,11 @@ const getRoutes = (account: string) => [
         label: 'agentguard:nav.alerts',
         path: createPath(pathsConfig.app.accountAlerts, account),
         Icon: <AlertTriangle className={iconClasses} />,
+      },
+      {
+        label: 'agentguard:nav.toolUsage',
+        path: createPath(pathsConfig.app.accountToolUsage, account),
+        Icon: <Wrench className={iconClasses} />,
       },
     ],
   },

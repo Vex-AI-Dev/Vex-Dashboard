@@ -4,8 +4,8 @@ import { z } from 'zod';
 
 import { isSuperAdmin } from '@kit/admin';
 import { getLogger } from '@kit/shared/logger';
-import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 import { requireUser } from '@kit/supabase/require-user';
+import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 
 const UpdatePlanSchema = z.object({
   accountId: z.string().uuid(),
@@ -21,7 +21,9 @@ const UpdatePlanSchema = z.object({
     .nullable(),
 });
 
-export async function updateAccountPlan(input: z.infer<typeof UpdatePlanSchema>) {
+export async function updateAccountPlan(
+  input: z.infer<typeof UpdatePlanSchema>,
+) {
   const data = UpdatePlanSchema.parse(input);
 
   const auth = await requireUser();

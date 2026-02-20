@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+
 import Link from 'next/link';
 
 export const metadata: Metadata = {
@@ -36,7 +37,7 @@ export default function CompareBraintrust() {
   return (
     <div className="container py-24">
       <div className="mx-auto max-w-[800px]">
-        <div className="mb-4 text-[13px] font-medium uppercase tracking-widest text-emerald-500">
+        <div className="mb-4 text-[13px] font-medium tracking-widest text-emerald-500 uppercase">
           Comparison
         </div>
         <h1 className="mb-4 text-3xl font-bold text-white sm:text-4xl">
@@ -113,10 +114,10 @@ export default function CompareBraintrust() {
         <p className="mb-8 text-[15px] leading-relaxed text-[#a2a2a2]">
           Braintrust tells you how your agent performed after the fact. Vex
           prevents bad output from reaching users in the first place. Braintrust
-          excels at eval workflows, prompt engineering, and regression detection.
-          Vex excels at runtime safety, real-time blocking, and auto-correction.
-          Use Braintrust for development iteration. Use Vex for production
-          guardrails.
+          excels at eval workflows, prompt engineering, and regression
+          detection. Vex excels at runtime safety, real-time blocking, and
+          auto-correction. Use Braintrust for development iteration. Use Vex for
+          production guardrails.
         </p>
 
         {/* CTA */}

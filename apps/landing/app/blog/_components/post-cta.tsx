@@ -1,10 +1,10 @@
 export function PostCta() {
   return (
     <section className="mt-10 border-t border-[#252525] py-12">
-      <div className="mb-4 text-[13px] font-medium uppercase tracking-widest text-emerald-500">
+      <div className="mb-4 text-[13px] font-medium tracking-widest text-emerald-500 uppercase">
         Get Started
       </div>
-      <h2 className="mb-3 text-2xl font-semibold leading-tight text-white">
+      <h2 className="mb-3 text-2xl leading-tight font-semibold text-white">
         Start monitoring your AI agents for free.
       </h2>
       <p className="mb-8 max-w-[480px] text-[15px] leading-relaxed text-[#a2a2a2]">

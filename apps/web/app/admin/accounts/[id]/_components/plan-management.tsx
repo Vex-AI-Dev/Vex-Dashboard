@@ -58,7 +58,11 @@ export function PlanManagement({
               )
             : null;
 
-        await updateAccountPlan({ accountId, plan, overrides: parsedOverrides });
+        await updateAccountPlan({
+          accountId,
+          plan,
+          overrides: parsedOverrides,
+        });
         setMessage('Plan updated successfully');
       } catch (e) {
         setMessage(
@@ -107,7 +111,7 @@ export function PlanManagement({
             <div className="grid grid-cols-2 gap-3">
               {overrideFields.map(({ key, label }) => (
                 <div key={key} className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">
+                  <Label className="text-muted-foreground text-xs">
                     {label}
                   </Label>
                   <Input

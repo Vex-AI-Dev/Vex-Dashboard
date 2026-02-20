@@ -3,10 +3,10 @@ import type { Metadata } from 'next';
 import { cn } from '@kit/ui/utils';
 
 import { getFontsClassName } from '~/lib/fonts';
-import { SiteFooter } from './_components/site-footer';
-import { SiteHeader } from './_components/site-header';
 
 import '../styles/globals.css';
+import { SiteFooter } from './_components/site-footer';
+import { SiteHeader } from './_components/site-header';
 
 /*
  * Tessellating chevron / V pattern — echoes the Vex logo shape.
@@ -184,7 +184,6 @@ export default function RootLayout({
               'radial-gradient(ellipse 90% 70% at 50% 30%, transparent 0%, #0a0a0a 100%)',
           }}
         />
-
 
         <div className="relative z-10 flex min-h-screen flex-col">
           <SiteHeader />

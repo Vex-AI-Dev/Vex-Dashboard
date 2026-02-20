@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
+
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+
 import { MDXRemote } from 'next-mdx-remote/rsc';
 import remarkGfm from 'remark-gfm';
 
@@ -110,7 +112,7 @@ export default async function BlogPostPage({ params }: Props) {
                 </span>
               ))}
             </div>
-            <h1 className="text-3xl font-bold leading-tight text-white sm:text-4xl">
+            <h1 className="text-3xl leading-tight font-bold text-white sm:text-4xl">
               {post.title}
             </h1>
             <p className="mt-4 text-lg text-[#a2a2a2]">{post.description}</p>
@@ -120,7 +122,7 @@ export default async function BlogPostPage({ params }: Props) {
           <TableOfContents headings={post.headings} />
 
           {/* Article body */}
-          <div className="prose prose-invert prose-lg max-w-none text-[#a2a2a2] prose-headings:text-white prose-headings:font-bold prose-h2:text-2xl prose-h2:mt-14 prose-h2:mb-6 prose-h3:text-xl prose-h3:mt-10 prose-h3:mb-4 prose-p:text-[16px] prose-p:leading-[1.8] prose-p:text-[#a2a2a2] prose-li:text-[16px] prose-li:text-[#a2a2a2] prose-li:marker:text-emerald-500/50 prose-ul:my-4 prose-ol:my-4 prose-strong:text-white prose-a:text-emerald-500 prose-a:no-underline hover:prose-a:text-emerald-400 prose-code:text-emerald-400 prose-code:bg-[#161616] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:before:content-none prose-code:after:content-none prose-pre:bg-[#0a0a0a] prose-pre:border prose-pre:border-[#252525] prose-pre:rounded-xl prose-pre:my-6 prose-pre:p-5 prose-pre:text-sm prose-hr:border-[#252525] prose-hr:my-10 prose-blockquote:border-l-emerald-500/40 prose-blockquote:text-[#a2a2a2] prose-blockquote:not-italic prose-img:rounded-lg prose-img:border prose-img:border-[#252525]">
+          <div className="prose prose-invert prose-lg prose-headings:text-white prose-headings:font-bold prose-h2:text-2xl prose-h2:mt-14 prose-h2:mb-6 prose-h3:text-xl prose-h3:mt-10 prose-h3:mb-4 prose-p:text-[16px] prose-p:leading-[1.8] prose-p:text-[#a2a2a2] prose-li:text-[16px] prose-li:text-[#a2a2a2] prose-li:marker:text-emerald-500/50 prose-ul:my-4 prose-ol:my-4 prose-strong:text-white prose-a:text-emerald-500 prose-a:no-underline hover:prose-a:text-emerald-400 prose-code:text-emerald-400 prose-code:bg-[#161616] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:before:content-none prose-code:after:content-none prose-pre:bg-[#0a0a0a] prose-pre:border prose-pre:border-[#252525] prose-pre:rounded-xl prose-pre:my-6 prose-pre:p-5 prose-pre:text-sm prose-hr:border-[#252525] prose-hr:my-10 prose-blockquote:border-l-emerald-500/40 prose-blockquote:text-[#a2a2a2] prose-blockquote:not-italic prose-img:rounded-lg prose-img:border prose-img:border-[#252525] max-w-none text-[#a2a2a2]">
             <MDXRemote
               source={post.content}
               components={mdxComponents}

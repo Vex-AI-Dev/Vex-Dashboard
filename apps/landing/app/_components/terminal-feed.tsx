@@ -116,9 +116,7 @@ export function TerminalFeed() {
                 <span className="text-[#585858]">[{line.time}]</span>{' '}
                 <span className="text-white">{line.agent}</span>
                 {'\n  '}
-                <span className={statusColor[line.status]}>
-                  {line.details}
-                </span>
+                <span className={statusColor[line.status]}>{line.details}</span>
                 {line.extra && (
                   <>
                     {'\n  '}

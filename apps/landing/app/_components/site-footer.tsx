@@ -59,8 +59,14 @@ export function SiteFooter() {
                   <li key={link.label}>
                     <a
                       href={link.href}
-                      target={link.href.startsWith('http') ? '_blank' : undefined}
-                      rel={link.href.startsWith('http') ? 'noopener noreferrer' : undefined}
+                      target={
+                        link.href.startsWith('http') ? '_blank' : undefined
+                      }
+                      rel={
+                        link.href.startsWith('http')
+                          ? 'noopener noreferrer'
+                          : undefined
+                      }
                       className="text-sm text-[#a2a2a2] transition-colors hover:text-white"
                     >
                       {link.label}
@@ -71,7 +77,6 @@ export function SiteFooter() {
             </div>
           ))}
         </div>
-
       </div>
     </footer>
   );

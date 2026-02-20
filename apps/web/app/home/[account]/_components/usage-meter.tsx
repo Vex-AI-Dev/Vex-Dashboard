@@ -18,14 +18,14 @@ export function UsageMeter({
   const isExceeded = percentage >= 100;
 
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
+    <div className="border-border bg-card rounded-lg border p-4">
       <div className="mb-2 flex items-center justify-between">
         <span className="text-sm font-medium">{label}</span>
-        <span className="text-sm text-muted-foreground">
+        <span className="text-muted-foreground text-sm">
           {current.toLocaleString()} / {limit.toLocaleString()} {unit}
         </span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-muted">
+      <div className="bg-muted h-2 overflow-hidden rounded-full">
         <div
           className={`h-full rounded-full transition-all ${
             isExceeded
@@ -38,7 +38,7 @@ export function UsageMeter({
         />
       </div>
       {isExceeded && (
-        <p className="mt-2 text-xs text-destructive">
+        <p className="text-destructive mt-2 text-xs">
           Quota exceeded. Upgrade your plan for uninterrupted service.
         </p>
       )}

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+
 import Link from 'next/link';
 
 import { getAllPosts } from '~/lib/blog';
@@ -17,7 +18,7 @@ export default function BlogPage() {
     <div className="container py-24">
       {/* Hero */}
       <div className="mb-16 border-b border-[#252525] pb-12">
-        <div className="mb-4 text-[13px] font-medium uppercase tracking-widest text-emerald-500">
+        <div className="mb-4 text-[13px] font-medium tracking-widest text-emerald-500 uppercase">
           Blog
         </div>
         <h1 className="mb-4 text-3xl font-bold text-white sm:text-4xl lg:text-5xl">
@@ -40,7 +41,7 @@ export default function BlogPage() {
               className="group mb-12 block rounded-xl border border-[#252525] bg-[#0a0a0a] p-8 transition-colors hover:border-emerald-500/30 hover:bg-[#161616] sm:p-10"
             >
               <div className="mb-4 flex flex-wrap items-center gap-3">
-                <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium uppercase tracking-widest text-emerald-500">
+                <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium tracking-widest text-emerald-500 uppercase">
                   Latest
                 </span>
                 <time className="text-xs text-[#585858]">{featured.date}</time>
