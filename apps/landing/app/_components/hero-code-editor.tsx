@@ -1,11 +1,22 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   SandpackCodeEditor,
   SandpackProvider,
 } from '@codesandbox/sandpack-react';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Play,
+  RefreshCw,
+  RotateCcw,
+} from 'lucide-react';
+
+/* ------------------------------------------------------------------ */
+/*  Code tab data                                                      */
+/* ------------------------------------------------------------------ */
 
 const pythonCode = `from vex import Vex
 
@@ -41,19 +52,128 @@ const installCommands = {
   typescript: 'npm install @vex_dev/sdk',
 } as const;
 
-type Lang = 'python' | 'typescript';
+/* ------------------------------------------------------------------ */
+/*  Live demo data                                                     */
+/* ------------------------------------------------------------------ */
+
+interface LogEntry {
+  phase: 1 | 2 | 3;
+  text: string;
+  type: 'info' | 'warn' | 'success';
+  classification?: string;
+  confidence?: number;
+  status?: 'pass' | 'flag' | 'corrected';
+}
+
+const DEMO_SEQUENCE: LogEntry[] = [
+  {
+    phase: 1,
+    text: '"Can\'t login to my account"',
+    type: 'info',
+    classification: 'Technical',
+    confidence: 0.97,
+    status: 'pass',
+  },
+  {
+    phase: 1,
+    text: '"I want a refund for my last order"',
+    type: 'info',
+    classification: 'Billing',
+    confidence: 0.95,
+    status: 'pass',
+  },
+  {
+    phase: 1,
+    text: '"App crashes when I open settings"',
+    type: 'info',
+    classification: 'Technical',
+    confidence: 0.96,
+    status: 'pass',
+  },
+  {
+    phase: 1,
+    text: '"How do I cancel my subscription?"',
+    type: 'info',
+    classification: 'Billing',
+    confidence: 0.93,
+    status: 'pass',
+  },
+  {
+    phase: 2,
+    text: '⚠ drift_score: 0.45 — confidence dropping',
+    type: 'warn',
+  },
+  {
+    phase: 2,
+    text: '"Payment failed on checkout"',
+    type: 'warn',
+    classification: 'Technical ✗',
+    confidence: 0.61,
+    status: 'flag',
+  },
+  {
+    phase: 2,
+    text: '"Charged twice for same item"',
+    type: 'warn',
+    classification: 'Technical ✗',
+    confidence: 0.58,
+    status: 'flag',
+  },
+  {
+    phase: 3,
+    text: 'correction cascade → L1 prompt refinement',
+    type: 'success',
+  },
+  {
+    phase: 3,
+    text: 're-classify → Billing',
+    type: 'success',
+    classification: 'Billing ✓',
+    confidence: 0.92,
+    status: 'corrected',
+  },
+  {
+    phase: 3,
+    text: 're-classify → Billing',
+    type: 'success',
+    classification: 'Billing ✓',
+    confidence: 0.94,
+    status: 'corrected',
+  },
+  {
+    phase: 3,
+    text: '✓ 2 caught · 2 corrected · 0 reached production',
+    type: 'success',
+  },
+];
+
+/* ------------------------------------------------------------------ */
+/*  Icons                                                              */
+/* ------------------------------------------------------------------ */
 
 function PythonIcon({ active }: { active?: boolean }) {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24">
       <defs>
         <linearGradient id="py1" x1="0" x2="1" y1="0" y2="1">
-          <stop offset="0" stopColor={active ? 'rgb(56,126,184)' : '#a2a2a2'} />
-          <stop offset="1" stopColor={active ? 'rgb(54,105,148)' : '#888'} />
+          <stop
+            offset="0"
+            stopColor={active ? 'rgb(56,126,184)' : '#a2a2a2'}
+          />
+          <stop
+            offset="1"
+            stopColor={active ? 'rgb(54,105,148)' : '#888'}
+          />
         </linearGradient>
         <linearGradient id="py2" x1="0" x2="1" y1="0" y2="1">
-          <stop offset="0" stopColor={active ? 'rgb(255,224,82)' : '#a2a2a2'} />
-          <stop offset="1" stopColor={active ? 'rgb(255,195,49)' : '#888'} />
+          <stop
+            offset="0"
+            stopColor={active ? 'rgb(255,224,82)' : '#a2a2a2'}
+          />
+          <stop
+            offset="1"
+            stopColor={active ? 'rgb(255,195,49)' : '#888'}
+          />
         </linearGradient>
       </defs>
       <path
@@ -85,10 +205,171 @@ function TSIcon({ active }: { active?: boolean }) {
   );
 }
 
+/* ------------------------------------------------------------------ */
+/*  Hero Live Demo (compact, for hero tab)                             */
+/* ------------------------------------------------------------------ */
+
+function HeroLiveDemo() {
+  const [step, setStep] = useState(0);
+  const [done, setDone] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startPlayback = useCallback(() => {
+    setStep(0);
+    setDone(false);
+
+    let idx = 0;
+    intervalRef.current = setInterval(() => {
+      idx++;
+      if (idx >= DEMO_SEQUENCE.length) {
+        setDone(true);
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        return;
+      }
+      setStep(idx);
+    }, 600);
+  }, []);
+
+  // Auto-start on mount
+  useEffect(() => {
+    startPlayback();
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [startPlayback]);
+
+  const replay = () => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    startPlayback();
+  };
+
+  const visibleEntries = DEMO_SEQUENCE.slice(0, step + 1);
+  const currentPhase = visibleEntries[visibleEntries.length - 1]?.phase ?? 1;
+
+  return (
+    <div className="flex h-[400px] flex-col">
+      {/* Phase bar + replay */}
+      <div className="flex items-center justify-between border-b border-[#252525] px-4 py-2">
+        <div className="flex gap-2">
+          {[
+            { phase: 1, label: 'Normal' },
+            { phase: 2, label: 'Drift' },
+            { phase: 3, label: 'Corrected' },
+          ].map((p) => (
+            <span
+              key={p.phase}
+              className={`rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                currentPhase === p.phase
+                  ? p.phase === 2
+                    ? 'bg-amber-500/20 text-amber-400'
+                    : 'bg-emerald-500/20 text-emerald-400'
+                  : 'text-[#585858]'
+              }`}
+            >
+              {p.label}
+            </span>
+          ))}
+        </div>
+
+        {done && (
+          <button
+            onClick={replay}
+            className="flex items-center gap-1 text-[10px] text-[#a2a2a2] transition-colors hover:text-white"
+          >
+            <RotateCcw className="h-2.5 w-2.5" />
+            Replay
+          </button>
+        )}
+      </div>
+
+      {/* Terminal feed */}
+      <div className="flex-1 overflow-y-auto px-4 py-3 font-mono text-[12px] leading-relaxed">
+        {visibleEntries.map((entry, i) => (
+          <div
+            key={i}
+            className={`mb-1.5 animate-[termLine_0.4s_cubic-bezier(0.16,1,0.3,1)_forwards] opacity-0 ${
+              entry.type === 'warn'
+                ? 'text-amber-400'
+                : entry.type === 'success'
+                  ? 'text-emerald-400'
+                  : 'text-[#a2a2a2]'
+            }`}
+          >
+            <span className="mr-1.5 text-[#585858]">$</span>
+            {entry.text}
+            {entry.classification && (
+              <span className="ml-2 text-[#585858]">
+                → {entry.classification}
+              </span>
+            )}
+            {entry.confidence !== undefined && (
+              <span
+                className={`ml-2 ${
+                  entry.confidence >= 0.9
+                    ? 'text-emerald-500'
+                    : entry.confidence >= 0.7
+                      ? 'text-amber-500'
+                      : 'text-red-400'
+                }`}
+              >
+                {entry.confidence.toFixed(2)}
+              </span>
+            )}
+            {entry.status && (
+              <span
+                className={`ml-2 rounded px-1 py-0.5 text-[10px] font-medium ${
+                  entry.status === 'pass'
+                    ? 'bg-emerald-500/10 text-emerald-400'
+                    : entry.status === 'flag'
+                      ? 'bg-amber-500/10 text-amber-400'
+                      : 'bg-emerald-500/10 text-emerald-400'
+                }`}
+              >
+                {entry.status === 'corrected' ? (
+                  <span className="inline-flex items-center gap-0.5">
+                    <RefreshCw className="inline h-2.5 w-2.5" />
+                    corrected
+                  </span>
+                ) : (
+                  entry.status
+                )}
+              </span>
+            )}
+          </div>
+        ))}
+
+        {/* Summary stats */}
+        {done && (
+          <div className="mt-3 flex gap-4 animate-[termLine_0.4s_cubic-bezier(0.16,1,0.3,1)_forwards] rounded border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 opacity-0">
+            {[
+              { n: '2', label: 'caught' },
+              { n: '2', label: 'corrected' },
+              { n: '0', label: 'leaked' },
+            ].map((s) => (
+              <div key={s.label} className="text-center">
+                <div className="text-sm font-bold text-emerald-400">{s.n}</div>
+                <div className="text-[9px] text-[#a2a2a2]">{s.label}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Main component                                                     */
+/* ------------------------------------------------------------------ */
+
+type Tab = 'live' | 'python' | 'typescript';
+
 export function HeroCodeEditor() {
-  const [lang, setLang] = useState<Lang>('python');
+  const [tab, setTab] = useState<Tab>('live');
   const [copiedInstall, setCopiedInstall] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
+
+  const lang = tab === 'live' ? 'python' : tab;
 
   const handleCopyInstall = useCallback(() => {
     void navigator.clipboard.writeText(installCommands[lang]).then(() => {
@@ -107,125 +388,172 @@ export function HeroCodeEditor() {
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Install command bar — dark, rounded, bordered */}
+      {/* Tab bar */}
       <div className="flex items-center overflow-hidden rounded-[10px] border border-[#252525] bg-[#161616]">
-        {/* Language icon switcher */}
+        {/* Tab switcher */}
         <div className="flex items-center gap-0.5 rounded-[10px] bg-[#0a0a0a] p-1">
           <button
-            onClick={() => setLang('python')}
-            className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all ${
-              lang === 'python'
-                ? 'border border-[#252525] bg-[#161616]'
-                : 'hover:bg-[#161616]/60'
+            onClick={() => setTab('live')}
+            className={`flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium transition-all ${
+              tab === 'live'
+                ? 'border border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+                : 'text-[#a2a2a2] hover:bg-[#161616]/60 hover:text-white'
             }`}
           >
-            <PythonIcon active={lang === 'python'} />
+            <Play className="h-3.5 w-3.5" />
+            Live
           </button>
           <button
-            onClick={() => setLang('typescript')}
+            onClick={() => setTab('python')}
             className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all ${
-              lang === 'typescript'
+              tab === 'python'
                 ? 'border border-[#252525] bg-[#161616]'
                 : 'hover:bg-[#161616]/60'
             }`}
           >
-            <TSIcon active={lang === 'typescript'} />
+            <PythonIcon active={tab === 'python'} />
+          </button>
+          <button
+            onClick={() => setTab('typescript')}
+            className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all ${
+              tab === 'typescript'
+                ? 'border border-[#252525] bg-[#161616]'
+                : 'hover:bg-[#161616]/60'
+            }`}
+          >
+            <TSIcon active={tab === 'typescript'} />
           </button>
         </div>
 
-        {/* Separator */}
-        <div className="mx-3 h-[18px] w-px bg-[#252525]" />
+        {/* Install command (hidden on live tab) */}
+        {tab !== 'live' && (
+          <>
+            <div className="mx-3 h-[18px] w-px bg-[#252525]" />
+            <code className="flex-1 font-mono text-sm text-[#a2a2a2]">
+              {installCommands[lang]}
+            </code>
+            <button
+              onClick={handleCopyInstall}
+              className="mr-2 flex h-8 w-8 items-center justify-center rounded-lg border border-[#252525] bg-[#161616] transition-colors hover:bg-[#252525]"
+            >
+              {copiedInstall ? (
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 256 256"
+                  fill="#10b981"
+                >
+                  <path d="M232.49,80.49l-128,128a12,12,0,0,1-17,0l-56-56a12,12,0,1,1,17-17L96,183,215.51,63.51a12,12,0,0,1,17,17Z" />
+                </svg>
+              ) : (
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 256 256"
+                  fill="#a2a2a2"
+                >
+                  <path d="M216,28H88A12,12,0,0,0,76,40V76H40A12,12,0,0,0,28,88V216a12,12,0,0,0,12,12H168a12,12,0,0,0,12-12V180h36a12,12,0,0,0,12-12V40A12,12,0,0,0,216,28ZM156,204H52V100H156Zm48-48H180V88a12,12,0,0,0-12-12H100V52H204Z" />
+                </svg>
+              )}
+            </button>
+          </>
+        )}
 
-        {/* Install command */}
-        <code className="flex-1 font-mono text-sm text-[#a2a2a2]">
-          {installCommands[lang]}
-        </code>
-
-        {/* Copy button */}
-        <button
-          onClick={handleCopyInstall}
-          className="mr-2 flex h-8 w-8 items-center justify-center rounded-lg border border-[#252525] bg-[#161616] transition-colors hover:bg-[#252525]"
-        >
-          {copiedInstall ? (
-            <svg width="16" height="16" viewBox="0 0 256 256" fill="#10b981">
-              <path d="M232.49,80.49l-128,128a12,12,0,0,1-17,0l-56-56a12,12,0,1,1,17-17L96,183,215.51,63.51a12,12,0,0,1,17,17Z" />
-            </svg>
-          ) : (
-            <svg width="16" height="16" viewBox="0 0 256 256" fill="#a2a2a2">
-              <path d="M216,28H88A12,12,0,0,0,76,40V76H40A12,12,0,0,0,28,88V216a12,12,0,0,0,12,12H168a12,12,0,0,0,12-12V180h36a12,12,0,0,0,12-12V40A12,12,0,0,0,216,28ZM156,204H52V100H156Zm48-48H180V88a12,12,0,0,0-12-12H100V52H204Z" />
-            </svg>
-          )}
-        </button>
+        {/* Live tab label */}
+        {tab === 'live' && (
+          <>
+            <div className="mx-3 h-[18px] w-px bg-[#252525]" />
+            <span className="flex-1 text-xs text-[#585858]">
+              support-ticket-classifier — live verification feed
+            </span>
+          </>
+        )}
       </div>
 
-      {/* Code editor — dark, rounded, bordered */}
+      {/* Content area */}
       <div className="relative overflow-hidden rounded-lg border border-[#252525] bg-[#161616]">
-        <SandpackProvider
-          key={lang}
-          template="vanilla"
-          theme={{
-            colors: {
-              surface1: '#161616',
-              surface2: '#1e1e1e',
-              surface3: '#252525',
-              clickable: '#585858',
-              base: '#a2a2a2',
-              disabled: '#585858',
-              hover: '#a2a2a2',
-              accent: '#10b981',
-              error: '#ef4444',
-              errorSurface: '#1e1e1e',
-            },
-            syntax: {
-              plain: '#a2a2a2',
-              comment: { color: '#585858', fontStyle: 'italic' },
-              keyword: '#c084fc',
-              tag: '#60a5fa',
-              punctuation: '#a2a2a2',
-              definition: '#FFAA00',
-              property: '#34d399',
-              static: '#ff8866',
-              string: '#34d399',
-            },
-            font: {
-              body: 'Inter, system-ui, sans-serif',
-              mono: '"JetBrains Mono", "Fira Code", monospace',
-              size: '14px',
-              lineHeight: '20px',
-            },
-          }}
-          files={{
-            '/index.js': {
-              code: lang === 'python' ? pythonCode : typescriptCode,
-              active: true,
-            },
-          }}
-        >
-          <SandpackCodeEditor
-            readOnly
-            showLineNumbers
-            style={{
-              height: 400,
-              fontSize: 14,
-            }}
-          />
-        </SandpackProvider>
+        {tab === 'live' ? (
+          <HeroLiveDemo />
+        ) : (
+          <>
+            <SandpackProvider
+              key={tab}
+              template="vanilla"
+              theme={{
+                colors: {
+                  surface1: '#161616',
+                  surface2: '#1e1e1e',
+                  surface3: '#252525',
+                  clickable: '#585858',
+                  base: '#a2a2a2',
+                  disabled: '#585858',
+                  hover: '#a2a2a2',
+                  accent: '#10b981',
+                  error: '#ef4444',
+                  errorSurface: '#1e1e1e',
+                },
+                syntax: {
+                  plain: '#a2a2a2',
+                  comment: { color: '#585858', fontStyle: 'italic' },
+                  keyword: '#c084fc',
+                  tag: '#60a5fa',
+                  punctuation: '#a2a2a2',
+                  definition: '#FFAA00',
+                  property: '#34d399',
+                  static: '#ff8866',
+                  string: '#34d399',
+                },
+                font: {
+                  body: 'Inter, system-ui, sans-serif',
+                  mono: '"JetBrains Mono", "Fira Code", monospace',
+                  size: '14px',
+                  lineHeight: '20px',
+                },
+              }}
+              files={{
+                '/index.js': {
+                  code: tab === 'python' ? pythonCode : typescriptCode,
+                  active: true,
+                },
+              }}
+            >
+              <SandpackCodeEditor
+                readOnly
+                showLineNumbers
+                style={{
+                  height: 400,
+                  fontSize: 14,
+                }}
+              />
+            </SandpackProvider>
 
-        {/* Copy code button — top right */}
-        <button
-          onClick={handleCopyCode}
-          className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-lg border border-[#252525] bg-[#161616] transition-colors hover:bg-[#252525]"
-        >
-          {copiedCode ? (
-            <svg width="16" height="16" viewBox="0 0 256 256" fill="#10b981">
-              <path d="M232.49,80.49l-128,128a12,12,0,0,1-17,0l-56-56a12,12,0,1,1,17-17L96,183,215.51,63.51a12,12,0,0,1,17,17Z" />
-            </svg>
-          ) : (
-            <svg width="16" height="16" viewBox="0 0 256 256" fill="#a2a2a2">
-              <path d="M216,28H88A12,12,0,0,0,76,40V76H40A12,12,0,0,0,28,88V216a12,12,0,0,0,12,12H168a12,12,0,0,0,12-12V180h36a12,12,0,0,0,12-12V40A12,12,0,0,0,216,28ZM156,204H52V100H156Zm48-48H180V88a12,12,0,0,0-12-12H100V52H204Z" />
-            </svg>
-          )}
-        </button>
+            {/* Copy code button */}
+            <button
+              onClick={handleCopyCode}
+              className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-lg border border-[#252525] bg-[#161616] transition-colors hover:bg-[#252525]"
+            >
+              {copiedCode ? (
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 256 256"
+                  fill="#10b981"
+                >
+                  <path d="M232.49,80.49l-128,128a12,12,0,0,1-17,0l-56-56a12,12,0,1,1,17-17L96,183,215.51,63.51a12,12,0,0,1,17,17Z" />
+                </svg>
+              ) : (
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 256 256"
+                  fill="#a2a2a2"
+                >
+                  <path d="M216,28H88A12,12,0,0,0,76,40V76H40A12,12,0,0,0,28,88V216a12,12,0,0,0,12,12H168a12,12,0,0,0,12-12V180h36a12,12,0,0,0,12-12V40A12,12,0,0,0,216,28ZM156,204H52V100H156Zm48-48H180V88a12,12,0,0,0-12-12H100V52H204Z" />
+                </svg>
+              )}
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
