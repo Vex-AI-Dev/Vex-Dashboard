@@ -8,6 +8,50 @@ export default createBillingSchema({
   provider,
   products: [
     {
+      id: 'starter',
+      name: 'Starter',
+      description: 'For founders running 1-2 agents in production',
+      currency: 'USD',
+      plans: [
+        {
+          name: 'Starter Monthly',
+          id: 'starter-monthly',
+          paymentType: 'recurring',
+          interval: 'month',
+          lineItems: [
+            {
+              id: 'price_vex_starter_monthly',
+              name: 'Starter',
+              cost: 29,
+              type: 'flat',
+            },
+          ],
+        },
+        {
+          name: 'Starter Yearly',
+          id: 'starter-yearly',
+          paymentType: 'recurring',
+          interval: 'year',
+          lineItems: [
+            {
+              id: 'price_vex_starter_yearly',
+              name: 'Starter',
+              cost: 290,
+              type: 'flat',
+            },
+          ],
+        },
+      ],
+      features: [
+        '25,000 observations/mo',
+        '1,000 verifications/mo',
+        '100 corrections/mo',
+        'Unlimited agents',
+        '7-day retention',
+        'Email support',
+      ],
+    },
+    {
       id: 'pro',
       name: 'Pro',
       badge: 'Most Popular',
@@ -24,7 +68,7 @@ export default createBillingSchema({
             {
               id: 'price_vex_pro_monthly',
               name: 'Pro',
-              cost: 79,
+              cost: 99,
               type: 'flat',
             },
           ],
@@ -38,19 +82,18 @@ export default createBillingSchema({
             {
               id: 'price_vex_pro_yearly',
               name: 'Pro',
-              cost: 790,
+              cost: 990,
               type: 'flat',
             },
           ],
         },
       ],
       features: [
-        '100,000 observations/mo',
-        '10,000 verifications/mo',
-        '15 agents',
-        '5 seats',
-        '30-day retention',
+        '150,000 observations/mo',
+        '15,000 verifications/mo',
         'Full correction cascade',
+        'Unlimited agents',
+        '30-day retention',
         'Email + webhook alerts',
         'Email support (48h SLA)',
       ],
@@ -58,7 +101,7 @@ export default createBillingSchema({
     {
       id: 'team',
       name: 'Team',
-      description: 'For scaling teams with mission-critical agents',
+      description: 'For organizations running agents at scale',
       currency: 'USD',
       plans: [
         {
@@ -70,7 +113,7 @@ export default createBillingSchema({
             {
               id: 'price_vex_team_monthly',
               name: 'Team',
-              cost: 299,
+              cost: 349,
               type: 'flat',
             },
           ],
@@ -84,19 +127,18 @@ export default createBillingSchema({
             {
               id: 'price_vex_team_yearly',
               name: 'Team',
-              cost: 2990,
+              cost: 3490,
               type: 'flat',
             },
           ],
         },
       ],
       features: [
-        '1,000,000 observations/mo',
-        '100,000 verifications/mo',
-        'Unlimited agents',
-        '15 seats',
-        '90-day retention',
+        '1,500,000 observations/mo',
+        '150,000 verifications/mo',
         'Full correction cascade + priority',
+        'Unlimited agents',
+        '90-day retention',
         'Email + webhook + Slack alerts',
         'Priority support (24h SLA)',
       ],
