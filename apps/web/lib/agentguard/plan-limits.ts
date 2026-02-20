@@ -70,7 +70,7 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
     verificationsPerMonth: 1_000_000,
     maxRpm: 10_000,
     maxAgents: -1, // unlimited
-    maxSeats: -1,  // unlimited
+    maxSeats: -1, // unlimited
     correctionsEnabled: true,
     webhookAlerts: true,
     slackAlerts: true,
@@ -90,9 +90,12 @@ export function getPlanLimits(
 ): PlanLimits {
   const base = PLAN_LIMITS[plan] ?? PLAN_LIMITS.free!;
   if (!overrides) return base;
-  return { ...base, ...Object.fromEntries(
-    Object.entries(overrides).filter(([, v]) => v != null)
-  ) } as PlanLimits;
+  return {
+    ...base,
+    ...Object.fromEntries(
+      Object.entries(overrides).filter(([, v]) => v != null),
+    ),
+  } as PlanLimits;
 }
 
 /**

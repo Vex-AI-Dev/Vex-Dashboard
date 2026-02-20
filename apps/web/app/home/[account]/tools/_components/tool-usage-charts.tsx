@@ -71,12 +71,13 @@ export default function ToolUsageCharts({
   const bucketMap = new Map<string, Record<string, number>>();
   for (const row of timeSeries) {
     if (!allToolNames.includes(row.tool_name)) continue;
-    const existing = bucketMap.get(row.bucket) ?? {};
+    const key = String(row.bucket);
+    const existing = bucketMap.get(key) ?? {};
     existing[row.tool_name] = row.call_count;
-    bucketMap.set(row.bucket, existing);
+    bucketMap.set(key, existing);
   }
   const areaChartData = Array.from(bucketMap.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
+    .sort(([a], [b]) => String(a).localeCompare(String(b)))
     .map(([bucket, counts]) => ({
       bucket: format(new Date(bucket), 'MMM d'),
       ...counts,
@@ -238,7 +239,7 @@ export default function ToolUsageCharts({
                 <table className="w-full text-xs">
                   <thead>
                     <tr>
-                      <th className="text-muted-foreground pb-2 pr-2 text-left font-normal">
+                      <th className="text-muted-foreground pr-2 pb-2 text-left font-normal">
                         Tool / Agent
                       </th>
                       {heatmapAgents.map((agentId) => (
@@ -260,7 +261,7 @@ export default function ToolUsageCharts({
                     {heatmapTools.map((toolName) => (
                       <tr key={toolName}>
                         <td
-                          className="text-muted-foreground pr-2 py-0.5 font-mono"
+                          className="text-muted-foreground py-0.5 pr-2 font-mono"
                           title={toolName}
                         >
                           {toolName.length > 16
@@ -271,7 +272,7 @@ export default function ToolUsageCharts({
                           const cell = cellMap.get(`${toolName}:${agentId}`);
                           const blockRate = cell?.block_rate;
                           return (
-                            <td key={agentId} className="py-0.5 px-0.5">
+                            <td key={agentId} className="px-0.5 py-0.5">
                               <div
                                 className={`flex h-7 items-center justify-center rounded text-center text-xs font-medium ${heatmapCellStyle(blockRate)}`}
                                 title={

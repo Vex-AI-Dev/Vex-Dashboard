@@ -30,7 +30,9 @@ export function ToolUsageTable({
   // Build anomaly tool set from anomalies prop if not passed pre-built
   const effectiveAnomalySet =
     anomalyToolSet ??
-    (anomalies ? new Set(anomalies.map((a) => a.tool_name)) : new Set<string>());
+    (anomalies
+      ? new Set(anomalies.map((a) => a.tool_name))
+      : new Set<string>());
 
   if (tools.length === 0) {
     return (
