@@ -32,17 +32,14 @@ export function FeaturebaseMessenger({
     }
 
     // Boot Featurebase messenger with configuration
-    const config: Record<string, unknown> = {
+    win.Featurebase('boot', {
       appId: '6990d53c69987751d9a17203',
+      email: email,
+      userId: userId,
+      name: userName,
       theme: 'dark',
       hideDefaultLauncher: true,
-    };
-
-    if (email) config.email = email;
-    if (userId) config.userId = userId;
-    if (userName) config.name = userName;
-
-    win.Featurebase('boot', config);
+    });
   }, [email, userId, userName]);
 
   return (

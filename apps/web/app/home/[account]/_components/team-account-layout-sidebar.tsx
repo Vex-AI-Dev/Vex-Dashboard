@@ -1,4 +1,4 @@
-import { MessageSquareHeart } from 'lucide-react';
+import { BookOpen, MessageSquareHeart } from 'lucide-react';
 
 import { JWTUserData } from '@kit/supabase/types';
 import {
@@ -116,6 +116,18 @@ function SidebarContainer(props: {
               (user.user_metadata?.display_name as string) ?? user.email
             }
           />
+
+          <a
+            href="https://docs.tryvex.dev/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-muted-foreground hover:bg-secondary hover:text-foreground flex items-center gap-2 rounded-md px-2 py-2 text-sm transition-colors group-data-[minimized=true]/sidebar:justify-center"
+          >
+            <BookOpen className="h-5 w-5" />
+            <span className="group-data-[minimized=true]/sidebar:hidden">
+              Docs
+            </span>
+          </a>
 
           <LiveSupportButton />
 
