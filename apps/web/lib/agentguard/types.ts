@@ -322,3 +322,95 @@ export interface SessionDetailHeader {
   total_tokens: number | null;
   total_cost: number | null;
 }
+
+/**
+ * Per-check score trend data point (from check_score_hourly view).
+ */
+export interface CheckScoreBucket {
+  bucket: string;
+  check_type: string;
+  avg_score: number | null;
+  check_count: number;
+}
+
+/**
+ * Correction effectiveness stats for a time period.
+ */
+export interface CorrectionStatsBucket {
+  bucket: string;
+  corrected_count: number;
+  failed_count: number;
+  total_count: number;
+}
+
+/**
+ * Layer usage breakdown for correction cascade.
+ */
+export interface CorrectionLayerUsage {
+  layer_name: string;
+  count: number;
+}
+
+/**
+ * Tool usage analytics row.
+ */
+export interface ToolUsageRow {
+  tool_name: string;
+  call_count: number;
+  avg_duration_ms: number | null;
+  agents_using: number;
+  flag_rate: number | null;
+  block_rate: number | null;
+}
+
+/**
+ * KPI aggregates for the tool usage dashboard.
+ */
+export interface ToolUsageKpis {
+  total_calls: number;
+  unique_tools: number;
+  anomaly_count: number;
+  active_policies: number;
+}
+
+/**
+ * Daily time-series bucket for tool call volume chart.
+ */
+export interface ToolCallDailyBucket {
+  bucket: string;
+  tool_name: string;
+  call_count: number;
+}
+
+/**
+ * Tool × agent risk matrix cell for heatmap.
+ */
+export interface ToolRiskCell {
+  tool_name: string;
+  agent_id: string;
+  call_count: number;
+  block_rate: number;
+}
+
+/**
+ * Detected anomaly for a tool.
+ */
+export interface ToolAnomaly {
+  severity: 'critical' | 'high' | 'medium';
+  tool_name: string;
+  agent_id: string | null;
+  anomaly_type: string;
+  description: string;
+  current_value: number;
+  baseline_value: number;
+}
+
+/**
+ * Failure pattern row for homepage widget.
+ */
+export interface FailurePattern {
+  agent_id: string;
+  agent_name: string;
+  check_type: string;
+  failure_count: number;
+}
