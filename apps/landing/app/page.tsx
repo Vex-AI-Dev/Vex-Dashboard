@@ -47,7 +47,7 @@ export default function LandingPage() {
             </div>
 
             {/* Right column — install + code editor */}
-            <div className="hidden lg:block">
+            <div>
               <HeroCodeEditor />
             </div>
           </div>
