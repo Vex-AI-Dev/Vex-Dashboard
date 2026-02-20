@@ -3,6 +3,7 @@ import { PageBody } from '@kit/ui/page';
 import { Trans } from '@kit/ui/trans';
 
 import { resolveOrgId } from '~/lib/agentguard/resolve-org-id';
+import { parseTimeRange } from '~/lib/agentguard/time-range';
 import { createI18nServerInstance } from '~/lib/i18n/i18n.server';
 import { withI18n } from '~/lib/i18n/with-i18n';
 
@@ -17,7 +18,7 @@ import {
 
 interface FleetHealthPageProps {
   params: Promise<{ account: string }>;
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; timeRange?: string }>;
 }
 
 export const generateMetadata = async () => {
@@ -34,13 +35,14 @@ async function FleetHealthPage({ params, searchParams }: FleetHealthPageProps) {
   const filters = await searchParams;
   const orgId = await resolveOrgId(account);
   const page = Math.max(1, parseInt(filters.page ?? '1', 10) || 1);
+  const timeRange = parseTimeRange(filters.timeRange);
 
   const [kpis, agentsResult, executionsOverTime, recentSessions] =
     await Promise.all([
-      loadFleetKpis(orgId),
-      loadAgentFleetTable(orgId, page),
-      loadExecutionsOverTime(orgId),
-      loadFleetRecentSessions(orgId),
+      loadFleetKpis(orgId, timeRange),
+      loadAgentFleetTable(orgId, page, timeRange),
+      loadExecutionsOverTime(orgId, timeRange),
+      loadFleetRecentSessions(orgId, timeRange),
     ]);
 
   return (

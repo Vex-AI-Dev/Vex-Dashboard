@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { AppBreadcrumbs } from '@kit/ui/app-breadcrumbs';
 import { PageBody } from '@kit/ui/page';
 
+import { parseTimeRange } from '~/lib/agentguard/time-range';
 import { createI18nServerInstance } from '~/lib/i18n/i18n.server';
 import { withI18n } from '~/lib/i18n/with-i18n';
 
@@ -22,6 +23,7 @@ import {
 
 interface AgentDetailPageProps {
   params: Promise<{ account: string; agentId: string }>;
+  searchParams: Promise<{ timeRange?: string }>;
 }
 
 export const generateMetadata = async () => {
@@ -33,8 +35,10 @@ export const generateMetadata = async () => {
   };
 };
 
-async function AgentDetailPage({ params }: AgentDetailPageProps) {
+async function AgentDetailPage({ params, searchParams }: AgentDetailPageProps) {
   const { account, agentId } = await params;
+  const { timeRange: timeRangeParam } = await searchParams;
+  const timeRange = parseTimeRange(timeRangeParam);
 
   const agent = await loadAgent(agentId);
 
@@ -52,14 +56,14 @@ async function AgentDetailPage({ params }: AgentDetailPageProps) {
     correctionLayerUsage,
     anomalyAlerts,
   ] = await Promise.all([
-    loadAgentKpis(agentId),
-    loadAgentConfidenceOverTime(agentId),
-    loadAgentActionDistribution(agentId),
+    loadAgentKpis(agentId, timeRange),
+    loadAgentConfidenceOverTime(agentId, timeRange),
+    loadAgentActionDistribution(agentId, timeRange),
     loadRecentExecutions(agentId),
-    loadCheckScoreTrends(agentId),
-    loadCorrectionStats(agentId),
-    loadCorrectionLayerUsage(agentId),
-    loadAgentAnomalyAlerts(agentId),
+    loadCheckScoreTrends(agentId, timeRange),
+    loadCorrectionStats(agentId, timeRange),
+    loadCorrectionLayerUsage(agentId, timeRange),
+    loadAgentAnomalyAlerts(agentId, timeRange),
   ]);
 
   return (

@@ -23,6 +23,7 @@ import {
 } from '@kit/ui/chart';
 import { Trans } from '@kit/ui/trans';
 
+import { TimeRangeSelect } from '~/components/time-range-select';
 import type {
   ToolAnomaly,
   ToolCallDailyBucket,
@@ -138,6 +139,9 @@ export default function ToolUsageCharts({
 
   return (
     <div className="animate-in fade-in flex flex-col space-y-6 pb-36 duration-500">
+      <div className="flex items-center justify-end">
+        <TimeRangeSelect />
+      </div>
       {/* Section 1: KPI Cards */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <KpiCard

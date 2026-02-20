@@ -3,6 +3,10 @@ import 'server-only';
 import { cache } from 'react';
 
 import { getAgentGuardPool } from '~/lib/agentguard/db';
+import {
+  TIME_RANGE_INTERVALS,
+  type TimeRange,
+} from '~/lib/agentguard/time-range';
 import type {
   ToolAnomaly,
   ToolCallDailyBucket,
@@ -15,7 +19,7 @@ import type {
  * Load tool usage analytics for an org (last 7 days).
  */
 export const loadToolUsage = cache(
-  async (orgId: string): Promise<ToolUsageRow[]> => {
+  async (orgId: string, timeRange?: TimeRange): Promise<ToolUsageRow[]> => {
     try {
       const pool = getAgentGuardPool();
 
@@ -38,7 +42,7 @@ export const loadToolUsage = cache(
         FROM tool_calls tc
         JOIN executions e ON tc.execution_id = e.execution_id
         WHERE tc.org_id = $1
-          AND tc.timestamp >= NOW() - INTERVAL '7 days'
+          AND tc.timestamp >= NOW() - INTERVAL '${TIME_RANGE_INTERVALS[timeRange ?? '7d']}'
         GROUP BY tc.tool_name
         ORDER BY call_count DESC
         LIMIT 50
@@ -64,7 +68,7 @@ export const loadToolUsage = cache(
  * Load KPI aggregates for the tool usage dashboard.
  */
 export const loadToolUsageKpis = cache(
-  async (orgId: string): Promise<ToolUsageKpis> => {
+  async (orgId: string, timeRange?: TimeRange): Promise<ToolUsageKpis> => {
     try {
       const pool = getAgentGuardPool();
 
@@ -78,7 +82,7 @@ export const loadToolUsageKpis = cache(
           COUNT(DISTINCT tool_name) AS unique_tools
         FROM tool_calls
         WHERE org_id = $1
-          AND timestamp >= NOW() - INTERVAL '7 days'
+          AND timestamp >= NOW() - INTERVAL '${TIME_RANGE_INTERVALS[timeRange ?? '7d']}'
         `,
         [orgId],
       );
@@ -117,7 +121,10 @@ export const loadToolUsageKpis = cache(
  * Load daily time-series for the stacked area chart (7 days).
  */
 export const loadToolUsageTimeSeries = cache(
-  async (orgId: string): Promise<ToolCallDailyBucket[]> => {
+  async (
+    orgId: string,
+    timeRange?: TimeRange,
+  ): Promise<ToolCallDailyBucket[]> => {
     try {
       const pool = getAgentGuardPool();
 
@@ -133,7 +140,7 @@ export const loadToolUsageTimeSeries = cache(
           SUM(call_count)::text AS call_count
         FROM tool_usage_daily
         WHERE org_id = $1
-          AND bucket >= NOW() - INTERVAL '7 days'
+          AND bucket >= NOW() - INTERVAL '${TIME_RANGE_INTERVALS[timeRange ?? '7d']}'
         GROUP BY bucket, tool_name
         ORDER BY bucket ASC, tool_name ASC
         `,
@@ -155,7 +162,7 @@ export const loadToolUsageTimeSeries = cache(
  * Load tool x agent risk matrix for heatmap (7 days).
  */
 export const loadToolRiskMatrix = cache(
-  async (orgId: string): Promise<ToolRiskCell[]> => {
+  async (orgId: string, timeRange?: TimeRange): Promise<ToolRiskCell[]> => {
     try {
       const pool = getAgentGuardPool();
 
@@ -173,7 +180,7 @@ export const loadToolRiskMatrix = cache(
           AVG(block_rate) AS block_rate
         FROM tool_usage_daily
         WHERE org_id = $1
-          AND bucket >= NOW() - INTERVAL '7 days'
+          AND bucket >= NOW() - INTERVAL '${TIME_RANGE_INTERVALS[timeRange ?? '7d']}'
         GROUP BY tool_name, agent_id
         ORDER BY tool_name, agent_id
         `,
@@ -196,7 +203,7 @@ export const loadToolRiskMatrix = cache(
  * Detect tool usage anomalies by comparing current vs 7-day averages.
  */
 export const loadToolAnomalies = cache(
-  async (orgId: string): Promise<ToolAnomaly[]> => {
+  async (orgId: string, timeRange?: TimeRange): Promise<ToolAnomaly[]> => {
     try {
       const pool = getAgentGuardPool();
 
@@ -220,7 +227,7 @@ export const loadToolAnomalies = cache(
             AVG(block_rate) AS block_rate
           FROM tool_usage_daily
           WHERE org_id = $1
-            AND bucket >= NOW() - INTERVAL '7 days'
+            AND bucket >= NOW() - INTERVAL '${TIME_RANGE_INTERVALS[timeRange ?? '7d']}'
           GROUP BY tool_name, agent_id, bucket
         ),
         today AS (

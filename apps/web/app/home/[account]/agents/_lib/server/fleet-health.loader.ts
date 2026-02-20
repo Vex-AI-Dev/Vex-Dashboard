@@ -3,6 +3,10 @@ import 'server-only';
 import { cache } from 'react';
 
 import { getAgentGuardPool } from '~/lib/agentguard/db';
+import {
+  TIME_RANGE_INTERVALS,
+  type TimeRange,
+} from '~/lib/agentguard/time-range';
 import type {
   AgentFleetRow,
   ExecutionsOverTime,
@@ -16,8 +20,9 @@ export const AGENTS_PAGE_SIZE = 25;
  * Load fleet-level KPI aggregates for the last 24 hours.
  */
 export const loadFleetKpis = cache(
-  async (orgId: string): Promise<FleetKpis> => {
+  async (orgId: string, timeRange?: TimeRange): Promise<FleetKpis> => {
     const pool = getAgentGuardPool();
+    const interval = TIME_RANGE_INTERVALS[timeRange ?? '24h'];
 
     const result = await pool.query<{
       total_agents: string;
@@ -44,7 +49,7 @@ export const loadFleetKpis = cache(
       END AS correction_rate
     FROM executions
     WHERE org_id = $1
-      AND timestamp >= NOW() - INTERVAL '24 hours'
+      AND timestamp >= NOW() - INTERVAL '${interval}'
     `,
       [orgId],
     );
@@ -70,10 +75,15 @@ export interface AgentFleetResult {
 }
 
 export const loadAgentFleetTable = cache(
-  async (orgId: string, page = 1): Promise<AgentFleetResult> => {
+  async (
+    orgId: string,
+    page = 1,
+    timeRange?: TimeRange,
+  ): Promise<AgentFleetResult> => {
     const pool = getAgentGuardPool();
     const safePage = Math.max(1, page);
     const offset = (safePage - 1) * AGENTS_PAGE_SIZE;
+    const interval = TIME_RANGE_INTERVALS[timeRange ?? '24h'];
 
     const result = await pool.query<{
       agent_id: string;
@@ -100,7 +110,7 @@ export const loadAgentFleetTable = cache(
       FROM agents a
       LEFT JOIN executions e
         ON a.agent_id = e.agent_id
-        AND e.timestamp >= NOW() - INTERVAL '24 hours'
+        AND e.timestamp >= NOW() - INTERVAL '${interval}'
       WHERE a.org_id = $1
       GROUP BY a.agent_id, a.name
       ORDER BY COUNT(e.execution_id) DESC
@@ -131,8 +141,12 @@ export const loadAgentFleetTable = cache(
  * Load executions over time (7 days) from agent_health_hourly continuous aggregate.
  */
 export const loadExecutionsOverTime = cache(
-  async (orgId: string): Promise<ExecutionsOverTime[]> => {
+  async (
+    orgId: string,
+    timeRange?: TimeRange,
+  ): Promise<ExecutionsOverTime[]> => {
     const pool = getAgentGuardPool();
+    const interval = TIME_RANGE_INTERVALS[timeRange ?? '7d'];
 
     const result = await pool.query<{
       bucket: string;
@@ -150,7 +164,7 @@ export const loadExecutionsOverTime = cache(
         FROM agent_health_hourly h
         INNER JOIN agents a ON h.agent_id = a.agent_id
         WHERE a.org_id = $1
-          AND h.bucket >= NOW() - INTERVAL '7 days'
+          AND h.bucket >= NOW() - INTERVAL '${interval}'
         GROUP BY h.bucket
       ),
       realtime AS (
@@ -190,8 +204,12 @@ export const loadExecutionsOverTime = cache(
  * Load the 3 most recent sessions per agent across the fleet (last 7 days).
  */
 export const loadFleetRecentSessions = cache(
-  async (orgId: string): Promise<FleetSessionSummary[]> => {
+  async (
+    orgId: string,
+    timeRange?: TimeRange,
+  ): Promise<FleetSessionSummary[]> => {
     const pool = getAgentGuardPool();
+    const interval = TIME_RANGE_INTERVALS[timeRange ?? '7d'];
 
     const result = await pool.query<{
       session_id: string;
@@ -217,7 +235,7 @@ export const loadFleetRecentSessions = cache(
         INNER JOIN agents a ON e.agent_id = a.agent_id
         WHERE a.org_id = $1
           AND e.session_id IS NOT NULL
-          AND e.timestamp >= NOW() - INTERVAL '7 days'
+          AND e.timestamp >= NOW() - INTERVAL '${interval}'
         GROUP BY e.session_id, e.agent_id
       ) sub
       WHERE rn <= 3

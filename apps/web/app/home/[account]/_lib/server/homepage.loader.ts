@@ -5,6 +5,10 @@ import { cache } from 'react';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import { getAgentGuardPool } from '~/lib/agentguard/db';
+import {
+  TIME_RANGE_INTERVALS,
+  type TimeRange,
+} from '~/lib/agentguard/time-range';
 import type {
   AgentHealthTile,
   AlertSeveritySummary,
@@ -19,8 +23,9 @@ import type {
  * Load value-oriented KPIs for the homepage (last 24 hours).
  */
 export const loadHomepageKpis = cache(
-  async (orgId: string): Promise<HomepageKpis> => {
+  async (orgId: string, timeRange?: TimeRange): Promise<HomepageKpis> => {
     const pool = getAgentGuardPool();
+    const interval = TIME_RANGE_INTERVALS[timeRange ?? '24h'];
 
     const result = await pool.query<{
       total_verifications: string;
@@ -36,7 +41,7 @@ export const loadHomepageKpis = cache(
         COUNT(*) FILTER (WHERE corrected = TRUE) AS auto_corrected
       FROM executions
       WHERE org_id = $1
-        AND timestamp >= NOW() - INTERVAL '24 hours'
+        AND timestamp >= NOW() - INTERVAL '${interval}'
       `,
       [orgId],
     );
@@ -56,8 +61,9 @@ export const loadHomepageKpis = cache(
  * Load per-agent health summaries for the homepage tiles (last 24 hours).
  */
 export const loadAgentHealth = cache(
-  async (orgId: string): Promise<AgentHealthTile[]> => {
+  async (orgId: string, timeRange?: TimeRange): Promise<AgentHealthTile[]> => {
     const pool = getAgentGuardPool();
+    const interval = TIME_RANGE_INTERVALS[timeRange ?? '24h'];
 
     const result = await pool.query<{
       agent_id: string;
@@ -76,7 +82,7 @@ export const loadAgentHealth = cache(
       FROM agents a
       LEFT JOIN executions e
         ON a.agent_id = e.agent_id
-        AND e.timestamp >= NOW() - INTERVAL '24 hours'
+        AND e.timestamp >= NOW() - INTERVAL '${interval}'
       WHERE a.org_id = $1
       GROUP BY a.agent_id, a.name
       ORDER BY COUNT(e.execution_id) DESC
@@ -98,8 +104,12 @@ export const loadAgentHealth = cache(
  * Load alert severity counts for the homepage summary (last 24 hours).
  */
 export const loadAlertSummary = cache(
-  async (orgId: string): Promise<AlertSeveritySummary> => {
+  async (
+    orgId: string,
+    timeRange?: TimeRange,
+  ): Promise<AlertSeveritySummary> => {
     const pool = getAgentGuardPool();
+    const interval = TIME_RANGE_INTERVALS[timeRange ?? '24h'];
 
     const result = await pool.query<{
       critical: string;
@@ -115,7 +125,7 @@ export const loadAlertSummary = cache(
         COUNT(*) FILTER (WHERE severity = 'low') AS low
       FROM alerts
       WHERE org_id = $1
-        AND created_at >= NOW() - INTERVAL '24 hours'
+        AND created_at >= NOW() - INTERVAL '${interval}'
       `,
       [orgId],
     );
@@ -135,8 +145,12 @@ export const loadAlertSummary = cache(
  * Load hourly execution trend for the homepage mini chart (last 24 hours).
  */
 export const loadHomepageTrend = cache(
-  async (orgId: string): Promise<HomepageTrendBucket[]> => {
+  async (
+    orgId: string,
+    timeRange?: TimeRange,
+  ): Promise<HomepageTrendBucket[]> => {
     const pool = getAgentGuardPool();
+    const interval = TIME_RANGE_INTERVALS[timeRange ?? '24h'];
 
     const result = await pool.query<{
       bucket: string;
@@ -152,7 +166,7 @@ export const loadHomepageTrend = cache(
         COUNT(*) FILTER (WHERE action = 'block') AS block_count
       FROM executions
       WHERE org_id = $1
-        AND timestamp >= NOW() - INTERVAL '24 hours'
+        AND timestamp >= NOW() - INTERVAL '${interval}'
       GROUP BY bucket
       ORDER BY bucket ASC
       `,
@@ -276,8 +290,9 @@ export const loadPlanUsage = cache(
  * Load top failure patterns for the homepage widget (last 7 days).
  */
 export const loadFailurePatterns = cache(
-  async (orgId: string): Promise<FailurePattern[]> => {
+  async (orgId: string, timeRange?: TimeRange): Promise<FailurePattern[]> => {
     const pool = getAgentGuardPool();
+    const interval = TIME_RANGE_INTERVALS[timeRange ?? '7d'];
 
     const result = await pool.query<{
       agent_id: string;
@@ -296,7 +311,7 @@ export const loadFailurePatterns = cache(
       JOIN agents a ON e.agent_id = a.agent_id
       WHERE e.org_id = $1
         AND cr.passed = false
-        AND cr.timestamp >= NOW() - INTERVAL '7 days'
+        AND cr.timestamp >= NOW() - INTERVAL '${interval}'
       GROUP BY e.agent_id, a.name, cr.check_type
       ORDER BY failure_count DESC
       LIMIT 10
@@ -317,8 +332,9 @@ export const loadFailurePatterns = cache(
  * Load recent cost/latency anomaly alerts for the homepage (last 7 days).
  */
 export const loadAnomalyAlerts = cache(
-  async (orgId: string): Promise<AnomalyAlert[]> => {
+  async (orgId: string, timeRange?: TimeRange): Promise<AnomalyAlert[]> => {
     const pool = getAgentGuardPool();
+    const interval = TIME_RANGE_INTERVALS[timeRange ?? '7d'];
 
     const result = await pool.query<AnomalyAlert>(
       `
@@ -334,7 +350,7 @@ export const loadAnomalyAlerts = cache(
       LEFT JOIN agents ag ON al.agent_id = ag.agent_id
       WHERE al.org_id = $1
         AND al.alert_type IN ('cost_anomaly', 'latency_anomaly')
-        AND al.created_at >= NOW() - INTERVAL '7 days'
+        AND al.created_at >= NOW() - INTERVAL '${interval}'
       ORDER BY al.created_at DESC
       LIMIT 10
       `,

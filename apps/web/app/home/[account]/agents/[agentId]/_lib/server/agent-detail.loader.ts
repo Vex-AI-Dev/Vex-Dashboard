@@ -3,6 +3,10 @@ import 'server-only';
 import { cache } from 'react';
 
 import { getAgentGuardPool } from '~/lib/agentguard/db';
+import {
+  TIME_RANGE_INTERVALS,
+  type TimeRange,
+} from '~/lib/agentguard/time-range';
 import type {
   ActionDistribution,
   Agent,
@@ -33,11 +37,12 @@ export const loadAgent = cache(
 );
 
 /**
- * Load KPI aggregates for a specific agent (last 24 hours).
+ * Load KPI aggregates for a specific agent.
  */
 export const loadAgentKpis = cache(
-  async (agentId: string): Promise<AgentKpis> => {
+  async (agentId: string, timeRange?: TimeRange): Promise<AgentKpis> => {
     const pool = getAgentGuardPool();
+    const interval = TIME_RANGE_INTERVALS[timeRange ?? '24h'];
 
     const result = await pool.query<{
       total_executions: string;
@@ -55,7 +60,7 @@ export const loadAgentKpis = cache(
         SUM(cost_estimate) AS total_cost
       FROM executions
       WHERE agent_id = $1
-        AND timestamp >= NOW() - INTERVAL '24 hours'
+        AND timestamp >= NOW() - INTERVAL '${interval}'
       `,
       [agentId],
     );
@@ -73,11 +78,15 @@ export const loadAgentKpis = cache(
 );
 
 /**
- * Load confidence over time for a specific agent (7 days, hourly buckets).
+ * Load confidence over time for a specific agent (hourly buckets).
  */
 export const loadAgentConfidenceOverTime = cache(
-  async (agentId: string): Promise<ConfidenceOverTime[]> => {
+  async (
+    agentId: string,
+    timeRange?: TimeRange,
+  ): Promise<ConfidenceOverTime[]> => {
     const pool = getAgentGuardPool();
+    const interval = TIME_RANGE_INTERVALS[timeRange ?? '7d'];
 
     const result = await pool.query<{
       bucket: string;
@@ -89,7 +98,7 @@ export const loadAgentConfidenceOverTime = cache(
         avg_confidence
       FROM agent_health_hourly
       WHERE agent_id = $1
-        AND bucket >= NOW() - INTERVAL '7 days'
+        AND bucket >= NOW() - INTERVAL '${interval}'
       ORDER BY bucket ASC
       `,
       [agentId],
@@ -100,11 +109,15 @@ export const loadAgentConfidenceOverTime = cache(
 );
 
 /**
- * Load action distribution for a specific agent (last 24 hours).
+ * Load action distribution for a specific agent.
  */
 export const loadAgentActionDistribution = cache(
-  async (agentId: string): Promise<ActionDistribution[]> => {
+  async (
+    agentId: string,
+    timeRange?: TimeRange,
+  ): Promise<ActionDistribution[]> => {
     const pool = getAgentGuardPool();
+    const interval = TIME_RANGE_INTERVALS[timeRange ?? '24h'];
 
     const result = await pool.query<{
       action: string;
@@ -116,7 +129,7 @@ export const loadAgentActionDistribution = cache(
         COUNT(*) AS count
       FROM executions
       WHERE agent_id = $1
-        AND timestamp >= NOW() - INTERVAL '24 hours'
+        AND timestamp >= NOW() - INTERVAL '${interval}'
       GROUP BY action
       ORDER BY count DESC
       `,
@@ -200,12 +213,16 @@ export const loadRecentSessions = cache(
 );
 
 /**
- * Load per-check score trends for a specific agent (7 days, hourly buckets).
+ * Load per-check score trends for a specific agent (hourly buckets).
  */
 export const loadCheckScoreTrends = cache(
-  async (agentId: string): Promise<CheckScoreBucket[]> => {
+  async (
+    agentId: string,
+    timeRange?: TimeRange,
+  ): Promise<CheckScoreBucket[]> => {
     try {
       const pool = getAgentGuardPool();
+      const interval = TIME_RANGE_INTERVALS[timeRange ?? '7d'];
 
       const result = await pool.query<{
         bucket: string;
@@ -221,7 +238,7 @@ export const loadCheckScoreTrends = cache(
           check_count
         FROM check_score_hourly
         WHERE agent_id = $1
-          AND bucket >= NOW() - INTERVAL '7 days'
+          AND bucket >= NOW() - INTERVAL '${interval}'
         ORDER BY bucket ASC, check_type ASC
         `,
         [agentId],
@@ -240,12 +257,16 @@ export const loadCheckScoreTrends = cache(
 );
 
 /**
- * Load correction stats trend for a specific agent (30 days, daily buckets).
+ * Load correction stats trend for a specific agent (daily buckets).
  */
 export const loadCorrectionStats = cache(
-  async (agentId: string): Promise<CorrectionStatsBucket[]> => {
+  async (
+    agentId: string,
+    timeRange?: TimeRange,
+  ): Promise<CorrectionStatsBucket[]> => {
     try {
       const pool = getAgentGuardPool();
+      const interval = TIME_RANGE_INTERVALS[timeRange ?? '30d'];
 
       const result = await pool.query<{
         bucket: string;
@@ -261,7 +282,7 @@ export const loadCorrectionStats = cache(
           total_count
         FROM correction_stats_daily
         WHERE agent_id = $1
-          AND bucket >= NOW() - INTERVAL '30 days'
+          AND bucket >= NOW() - INTERVAL '${interval}'
         ORDER BY bucket ASC
         `,
         [agentId],
@@ -280,12 +301,16 @@ export const loadCorrectionStats = cache(
 );
 
 /**
- * Load correction layer usage breakdown for a specific agent (last 30 days).
+ * Load correction layer usage breakdown for a specific agent.
  */
 export const loadCorrectionLayerUsage = cache(
-  async (agentId: string): Promise<CorrectionLayerUsage[]> => {
+  async (
+    agentId: string,
+    timeRange?: TimeRange,
+  ): Promise<CorrectionLayerUsage[]> => {
     try {
       const pool = getAgentGuardPool();
+      const interval = TIME_RANGE_INTERVALS[timeRange ?? '30d'];
 
       const result = await pool.query<{
         layer_name: string;
@@ -299,7 +324,7 @@ export const loadCorrectionLayerUsage = cache(
              jsonb_array_elements(correction_layers_used) AS elem
         WHERE agent_id = $1
           AND corrected = true
-          AND timestamp >= NOW() - INTERVAL '30 days'
+          AND timestamp >= NOW() - INTERVAL '${interval}'
           AND correction_layers_used IS NOT NULL
         GROUP BY layer_name
         ORDER BY count DESC
@@ -318,11 +343,12 @@ export const loadCorrectionLayerUsage = cache(
 );
 
 /**
- * Load recent cost/latency anomaly alerts for this agent (last 7 days).
+ * Load recent cost/latency anomaly alerts for this agent.
  */
 export const loadAgentAnomalyAlerts = cache(
-  async (agentId: string): Promise<AnomalyAlert[]> => {
+  async (agentId: string, timeRange?: TimeRange): Promise<AnomalyAlert[]> => {
     const pool = getAgentGuardPool();
+    const interval = TIME_RANGE_INTERVALS[timeRange ?? '7d'];
 
     const result = await pool.query<AnomalyAlert>(
       `
@@ -338,7 +364,7 @@ export const loadAgentAnomalyAlerts = cache(
       LEFT JOIN agents ag ON al.agent_id = ag.agent_id
       WHERE al.agent_id = $1
         AND al.alert_type IN ('cost_anomaly', 'latency_anomaly')
-        AND al.created_at >= NOW() - INTERVAL '7 days'
+        AND al.created_at >= NOW() - INTERVAL '${interval}'
       ORDER BY al.created_at DESC
       LIMIT 10
       `,

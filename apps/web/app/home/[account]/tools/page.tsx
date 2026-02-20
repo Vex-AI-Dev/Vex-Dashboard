@@ -3,6 +3,7 @@ import { PageBody } from '@kit/ui/page';
 import { Trans } from '@kit/ui/trans';
 
 import { resolveOrgId } from '~/lib/agentguard/resolve-org-id';
+import { parseTimeRange } from '~/lib/agentguard/time-range';
 import { createI18nServerInstance } from '~/lib/i18n/i18n.server';
 import { withI18n } from '~/lib/i18n/with-i18n';
 
@@ -18,6 +19,7 @@ import {
 
 interface ToolUsagePageProps {
   params: Promise<{ account: string }>;
+  searchParams: Promise<{ timeRange?: string }>;
 }
 
 export const generateMetadata = async () => {
@@ -26,16 +28,18 @@ export const generateMetadata = async () => {
   return { title };
 };
 
-async function ToolUsagePage({ params }: ToolUsagePageProps) {
+async function ToolUsagePage({ params, searchParams }: ToolUsagePageProps) {
   const { account } = await params;
+  const { timeRange: rawTimeRange } = await searchParams;
+  const timeRange = parseTimeRange(rawTimeRange);
   const orgId = await resolveOrgId(account);
 
   const [tools, kpis, timeSeries, riskMatrix, anomalies] = await Promise.all([
-    loadToolUsage(orgId),
-    loadToolUsageKpis(orgId),
-    loadToolUsageTimeSeries(orgId),
-    loadToolRiskMatrix(orgId),
-    loadToolAnomalies(orgId),
+    loadToolUsage(orgId, timeRange),
+    loadToolUsageKpis(orgId, timeRange),
+    loadToolUsageTimeSeries(orgId, timeRange),
+    loadToolRiskMatrix(orgId, timeRange),
+    loadToolAnomalies(orgId, timeRange),
   ]);
 
   return (
