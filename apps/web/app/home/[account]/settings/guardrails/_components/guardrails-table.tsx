@@ -4,6 +4,8 @@ import { useState, useTransition } from 'react';
 
 import { useRouter } from 'next/navigation';
 
+import { Shield } from 'lucide-react';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,8 +16,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@kit/ui/alert-dialog';
-import { Shield } from 'lucide-react';
-
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import {
@@ -36,11 +36,11 @@ import {
 } from '@kit/ui/table';
 import { Trans } from '@kit/ui/trans';
 
-import type { GuardrailRow } from '../_lib/server/guardrails.loader';
 import {
   deleteGuardrailAction,
   toggleGuardrailAction,
 } from '../_lib/server/guardrails-actions';
+import type { GuardrailRow } from '../_lib/server/guardrails.loader';
 import CreateGuardrailDialog from './create-guardrail-dialog';
 
 const RULE_TYPE_LABELS: Record<string, string> = {
@@ -48,6 +48,7 @@ const RULE_TYPE_LABELS: Record<string, string> = {
   keyword: 'agentguard:guardrails.ruleTypeKeyword',
   threshold: 'agentguard:guardrails.ruleTypeThreshold',
   llm: 'agentguard:guardrails.ruleTypeLlm',
+  tool_policy: 'agentguard:guardrails.ruleTypeToolPolicy',
 };
 
 interface GuardrailsTableProps {
@@ -148,10 +149,7 @@ export default function GuardrailsTable({
             </TableHeader>
             <TableBody>
               {guardrails.map((g) => (
-                <TableRow
-                  key={g.id}
-                  className={!g.enabled ? 'opacity-50' : ''}
-                >
+                <TableRow key={g.id} className={!g.enabled ? 'opacity-50' : ''}>
                   <TableCell className="font-medium">{g.name}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className="text-xs">
@@ -172,15 +170,23 @@ export default function GuardrailsTable({
                           : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
                       }
                     >
-                      <Trans
-                        i18nKey={`agentguard:guardrails.${g.action}`}
-                      />
+                      <Trans i18nKey={`agentguard:guardrails.${g.action}`} />
                     </Badge>
                   </TableCell>
                   <TableCell className="text-sm">
-                    {g.agent_id ?? (
-                      <Trans i18nKey="agentguard:guardrails.allAgents" />
-                    )}
+                    <div>
+                      {g.agent_id ?? (
+                        <Trans i18nKey="agentguard:guardrails.allAgents" />
+                      )}
+                    </div>
+                    {g.rule_type === 'tool_policy' &&
+                      g.condition &&
+                      typeof g.condition === 'object' &&
+                      'tool_name' in g.condition && (
+                        <span className="text-muted-foreground font-mono text-xs">
+                          {String(g.condition.tool_name)}
+                        </span>
+                      )}
                   </TableCell>
                   <TableCell>
                     <Switch

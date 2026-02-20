@@ -7,7 +7,7 @@ export interface GuardrailRow {
   org_id: string;
   agent_id: string | null;
   name: string;
-  rule_type: 'regex' | 'keyword' | 'threshold' | 'llm';
+  rule_type: 'regex' | 'keyword' | 'threshold' | 'llm' | 'tool_policy';
   condition: Record<string, unknown>;
   action: 'flag' | 'block';
   enabled: boolean;
@@ -19,14 +19,12 @@ export interface CreateGuardrailParams {
   orgId: string;
   agentId: string | null;
   name: string;
-  ruleType: 'regex' | 'keyword' | 'threshold' | 'llm';
+  ruleType: 'regex' | 'keyword' | 'threshold' | 'llm' | 'tool_policy';
   condition: Record<string, unknown>;
   action: 'flag' | 'block';
 }
 
-export async function listGuardrails(
-  orgId: string,
-): Promise<GuardrailRow[]> {
+export async function listGuardrails(orgId: string): Promise<GuardrailRow[]> {
   const pool = getAgentGuardPool();
   const result = await pool.query<GuardrailRow>(
     `SELECT id, org_id, agent_id, name, rule_type, condition, action, enabled, created_at, updated_at

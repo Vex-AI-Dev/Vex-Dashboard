@@ -1,6 +1,12 @@
 import { z } from 'zod';
 
-const RULE_TYPES = ['regex', 'keyword', 'threshold', 'llm'] as const;
+const RULE_TYPES = [
+  'regex',
+  'keyword',
+  'threshold',
+  'llm',
+  'tool_policy',
+] as const;
 const ACTIONS = ['flag', 'block'] as const;
 
 export const CreateGuardrailSchema = z.object({

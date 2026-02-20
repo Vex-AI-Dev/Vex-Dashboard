@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import { Button } from '@kit/ui/button';
 import { Checkbox } from '@kit/ui/checkbox';
@@ -29,7 +29,7 @@ import { Trans } from '@kit/ui/trans';
 
 import { createGuardrailAction } from '../_lib/server/guardrails-actions';
 
-type RuleType = 'regex' | 'keyword' | 'threshold' | 'llm';
+type RuleType = 'regex' | 'keyword' | 'threshold' | 'llm' | 'tool_policy';
 type Action = 'flag' | 'block';
 
 interface CreateGuardrailDialogProps {
@@ -63,6 +63,29 @@ export default function CreateGuardrailDialog({
   // LLM condition
   const [llmDescription, setLlmDescription] = useState('');
 
+  // Tool policy condition
+  const [toolName, setToolName] = useState('');
+  const [toolPolicy, setToolPolicy] = useState<'deny' | 'allow'>('deny');
+  const [maxCalls, setMaxCalls] = useState('');
+
+  // Prefill from URL params (from anomaly card "Create Guardrail" link)
+  const searchParams = useSearchParams();
+  const prefillTool = searchParams.get('prefill_tool');
+  const prefillAgent = searchParams.get('prefill_agent');
+  useEffect(() => {
+    if (prefillTool) {
+      queueMicrotask(() => {
+        setOpen(true);
+        setRuleType('tool_policy');
+        setToolName(prefillTool);
+        setToolPolicy('deny');
+        setAction('block');
+        setName(`Block ${prefillTool}`);
+        if (prefillAgent) setAgentId(prefillAgent);
+      });
+    }
+  }, [prefillTool, prefillAgent]);
+
   function resetForm() {
     setName('');
     setRuleType('keyword');
@@ -75,6 +98,9 @@ export default function CreateGuardrailDialog({
     setOperator('>');
     setLimit('');
     setLlmDescription('');
+    setToolName('');
+    setToolPolicy('deny');
+    setMaxCalls('');
   }
 
   function buildCondition(): Record<string, unknown> {
@@ -93,6 +119,16 @@ export default function CreateGuardrailDialog({
         return { metric, operator, limit: parseFloat(limit) };
       case 'llm':
         return { description: llmDescription };
+      case 'tool_policy': {
+        const cond: Record<string, unknown> = {
+          tool_name: toolName,
+          policy: toolPolicy,
+        };
+        if (toolPolicy === 'allow' && maxCalls) {
+          cond.max_calls_per_execution = parseInt(maxCalls, 10);
+        }
+        return cond;
+      }
     }
   }
 
@@ -108,6 +144,12 @@ export default function CreateGuardrailDialog({
         return limit.trim().length > 0 && !isNaN(parseFloat(limit));
       case 'llm':
         return llmDescription.trim().length > 0;
+      case 'tool_policy':
+        if (!toolName.trim()) return false;
+        if (toolPolicy === 'allow' && maxCalls) {
+          return !isNaN(parseInt(maxCalls, 10));
+        }
+        return true;
     }
   }
 
@@ -182,6 +224,9 @@ export default function CreateGuardrailDialog({
                 <SelectItem value="keyword">Keyword</SelectItem>
                 <SelectItem value="threshold">Threshold</SelectItem>
                 <SelectItem value="llm">LLM</SelectItem>
+                <SelectItem value="tool_policy">
+                  <Trans i18nKey="agentguard:guardrails.ruleTypeToolPolicy" />
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -249,7 +294,7 @@ export default function CreateGuardrailDialog({
                 <Textarea
                   value={keywords}
                   onChange={(e) => setKeywords(e.target.value)}
-                  placeholder={"confidential\nsecret\npassword"}
+                  placeholder={'confidential\nsecret\npassword'}
                   rows={4}
                 />
                 <div className="flex items-center space-x-2">
@@ -325,6 +370,55 @@ export default function CreateGuardrailDialog({
                 placeholder="Describe what the rule checks in plain English"
                 rows={3}
               />
+            )}
+
+            {ruleType === 'tool_policy' && (
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">
+                    <Trans i18nKey="agentguard:guardrails.toolNameLabel" />
+                  </Label>
+                  <Input
+                    value={toolName}
+                    onChange={(e) => setToolName(e.target.value)}
+                    placeholder="e.g., web_search, send_email"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">
+                    <Trans i18nKey="agentguard:guardrails.policyLabel" />
+                  </Label>
+                  <Select
+                    value={toolPolicy}
+                    onValueChange={(v) => setToolPolicy(v as 'deny' | 'allow')}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="deny">
+                        <Trans i18nKey="agentguard:guardrails.policyDeny" />
+                      </SelectItem>
+                      <SelectItem value="allow">
+                        <Trans i18nKey="agentguard:guardrails.policyAllow" />
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {toolPolicy === 'allow' && (
+                  <div className="space-y-1">
+                    <Label className="text-xs">
+                      <Trans i18nKey="agentguard:guardrails.maxCallsLabel" />
+                    </Label>
+                    <Input
+                      type="number"
+                      value={maxCalls}
+                      onChange={(e) => setMaxCalls(e.target.value)}
+                      placeholder="10"
+                    />
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
