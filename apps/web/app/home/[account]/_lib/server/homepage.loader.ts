@@ -2,11 +2,14 @@ import 'server-only';
 
 import { cache } from 'react';
 
-import { getAgentGuardPool } from '~/lib/agentguard/db';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
+
+import { getAgentGuardPool } from '~/lib/agentguard/db';
 import type {
   AgentHealthTile,
   AlertSeveritySummary,
+  AnomalyAlert,
+  FailurePattern,
   HomepageKpis,
   HomepageTrendBucket,
   RecentActivityItem,
@@ -209,7 +212,10 @@ export const loadRecentActivity = cache(
  * Usage data: TimescaleDB hourly_agent_stats (analytics).
  */
 export const loadPlanUsage = cache(
-  async (orgId: string, accountSlug: string): Promise<{
+  async (
+    orgId: string,
+    accountSlug: string,
+  ): Promise<{
     plan: string;
     planOverrides: Record<string, number> | null;
     observationsUsed: number;
@@ -249,15 +255,92 @@ export const loadPlanUsage = cache(
     ]);
 
     const account = accountResult.data;
-    const totalExecs = parseInt(usageResult.rows[0]?.total_executions ?? '0', 10);
+    const totalExecs = parseInt(
+      usageResult.rows[0]?.total_executions ?? '0',
+      10,
+    );
     const agentCount = parseInt(agentResult.rows[0]?.agent_count ?? '0', 10);
 
     return {
       plan: account?.vex_plan ?? 'free',
-      planOverrides: (account?.vex_plan_overrides as Record<string, number>) ?? null,
+      planOverrides:
+        (account?.vex_plan_overrides as Record<string, number>) ?? null,
       observationsUsed: totalExecs,
       verificationsUsed: 0,
       agentCount,
     };
+  },
+);
+
+/**
+ * Load top failure patterns for the homepage widget (last 7 days).
+ */
+export const loadFailurePatterns = cache(
+  async (orgId: string): Promise<FailurePattern[]> => {
+    const pool = getAgentGuardPool();
+
+    const result = await pool.query<{
+      agent_id: string;
+      agent_name: string;
+      check_type: string;
+      failure_count: string;
+    }>(
+      `
+      SELECT
+        e.agent_id,
+        a.name AS agent_name,
+        cr.check_type,
+        COUNT(*) AS failure_count
+      FROM check_results cr
+      JOIN executions e ON cr.execution_id = e.execution_id
+      JOIN agents a ON e.agent_id = a.agent_id
+      WHERE e.org_id = $1
+        AND cr.passed = false
+        AND cr.timestamp >= NOW() - INTERVAL '7 days'
+      GROUP BY e.agent_id, a.name, cr.check_type
+      ORDER BY failure_count DESC
+      LIMIT 10
+      `,
+      [orgId],
+    );
+
+    return result.rows.map((row) => ({
+      agent_id: row.agent_id,
+      agent_name: row.agent_name,
+      check_type: row.check_type,
+      failure_count: parseInt(row.failure_count, 10),
+    }));
+  },
+);
+
+/**
+ * Load recent cost/latency anomaly alerts for the homepage (last 7 days).
+ */
+export const loadAnomalyAlerts = cache(
+  async (orgId: string): Promise<AnomalyAlert[]> => {
+    const pool = getAgentGuardPool();
+
+    const result = await pool.query<AnomalyAlert>(
+      `
+      SELECT
+        al.alert_id,
+        al.agent_id,
+        COALESCE(ag.name, al.agent_id) AS agent_name,
+        al.alert_type,
+        al.severity,
+        al.execution_id,
+        al.created_at
+      FROM alerts al
+      LEFT JOIN agents ag ON al.agent_id = ag.agent_id
+      WHERE al.org_id = $1
+        AND al.alert_type IN ('cost_anomaly', 'latency_anomaly')
+        AND al.created_at >= NOW() - INTERVAL '7 days'
+      ORDER BY al.created_at DESC
+      LIMIT 10
+      `,
+      [orgId],
+    );
+
+    return result.rows;
   },
 );

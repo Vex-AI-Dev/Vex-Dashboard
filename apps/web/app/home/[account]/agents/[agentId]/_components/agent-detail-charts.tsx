@@ -2,17 +2,21 @@
 
 import Link from 'next/link';
 
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   Line,
   LineChart,
+  Pie,
+  PieChart,
   XAxis,
   YAxis,
 } from 'recharts';
 
+import { Badge } from '@kit/ui/badge';
 import {
   Card,
   CardContent,
@@ -47,7 +51,11 @@ import {
 import type {
   ActionDistribution,
   AgentKpis,
+  AnomalyAlert,
+  CheckScoreBucket,
   ConfidenceOverTime,
+  CorrectionLayerUsage,
+  CorrectionStatsBucket,
   Execution,
 } from '~/lib/agentguard/types';
 import { useAgentGuardUpdates } from '~/lib/agentguard/use-agentguard-updates';
@@ -59,6 +67,10 @@ interface AgentDetailChartsProps {
   confidenceOverTime: ConfidenceOverTime[];
   actionDistribution: ActionDistribution[];
   recentExecutions: Execution[];
+  checkScoreTrends: CheckScoreBucket[];
+  correctionStats: CorrectionStatsBucket[];
+  correctionLayerUsage: CorrectionLayerUsage[];
+  anomalyAlerts: AnomalyAlert[];
   accountSlug: string;
   agentId: string;
 }
@@ -83,11 +95,26 @@ const ACTION_COLORS: Record<string, string> = {
   block: 'var(--chart-5)',
 };
 
+const CHECK_TYPE_COLORS: Record<string, string> = {
+  schema: 'var(--chart-1)',
+  hallucination: 'var(--chart-2)',
+  drift: 'var(--chart-3)',
+  coherence: 'var(--chart-4)',
+  tool_loop: 'var(--chart-5)',
+  guardrails: '#8C8C8C',
+};
+
+const LAYER_COLORS = ['#34C78E', '#3B82F6', '#F97316', '#8B5CF6', '#F87171'];
+
 export default function AgentDetailCharts({
   kpis,
   confidenceOverTime,
   actionDistribution,
   recentExecutions,
+  checkScoreTrends,
+  correctionStats,
+  correctionLayerUsage,
+  anomalyAlerts,
   accountSlug,
   agentId,
 }: AgentDetailChartsProps) {
@@ -105,6 +132,48 @@ export default function AgentDetailCharts({
     action: row.action.charAt(0).toUpperCase() + row.action.slice(1),
     count: row.count,
     fill: ACTION_COLORS[row.action] ?? 'var(--chart-2)',
+  }));
+
+  // Transform check score trends into per-bucket rows with check_type columns
+  const checkTypes = [...new Set(checkScoreTrends.map((r) => r.check_type))];
+  const checkScoreByBucket = new Map<string, Record<string, number | null>>();
+  for (const row of checkScoreTrends) {
+    const key = row.bucket;
+    if (!checkScoreByBucket.has(key)) {
+      checkScoreByBucket.set(key, {});
+    }
+    checkScoreByBucket.get(key)![row.check_type] =
+      row.avg_score != null
+        ? parseFloat((row.avg_score * 100).toFixed(1))
+        : null;
+  }
+  const checkScoreData = Array.from(checkScoreByBucket.entries()).map(
+    ([bucket, scores]) => ({
+      bucket: format(new Date(bucket), 'MMM d HH:mm'),
+      ...scores,
+    }),
+  );
+
+  const checkScoreChartConfig = Object.fromEntries(
+    checkTypes.map((ct) => [
+      ct,
+      {
+        label: ct.charAt(0).toUpperCase() + ct.slice(1).replace('_', ' '),
+        color: CHECK_TYPE_COLORS[ct] ?? 'var(--chart-2)',
+      },
+    ]),
+  ) satisfies ChartConfig;
+
+  // Correction stats
+  const correctionData = correctionStats.map((row) => ({
+    bucket: format(new Date(row.bucket), 'MMM d'),
+    rate:
+      row.total_count > 0
+        ? parseFloat(((row.corrected_count / row.total_count) * 100).toFixed(1))
+        : 0,
+    corrected: row.corrected_count,
+    failed: row.failed_count,
+    total: row.total_count,
   }));
 
   return (
@@ -216,6 +285,212 @@ export default function AgentDetailCharts({
           </Card>
         )}
       </div>
+
+      {/* Per-Check Score Trends */}
+      {checkScoreData.length > 0 && checkTypes.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              <Trans i18nKey="agentguard:agent.checkScoreTrends" />
+            </CardTitle>
+            <CardDescription>
+              <Trans i18nKey="agentguard:agent.checkScoreTrendsDescription" />
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer
+              className={'h-64 w-full'}
+              config={checkScoreChartConfig}
+            >
+              <LineChart accessibilityLayer data={checkScoreData}>
+                <CartesianGrid vertical={false} />
+                <XAxis
+                  dataKey="bucket"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                  domain={[0, 100]}
+                  tickFormatter={(v) => `${v}%`}
+                />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                {checkTypes.map((ct) => (
+                  <Line
+                    key={ct}
+                    dataKey={ct}
+                    type="natural"
+                    stroke={CHECK_TYPE_COLORS[ct] ?? 'var(--chart-2)'}
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                ))}
+              </LineChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Correction Effectiveness */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {correctionData.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                <Trans i18nKey="agentguard:agent.correctionEffectiveness" />
+              </CardTitle>
+              <CardDescription>
+                <Trans i18nKey="agentguard:agent.correctionEffectivenessDescription" />
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer
+                className={'h-64 w-full'}
+                config={
+                  {
+                    rate: { label: 'Correction Rate', color: '#34C78E' },
+                  } satisfies ChartConfig
+                }
+              >
+                <LineChart accessibilityLayer data={correctionData}>
+                  <CartesianGrid vertical={false} />
+                  <XAxis
+                    dataKey="bucket"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                  />
+                  <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    domain={[0, 100]}
+                    tickFormatter={(v) => `${v}%`}
+                  />
+                  <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+                  <Line
+                    dataKey="rate"
+                    type="natural"
+                    stroke="#34C78E"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                </LineChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        )}
+
+        {correctionLayerUsage.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                <Trans i18nKey="agentguard:agent.correctionLayerUsage" />
+              </CardTitle>
+              <CardDescription>
+                <Trans i18nKey="agentguard:agent.correctionLayerUsageDescription" />
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer
+                className={'h-64 w-full'}
+                config={
+                  Object.fromEntries(
+                    correctionLayerUsage.map((l, i) => [
+                      l.layer_name,
+                      {
+                        label: l.layer_name.replace('_', ' '),
+                        color: LAYER_COLORS[i % LAYER_COLORS.length]!,
+                      },
+                    ]),
+                  ) satisfies ChartConfig
+                }
+              >
+                <PieChart>
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Pie
+                    data={correctionLayerUsage.map((l) => ({
+                      name: l.layer_name,
+                      value: l.count,
+                    }))}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    label
+                  >
+                    {correctionLayerUsage.map((_, i) => (
+                      <Cell
+                        key={i}
+                        fill={LAYER_COLORS[i % LAYER_COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Cost & Latency Anomalies */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">
+            <Trans i18nKey="agentguard:anomalies.title" />
+          </CardTitle>
+          <CardDescription>
+            <Trans i18nKey="agentguard:anomalies.description" />
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {anomalyAlerts.length === 0 ? (
+            <p className="text-muted-foreground py-4 text-sm">
+              <Trans i18nKey="agentguard:anomalies.noAnomalies" />
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {anomalyAlerts.map((alert) => (
+                <div
+                  key={alert.alert_id}
+                  className="flex items-center justify-between rounded-md border px-3 py-2"
+                >
+                  <div className="flex items-center gap-3">
+                    <Badge
+                      variant="outline"
+                      className={
+                        alert.severity === 'high'
+                          ? 'border-red-500/30 bg-red-500/15 text-red-400'
+                          : 'border-yellow-500/30 bg-yellow-500/15 text-yellow-400'
+                      }
+                    >
+                      {alert.severity}
+                    </Badge>
+                    <p className="text-sm font-medium">
+                      <Trans
+                        i18nKey={
+                          alert.alert_type === 'cost_anomaly'
+                            ? 'agentguard:anomalies.costAnomaly'
+                            : 'agentguard:anomalies.latencyAnomaly'
+                        }
+                      />
+                    </p>
+                  </div>
+                  <span className="text-muted-foreground text-xs">
+                    {formatDistanceToNow(new Date(alert.created_at), {
+                      addSuffix: true,
+                    })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Recent Executions Table */}
       <Card>

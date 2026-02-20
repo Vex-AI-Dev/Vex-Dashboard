@@ -11,8 +11,12 @@ import { AgentDetailDashboard } from './_components/agent-detail-dashboard';
 import {
   loadAgent,
   loadAgentActionDistribution,
+  loadAgentAnomalyAlerts,
   loadAgentConfidenceOverTime,
   loadAgentKpis,
+  loadCheckScoreTrends,
+  loadCorrectionLayerUsage,
+  loadCorrectionStats,
   loadRecentExecutions,
 } from './_lib/server/agent-detail.loader';
 
@@ -38,13 +42,25 @@ async function AgentDetailPage({ params }: AgentDetailPageProps) {
     notFound();
   }
 
-  const [kpis, confidenceOverTime, actionDistribution, recentExecutions] =
-    await Promise.all([
-      loadAgentKpis(agentId),
-      loadAgentConfidenceOverTime(agentId),
-      loadAgentActionDistribution(agentId),
-      loadRecentExecutions(agentId),
-    ]);
+  const [
+    kpis,
+    confidenceOverTime,
+    actionDistribution,
+    recentExecutions,
+    checkScoreTrends,
+    correctionStats,
+    correctionLayerUsage,
+    anomalyAlerts,
+  ] = await Promise.all([
+    loadAgentKpis(agentId),
+    loadAgentConfidenceOverTime(agentId),
+    loadAgentActionDistribution(agentId),
+    loadRecentExecutions(agentId),
+    loadCheckScoreTrends(agentId),
+    loadCorrectionStats(agentId),
+    loadCorrectionLayerUsage(agentId),
+    loadAgentAnomalyAlerts(agentId),
+  ]);
 
   return (
     <>
@@ -60,6 +76,10 @@ async function AgentDetailPage({ params }: AgentDetailPageProps) {
           confidenceOverTime={confidenceOverTime}
           actionDistribution={actionDistribution}
           recentExecutions={recentExecutions}
+          checkScoreTrends={checkScoreTrends}
+          correctionStats={correctionStats}
+          correctionLayerUsage={correctionLayerUsage}
+          anomalyAlerts={anomalyAlerts}
           accountSlug={account}
           agentId={agentId}
         />

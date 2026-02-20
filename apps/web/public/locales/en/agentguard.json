@@ -421,6 +421,15 @@
     "actions": "Actions",
     "viewExecutions": "View Executions"
   },
+  "anomalies": {
+    "title": "Cost & Latency Anomalies",
+    "description": "Z-score based anomaly alerts from the last 7 days",
+    "noAnomalies": "No anomalies detected — all agents operating within normal ranges.",
+    "costAnomaly": "Cost Anomaly",
+    "latencyAnomaly": "Latency Anomaly",
+    "agentLabel": "Agent",
+    "detectedAt": "Detected"
+  },
   "common": {
     "pass": "Pass",
     "flag": "Flag",

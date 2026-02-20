@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -30,22 +30,27 @@ import {
 } from '@kit/ui/chart';
 import { Trans } from '@kit/ui/trans';
 
-import { UsageMeter } from './usage-meter';
 import { formatConfidence } from '~/lib/agentguard/formatters';
 import { getPlanLimits } from '~/lib/agentguard/plan-limits';
 import type {
   AgentHealthTile,
   AlertSeveritySummary,
+  AnomalyAlert,
+  FailurePattern,
   HomepageKpis,
   HomepageTrendBucket,
 } from '~/lib/agentguard/types';
 import { useAgentGuardUpdates } from '~/lib/agentguard/use-agentguard-updates';
+
+import { UsageMeter } from './usage-meter';
 
 interface HomepageChartsProps {
   kpis: HomepageKpis;
   agentHealth: AgentHealthTile[];
   alertSummary: AlertSeveritySummary;
   trend: HomepageTrendBucket[];
+  failurePatterns: FailurePattern[];
+  anomalyAlerts: AnomalyAlert[];
   accountSlug: string;
   planUsage: {
     plan: string;
@@ -66,6 +71,8 @@ export default function HomepageCharts({
   agentHealth,
   alertSummary,
   trend,
+  failurePatterns,
+  anomalyAlerts,
   accountSlug,
   planUsage,
 }: HomepageChartsProps) {
@@ -114,7 +121,10 @@ export default function HomepageCharts({
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <div>
             <CardTitle className="text-base">
-              <Trans i18nKey="agentguard:homepage.planUsage" defaults="Plan Usage" />
+              <Trans
+                i18nKey="agentguard:homepage.planUsage"
+                defaults="Plan Usage"
+              />
             </CardTitle>
             <CardDescription>
               <Trans
@@ -138,8 +148,16 @@ export default function HomepageCharts({
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2">
-            <UsageMeter label="Observations" current={planUsage.observationsUsed} limit={planLimits.observationsPerMonth} />
-            <UsageMeter label="Verifications" current={planUsage.verificationsUsed} limit={planLimits.verificationsPerMonth} />
+            <UsageMeter
+              label="Observations"
+              current={planUsage.observationsUsed}
+              limit={planLimits.observationsPerMonth}
+            />
+            <UsageMeter
+              label="Verifications"
+              current={planUsage.verificationsUsed}
+              limit={planLimits.verificationsPerMonth}
+            />
           </div>
         </CardContent>
       </Card>
@@ -253,6 +271,108 @@ export default function HomepageCharts({
           </CardContent>
         </Card>
       </div>
+      {/* Row 4: Failure Patterns */}
+      {failurePatterns.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">
+              <Trans i18nKey="agentguard:homepage.failurePatterns" />
+            </CardTitle>
+            <CardDescription>
+              <Trans i18nKey="agentguard:homepage.failurePatternsDescription" />
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {failurePatterns.map((fp, i) => (
+                <Link
+                  key={`${fp.agent_id}-${fp.check_type}`}
+                  href={`/home/${accountSlug}/agents/${fp.agent_id}`}
+                  className="border-border flex items-center justify-between rounded-md border p-3 transition-colors hover:bg-[rgba(255,255,255,0.04)]"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-muted-foreground font-mono text-xs">
+                      {i + 1}
+                    </span>
+                    <div>
+                      <p className="text-sm font-medium">{fp.agent_name}</p>
+                      <p className="text-muted-foreground text-xs">
+                        {fp.check_type}
+                      </p>
+                    </div>
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className="border-[#F87171]/30 bg-[#F87171]/15 text-[#F87171]"
+                  >
+                    {fp.failure_count} failures
+                  </Badge>
+                </Link>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Anomaly Alerts */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">
+            <Trans i18nKey="agentguard:anomalies.title" />
+          </CardTitle>
+          <CardDescription>
+            <Trans i18nKey="agentguard:anomalies.description" />
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {anomalyAlerts.length === 0 ? (
+            <p className="text-muted-foreground py-4 text-sm">
+              <Trans i18nKey="agentguard:anomalies.noAnomalies" />
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {anomalyAlerts.map((alert) => (
+                <div
+                  key={alert.alert_id}
+                  className="flex items-center justify-between rounded-md border px-3 py-2"
+                >
+                  <div className="flex items-center gap-3">
+                    <Badge
+                      variant="outline"
+                      className={
+                        alert.severity === 'high'
+                          ? 'border-red-500/30 bg-red-500/15 text-red-400'
+                          : 'border-yellow-500/30 bg-yellow-500/15 text-yellow-400'
+                      }
+                    >
+                      {alert.severity}
+                    </Badge>
+                    <div>
+                      <p className="text-sm font-medium">
+                        <Trans
+                          i18nKey={
+                            alert.alert_type === 'cost_anomaly'
+                              ? 'agentguard:anomalies.costAnomaly'
+                              : 'agentguard:anomalies.latencyAnomaly'
+                          }
+                        />
+                      </p>
+                      <p className="text-muted-foreground text-xs">
+                        {alert.agent_name}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-muted-foreground text-xs">
+                    {formatDistanceToNow(new Date(alert.created_at), {
+                      addSuffix: true,
+                    })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

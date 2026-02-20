@@ -11,6 +11,8 @@ import { TeamAccountLayoutPageHeader } from './_components/team-account-layout-p
 import {
   loadAgentHealth,
   loadAlertSummary,
+  loadAnomalyAlerts,
+  loadFailurePatterns,
   loadHomepageKpis,
   loadHomepageTrend,
   loadPlanUsage,
@@ -33,12 +35,22 @@ async function TeamAccountHomePage({ params }: TeamAccountHomePageProps) {
   const { account } = await params;
   const orgId = await resolveOrgId(account);
 
-  const [kpis, agentHealth, alertSummary, trend, planUsage] = await Promise.all([
+  const [
+    kpis,
+    agentHealth,
+    alertSummary,
+    trend,
+    planUsage,
+    failurePatterns,
+    anomalyAlerts,
+  ] = await Promise.all([
     loadHomepageKpis(orgId),
     loadAgentHealth(orgId),
     loadAlertSummary(orgId),
     loadHomepageTrend(orgId),
     loadPlanUsage(orgId, account),
+    loadFailurePatterns(orgId),
+    loadAnomalyAlerts(orgId),
   ]);
 
   return (
@@ -57,6 +69,8 @@ async function TeamAccountHomePage({ params }: TeamAccountHomePageProps) {
           trend={trend}
           accountSlug={account}
           planUsage={planUsage}
+          failurePatterns={failurePatterns}
+          anomalyAlerts={anomalyAlerts}
         />
       </PageBody>
     </>

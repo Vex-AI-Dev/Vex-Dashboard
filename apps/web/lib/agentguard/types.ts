@@ -406,6 +406,19 @@ export interface ToolAnomaly {
 }
 
 /**
+ * Cost or latency anomaly alert from z-score detection.
+ */
+export interface AnomalyAlert {
+  alert_id: string;
+  agent_id: string;
+  agent_name: string;
+  alert_type: 'cost_anomaly' | 'latency_anomaly';
+  severity: 'high' | 'medium';
+  execution_id: string;
+  created_at: string;
+}
+
+/**
  * Failure pattern row for homepage widget.
  */
 export interface FailurePattern {
