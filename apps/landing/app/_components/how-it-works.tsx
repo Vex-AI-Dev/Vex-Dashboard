@@ -87,7 +87,9 @@ export function HowItWorks() {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   const [activeLayer, setActiveLayer] = useState<number>(0);
+  const [hoverLayer, setHoverLayer] = useState<number>(0);
   const [shownLines, setShownLines] = useState(2);
+  const [animDone, setAnimDone] = useState(false);
 
   useEffect(() => {
     const el = ref.current;
@@ -117,6 +119,7 @@ export function HowItWorks() {
       if (lineIndex >= lines.length) {
         clearInterval(interval);
         setActiveLayer(0);
+        setAnimDone(true);
         return;
       }
       const line = lines[lineIndex];
@@ -135,11 +138,14 @@ export function HowItWorks() {
       {/* Layers */}
       <div className="flex flex-col justify-center gap-4">
         {layers.map((layer) => {
-          const isActive = activeLayer === Number(layer.num);
+          const displayLayer = hoverLayer || activeLayer;
+          const isActive = displayLayer === Number(layer.num);
           return (
             <div
               key={layer.num}
-              className={`flex gap-4 border p-4 transition-all duration-300 ${
+              onMouseEnter={() => animDone && setHoverLayer(Number(layer.num))}
+              onMouseLeave={() => setHoverLayer(0)}
+              className={`flex cursor-pointer gap-4 border p-4 transition-all duration-300 ${
                 isActive
                   ? 'border-emerald-500/30 bg-emerald-500/[0.06]'
                   : 'border-[#252525] bg-transparent'
