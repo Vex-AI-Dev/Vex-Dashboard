@@ -21,61 +21,77 @@ const plans = [
     name: 'Free',
     price: '$0',
     period: '/mo',
-    description: 'For individuals exploring agent reliability.',
+    description: 'Sandbox for exploring agent reliability.',
     cta: 'Get Started Free',
     href: 'https://app.tryvex.dev',
     highlighted: false,
     features: [
-      { label: 'Observations', value: '10,000 / mo' },
-      { label: 'Verifications', value: '500 / mo' },
+      { label: 'Observations', value: '1,000 / mo' },
+      { label: 'Verifications', value: '50 / mo' },
       { label: 'Corrections', value: 'None' },
-      { label: 'Agents', value: '3' },
-      { label: 'Data retention', value: '7 days' },
+      { label: 'Agents', value: 'Unlimited' },
+      { label: 'Data retention', value: '1 day' },
       { label: 'Rate limit', value: '100 RPM' },
       { label: 'Overage', value: 'Hard limit' },
-      { label: 'Alerts', value: 'Email' },
       { label: 'Support', value: 'Community' },
     ],
   },
   {
-    name: 'Pro',
-    price: '$79',
+    name: 'Starter',
+    price: '$29',
     period: '/mo',
-    yearly: '$790/yr ($66/mo)',
+    description: 'For founders running 1-2 agents in production.',
+    cta: 'Start Starter',
+    href: 'https://app.tryvex.dev',
+    highlighted: false,
+    features: [
+      { label: 'Observations', value: '25,000 / mo' },
+      { label: 'Verifications', value: '1,000 / mo' },
+      { label: 'Corrections', value: '100 / mo' },
+      { label: 'Agents', value: 'Unlimited' },
+      { label: 'Data retention', value: '7 days' },
+      { label: 'Rate limit', value: '500 RPM' },
+      { label: 'Overage', value: 'Hard limit' },
+      { label: 'Support', value: 'Email' },
+    ],
+  },
+  {
+    name: 'Pro',
+    price: '$99',
+    period: '/mo',
+    yearly: '$990/yr ($83/mo)',
     description: 'For teams shipping agents to production.',
     cta: 'Start Pro',
     href: 'https://app.tryvex.dev',
     highlighted: true,
     features: [
-      { label: 'Observations', value: '100,000 / mo' },
-      { label: 'Verifications', value: '10,000 / mo' },
+      { label: 'Observations', value: '150,000 / mo' },
+      { label: 'Verifications', value: '15,000 / mo' },
       { label: 'Corrections', value: 'Full cascade' },
-      { label: 'Agents', value: '15' },
+      { label: 'Agents', value: 'Unlimited' },
       { label: 'Data retention', value: '30 days' },
       { label: 'Rate limit', value: '1,000 RPM' },
       { label: 'Overage', value: '$0.0005/obs, $0.005/verify' },
-      { label: 'Alerts', value: 'Email + webhook' },
       { label: 'Support', value: 'Email (48h)' },
     ],
   },
   {
     name: 'Team',
-    price: '$299',
+    price: '$349',
     period: '/mo',
-    yearly: '$2,990/yr ($249/mo)',
+    yearly: '$3,490/yr ($291/mo)',
     description: 'For organizations running agents at scale.',
     cta: 'Start Team',
     href: 'https://app.tryvex.dev',
     highlighted: false,
     features: [
-      { label: 'Observations', value: '1,000,000 / mo' },
-      { label: 'Verifications', value: '100,000 / mo' },
+      { label: 'Observations', value: '1,500,000 / mo' },
+      { label: 'Verifications', value: '150,000 / mo' },
       { label: 'Corrections', value: 'Full cascade + priority' },
       { label: 'Agents', value: 'Unlimited' },
       { label: 'Data retention', value: '90 days' },
       { label: 'Rate limit', value: '5,000 RPM' },
       { label: 'Overage', value: '$0.0004/obs, $0.004/verify' },
-      { label: 'Alerts', value: 'Email + webhook + Slack' },
       { label: 'Support', value: 'Priority (24h)' },
     ],
   },
@@ -95,7 +111,7 @@ const faqs = [
   {
     question: 'What happens when I exceed my plan limits?',
     answer:
-      'On the Free plan, monitoring pauses until the next billing cycle. On Pro and Team plans, you can continue beyond your included quota at the listed overage rates. You will receive alerts as you approach your limits.',
+      'On Free and Starter plans, monitoring pauses until the next billing cycle. On Pro and Team plans, you can continue beyond your included quota at the listed overage rates. You will receive alerts as you approach your limits.',
   },
   {
     question: 'Can I switch plans at any time?',
@@ -105,7 +121,7 @@ const faqs = [
   {
     question: 'Do you offer annual billing?',
     answer:
-      'Yes. Annual billing saves you roughly two months compared to monthly pricing. Pro is $790/yr ($66/mo) and Team is $2,990/yr ($249/mo). Contact us to switch to annual billing.',
+      'Yes. Annual billing saves you roughly two months compared to monthly pricing. Pro is $990/yr ($83/mo) and Team is $3,490/yr ($291/mo). Contact us to switch to annual billing.',
   },
   {
     question: 'Is Vex open source?',
@@ -118,7 +134,7 @@ export default function PricingPage() {
   return (
     <div className="container py-24">
       {/* Hero */}
-      <div className="mx-auto max-w-[1100px] text-center">
+      <div className="mx-auto max-w-[1200px] text-center">
         <div className="mb-4 text-[13px] font-medium tracking-widest text-emerald-500 uppercase">
           Pricing
         </div>
@@ -131,7 +147,7 @@ export default function PricingPage() {
       </div>
 
       {/* Plan cards */}
-      <div className="mx-auto mb-20 grid max-w-[1100px] gap-6 lg:grid-cols-3">
+      <div className="mx-auto mb-20 grid max-w-[1200px] gap-4 lg:grid-cols-4">
         {plans.map((plan) => (
           <div
             key={plan.name}
@@ -190,7 +206,7 @@ export default function PricingPage() {
       </div>
 
       {/* Enterprise CTA */}
-      <div className="mx-auto mb-20 max-w-[1100px]">
+      <div className="mx-auto mb-20 max-w-[1200px]">
         <div className="rounded-xl border border-[#252525] bg-[#161616] p-10 text-center">
           <h2 className="mb-2 text-2xl font-semibold text-white">Enterprise</h2>
           <p className="mx-auto mb-6 max-w-[480px] text-sm text-[#a2a2a2]">

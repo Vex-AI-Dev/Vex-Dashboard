@@ -9,7 +9,7 @@ import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client'
 
 const UpdatePlanSchema = z.object({
   accountId: z.string().uuid(),
-  plan: z.enum(['free', 'pro', 'team', 'enterprise']),
+  plan: z.enum(['free', 'starter', 'pro', 'team', 'enterprise']),
   overrides: z
     .object({
       observations_per_month: z.number().optional(),

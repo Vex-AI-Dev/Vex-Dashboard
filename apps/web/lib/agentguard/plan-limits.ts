@@ -10,6 +10,8 @@ export interface PlanLimits {
   observationsPerMonth: number;
   /** Monthly verification quota */
   verificationsPerMonth: number;
+  /** Monthly corrections quota (-1 = unlimited, full cascade) */
+  correctionsPerMonth: number;
   /** Maximum requests per minute (overrides per-key RPM if lower) */
   maxRpm: number;
   /** Maximum number of registered agents (-1 = unlimited) */
@@ -30,22 +32,37 @@ export interface PlanLimits {
 
 export const PLAN_LIMITS: Record<string, PlanLimits> = {
   free: {
-    observationsPerMonth: 10_000,
-    verificationsPerMonth: 500,
+    observationsPerMonth: 1_000,
+    verificationsPerMonth: 50,
+    correctionsPerMonth: 0,
     maxRpm: 100,
-    maxAgents: 3,
+    maxAgents: -1,
     maxSeats: 1,
     correctionsEnabled: false,
+    webhookAlerts: false,
+    slackAlerts: false,
+    retentionDays: 1,
+    overageAllowed: false,
+  },
+  starter: {
+    observationsPerMonth: 25_000,
+    verificationsPerMonth: 1_000,
+    correctionsPerMonth: 100,
+    maxRpm: 500,
+    maxAgents: -1,
+    maxSeats: 3,
+    correctionsEnabled: true,
     webhookAlerts: false,
     slackAlerts: false,
     retentionDays: 7,
     overageAllowed: false,
   },
   pro: {
-    observationsPerMonth: 100_000,
-    verificationsPerMonth: 10_000,
+    observationsPerMonth: 150_000,
+    verificationsPerMonth: 15_000,
+    correctionsPerMonth: -1,
     maxRpm: 1_000,
-    maxAgents: 15,
+    maxAgents: -1,
     maxSeats: 5,
     correctionsEnabled: true,
     webhookAlerts: true,
@@ -54,10 +71,11 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
     overageAllowed: true,
   },
   team: {
-    observationsPerMonth: 1_000_000,
-    verificationsPerMonth: 100_000,
+    observationsPerMonth: 1_500_000,
+    verificationsPerMonth: 150_000,
+    correctionsPerMonth: -1,
     maxRpm: 5_000,
-    maxAgents: -1, // unlimited
+    maxAgents: -1,
     maxSeats: 15,
     correctionsEnabled: true,
     webhookAlerts: true,
@@ -68,8 +86,9 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
   enterprise: {
     observationsPerMonth: 10_000_000,
     verificationsPerMonth: 1_000_000,
+    correctionsPerMonth: -1,
     maxRpm: 10_000,
-    maxAgents: -1, // unlimited
+    maxAgents: -1,
     maxSeats: -1, // unlimited
     correctionsEnabled: true,
     webhookAlerts: true,

@@ -22,7 +22,7 @@ import {
 
 import { updateAccountPlan } from '../_lib/update-plan.action';
 
-const PLANS = ['free', 'pro', 'team', 'enterprise'] as const;
+const PLANS = ['free', 'starter', 'pro', 'team', 'enterprise'] as const;
 
 interface PlanManagementProps {
   accountId: string;
