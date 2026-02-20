@@ -7,11 +7,12 @@ import {
   SandpackProvider,
 } from '@codesandbox/sandpack-react';
 import {
-  AlertTriangle,
   CheckCircle2,
   Play,
   RefreshCw,
   RotateCcw,
+  Shield,
+  ShieldCheck,
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -53,97 +54,62 @@ const installCommands = {
 } as const;
 
 /* ------------------------------------------------------------------ */
-/*  Live demo data                                                     */
+/*  Demo sequence                                                      */
 /* ------------------------------------------------------------------ */
 
-interface LogEntry {
-  phase: 1 | 2 | 3;
+interface DemoStep {
+  type:
+    | 'user-msg'
+    | 'agent-ok'
+    | 'agent-bad'
+    | 'vex-pass'
+    | 'vex-catch'
+    | 'vex-correct'
+    | 'summary';
   text: string;
-  type: 'info' | 'warn' | 'success';
-  classification?: string;
   confidence?: number;
-  status?: 'pass' | 'flag' | 'corrected';
 }
 
-const DEMO_SEQUENCE: LogEntry[] = [
+const DEMO: DemoStep[] = [
+  // Good interaction 1
+  { type: 'user-msg', text: 'How do I reset my password?' },
   {
-    phase: 1,
-    text: '"Can\'t login to my account"',
-    type: 'info',
-    classification: 'Technical',
-    confidence: 0.97,
-    status: 'pass',
+    type: 'agent-ok',
+    text: "Go to Settings → Security → Reset Password. You'll get an email.",
+  },
+  { type: 'vex-pass', text: 'Verified', confidence: 0.96 },
+
+  // Good interaction 2
+  { type: 'user-msg', text: 'What are your pricing plans?' },
+  {
+    type: 'agent-ok',
+    text: 'We have Free, Pro ($49/mo), and Enterprise plans. See /pricing.',
+  },
+  { type: 'vex-pass', text: 'Verified', confidence: 0.94 },
+
+  // Bad interaction — agent hallucinates
+  { type: 'user-msg', text: 'Can I export my data as CSV?' },
+  {
+    type: 'agent-bad',
+    text: 'Yes! Go to Dashboard → Analytics → Export CSV. You can also export as PDF and Excel.',
   },
   {
-    phase: 1,
-    text: '"I want a refund for my last order"',
-    type: 'info',
-    classification: 'Billing',
-    confidence: 0.95,
-    status: 'pass',
+    type: 'vex-catch',
+    text: 'Hallucination detected — feature does not exist',
+    confidence: 0.31,
   },
+
+  // Vex corrects
   {
-    phase: 1,
-    text: '"App crashes when I open settings"',
-    type: 'info',
-    classification: 'Technical',
-    confidence: 0.96,
-    status: 'pass',
-  },
-  {
-    phase: 1,
-    text: '"How do I cancel my subscription?"',
-    type: 'info',
-    classification: 'Billing',
+    type: 'vex-correct',
+    text: 'Data export is available via API. CSV export from the dashboard is on our roadmap.',
     confidence: 0.93,
-    status: 'pass',
   },
+
+  // Summary
   {
-    phase: 2,
-    text: '⚠ drift_score: 0.45 — confidence dropping',
-    type: 'warn',
-  },
-  {
-    phase: 2,
-    text: '"Payment failed on checkout"',
-    type: 'warn',
-    classification: 'Technical ✗',
-    confidence: 0.61,
-    status: 'flag',
-  },
-  {
-    phase: 2,
-    text: '"Charged twice for same item"',
-    type: 'warn',
-    classification: 'Technical ✗',
-    confidence: 0.58,
-    status: 'flag',
-  },
-  {
-    phase: 3,
-    text: 'correction cascade → L1 prompt refinement',
-    type: 'success',
-  },
-  {
-    phase: 3,
-    text: 're-classify → Billing',
-    type: 'success',
-    classification: 'Billing ✓',
-    confidence: 0.92,
-    status: 'corrected',
-  },
-  {
-    phase: 3,
-    text: 're-classify → Billing',
-    type: 'success',
-    classification: 'Billing ✓',
-    confidence: 0.94,
-    status: 'corrected',
-  },
-  {
-    phase: 3,
-    text: '✓ 2 caught · 2 corrected · 0 reached production',
-    type: 'success',
+    type: 'summary',
+    text: 'Hallucination intercepted · corrected in real-time · user never noticed',
   },
 ];
 
@@ -156,24 +122,12 @@ function PythonIcon({ active }: { active?: boolean }) {
     <svg width="20" height="20" viewBox="0 0 24 24">
       <defs>
         <linearGradient id="py1" x1="0" x2="1" y1="0" y2="1">
-          <stop
-            offset="0"
-            stopColor={active ? 'rgb(56,126,184)' : '#a2a2a2'}
-          />
-          <stop
-            offset="1"
-            stopColor={active ? 'rgb(54,105,148)' : '#888'}
-          />
+          <stop offset="0" stopColor={active ? 'rgb(56,126,184)' : '#a2a2a2'} />
+          <stop offset="1" stopColor={active ? 'rgb(54,105,148)' : '#888'} />
         </linearGradient>
         <linearGradient id="py2" x1="0" x2="1" y1="0" y2="1">
-          <stop
-            offset="0"
-            stopColor={active ? 'rgb(255,224,82)' : '#a2a2a2'}
-          />
-          <stop
-            offset="1"
-            stopColor={active ? 'rgb(255,195,49)' : '#888'}
-          />
+          <stop offset="0" stopColor={active ? 'rgb(255,224,82)' : '#a2a2a2'} />
+          <stop offset="1" stopColor={active ? 'rgb(255,195,49)' : '#888'} />
         </linearGradient>
       </defs>
       <path
@@ -206,31 +160,31 @@ function TSIcon({ active }: { active?: boolean }) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Hero Live Demo (compact, for hero tab)                             */
+/*  Hero Live Demo — chat-style with interception                      */
 /* ------------------------------------------------------------------ */
 
 function HeroLiveDemo() {
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(-1);
   const [done, setDone] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const startPlayback = useCallback(() => {
-    setStep(0);
+    setStep(-1);
     setDone(false);
 
-    let idx = 0;
+    let idx = -1;
     intervalRef.current = setInterval(() => {
       idx++;
-      if (idx >= DEMO_SEQUENCE.length) {
+      if (idx >= DEMO.length) {
         setDone(true);
         if (intervalRef.current) clearInterval(intervalRef.current);
         return;
       }
       setStep(idx);
-    }, 600);
+    }, 900);
   }, []);
 
-  // Auto-start on mount
   useEffect(() => {
     startPlayback();
     return () => {
@@ -238,121 +192,226 @@ function HeroLiveDemo() {
     };
   }, [startPlayback]);
 
+  // Auto-scroll to bottom
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [step]);
+
   const replay = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
     startPlayback();
   };
 
-  const visibleEntries = DEMO_SEQUENCE.slice(0, step + 1);
-  const currentPhase = visibleEntries[visibleEntries.length - 1]?.phase ?? 1;
+  const visibleSteps = step >= 0 ? DEMO.slice(0, step + 1) : [];
+
+  // Compute live confidence for the top bar
+  const lastConfidence =
+    [...visibleSteps].reverse().find((s) => s.confidence !== undefined)
+      ?.confidence ?? null;
 
   return (
     <div className="flex h-[400px] flex-col">
-      {/* Phase bar + replay */}
-      <div className="flex items-center justify-between border-b border-[#252525] px-4 py-2">
-        <div className="flex gap-2">
-          {[
-            { phase: 1, label: 'Normal' },
-            { phase: 2, label: 'Drift' },
-            { phase: 3, label: 'Corrected' },
-          ].map((p) => (
-            <span
-              key={p.phase}
-              className={`rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors ${
-                currentPhase === p.phase
-                  ? p.phase === 2
-                    ? 'bg-amber-500/20 text-amber-400'
-                    : 'bg-emerald-500/20 text-emerald-400'
-                  : 'text-[#585858]'
+      {/* Top status bar */}
+      <div className="flex items-center justify-between border-b border-[#252525] px-4 py-2.5">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <div
+              className={`h-2 w-2 rounded-full ${
+                lastConfidence !== null && lastConfidence < 0.5
+                  ? 'animate-pulse bg-red-400'
+                  : 'bg-emerald-500'
               }`}
-            >
-              {p.label}
+            />
+            <span className="text-[11px] font-medium text-[#a2a2a2]">
+              support-bot
             </span>
-          ))}
-        </div>
+          </div>
 
-        {done && (
-          <button
-            onClick={replay}
-            className="flex items-center gap-1 text-[10px] text-[#a2a2a2] transition-colors hover:text-white"
-          >
-            <RotateCcw className="h-2.5 w-2.5" />
-            Replay
-          </button>
-        )}
-      </div>
-
-      {/* Terminal feed */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 font-mono text-[12px] leading-relaxed">
-        {visibleEntries.map((entry, i) => (
-          <div
-            key={i}
-            className={`mb-1.5 animate-[termLine_0.4s_cubic-bezier(0.16,1,0.3,1)_forwards] opacity-0 ${
-              entry.type === 'warn'
-                ? 'text-amber-400'
-                : entry.type === 'success'
-                  ? 'text-emerald-400'
-                  : 'text-[#a2a2a2]'
-            }`}
-          >
-            <span className="mr-1.5 text-[#585858]">$</span>
-            {entry.text}
-            {entry.classification && (
-              <span className="ml-2 text-[#585858]">
-                → {entry.classification}
-              </span>
-            )}
-            {entry.confidence !== undefined && (
+          {lastConfidence !== null && (
+            <>
+              <div className="h-3 w-px bg-[#252525]" />
               <span
-                className={`ml-2 ${
-                  entry.confidence >= 0.9
-                    ? 'text-emerald-500'
-                    : entry.confidence >= 0.7
-                      ? 'text-amber-500'
+                className={`font-mono text-[11px] font-medium ${
+                  lastConfidence >= 0.9
+                    ? 'text-emerald-400'
+                    : lastConfidence >= 0.5
+                      ? 'text-amber-400'
                       : 'text-red-400'
                 }`}
               >
-                {entry.confidence.toFixed(2)}
+                {lastConfidence.toFixed(2)}
               </span>
-            )}
-            {entry.status && (
-              <span
-                className={`ml-2 rounded px-1 py-0.5 text-[10px] font-medium ${
-                  entry.status === 'pass'
-                    ? 'bg-emerald-500/10 text-emerald-400'
-                    : entry.status === 'flag'
-                      ? 'bg-amber-500/10 text-amber-400'
-                      : 'bg-emerald-500/10 text-emerald-400'
-                }`}
-              >
-                {entry.status === 'corrected' ? (
-                  <span className="inline-flex items-center gap-0.5">
-                    <RefreshCw className="inline h-2.5 w-2.5" />
-                    corrected
-                  </span>
-                ) : (
-                  entry.status
-                )}
-              </span>
-            )}
-          </div>
-        ))}
+            </>
+          )}
+        </div>
 
-        {/* Summary stats */}
-        {done && (
-          <div className="mt-3 flex gap-4 animate-[termLine_0.4s_cubic-bezier(0.16,1,0.3,1)_forwards] rounded border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 opacity-0">
-            {[
-              { n: '2', label: 'caught' },
-              { n: '2', label: 'corrected' },
-              { n: '0', label: 'leaked' },
-            ].map((s) => (
-              <div key={s.label} className="text-center">
-                <div className="text-sm font-bold text-emerald-400">{s.n}</div>
-                <div className="text-[9px] text-[#a2a2a2]">{s.label}</div>
-              </div>
-            ))}
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+          <span className="text-[10px] text-[#585858]">vex active</span>
+          {done && (
+            <button
+              onClick={replay}
+              className="ml-2 flex items-center gap-1 text-[10px] text-[#a2a2a2] transition-colors hover:text-white"
+            >
+              <RotateCcw className="h-2.5 w-2.5" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Chat area */}
+      <div
+        ref={scrollRef}
+        className="flex-1 space-y-2.5 overflow-y-auto px-4 py-3"
+      >
+        {visibleSteps.length === 0 && (
+          <div className="flex h-full items-center justify-center">
+            <span className="text-xs text-[#585858]">Starting session…</span>
           </div>
         )}
+
+        {visibleSteps.map((s, i) => {
+          if (s.type === 'user-msg') {
+            return (
+              <div
+                key={i}
+                className="animate-[termLine_0.3s_cubic-bezier(0.16,1,0.3,1)_forwards] opacity-0"
+              >
+                <div className="flex items-start gap-2">
+                  <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#252525] text-[9px] font-bold text-[#a2a2a2]">
+                    U
+                  </div>
+                  <div className="rounded-lg rounded-tl-none bg-[#1e1e1e] px-3 py-2 text-[13px] text-white">
+                    {s.text}
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          if (s.type === 'agent-ok') {
+            return (
+              <div
+                key={i}
+                className="animate-[termLine_0.3s_cubic-bezier(0.16,1,0.3,1)_forwards] opacity-0"
+              >
+                <div className="flex items-start gap-2 pl-7">
+                  <div className="rounded-lg rounded-tl-none border border-[#252525] bg-[#161616] px-3 py-2 text-[13px] text-[#a2a2a2]">
+                    {s.text}
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          if (s.type === 'agent-bad') {
+            return (
+              <div
+                key={i}
+                className="animate-[termLine_0.3s_cubic-bezier(0.16,1,0.3,1)_forwards] opacity-0"
+              >
+                <div className="flex items-start gap-2 pl-7">
+                  <div className="relative rounded-lg rounded-tl-none border border-red-500/30 bg-red-500/5 px-3 py-2 text-[13px] text-red-300 line-through decoration-red-500/40">
+                    {s.text}
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          if (s.type === 'vex-pass') {
+            return (
+              <div
+                key={i}
+                className="animate-[termLine_0.3s_cubic-bezier(0.16,1,0.3,1)_forwards] pl-7 opacity-0"
+              >
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1">
+                  <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                  <span className="text-[10px] font-medium text-emerald-400">
+                    {s.text}
+                  </span>
+                  <span className="font-mono text-[10px] text-emerald-500/60">
+                    {s.confidence?.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            );
+          }
+
+          if (s.type === 'vex-catch') {
+            return (
+              <div
+                key={i}
+                className="animate-[termLine_0.3s_cubic-bezier(0.16,1,0.3,1)_forwards] pl-7 opacity-0"
+              >
+                <div className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/5 px-3 py-2">
+                  <Shield className="h-4 w-4 shrink-0 text-red-400" />
+                  <div>
+                    <div className="text-[11px] font-medium text-red-400">
+                      Blocked by Vex
+                    </div>
+                    <div className="text-[10px] text-red-300/60">{s.text}</div>
+                  </div>
+                  <span className="ml-auto font-mono text-[11px] text-red-400">
+                    {s.confidence?.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            );
+          }
+
+          if (s.type === 'vex-correct') {
+            return (
+              <div
+                key={i}
+                className="animate-[termLine_0.3s_cubic-bezier(0.16,1,0.3,1)_forwards] space-y-1.5 opacity-0"
+              >
+                {/* What the end user sees — a normal, clean response */}
+                <div className="pl-7">
+                  <div className="mb-1 flex items-center gap-1.5">
+                    <span className="text-[10px] font-medium text-emerald-400">
+                      ↓ What your user sees
+                    </span>
+                  </div>
+                  <div className="rounded-lg rounded-tl-none border border-[#252525] bg-[#161616] px-3 py-2 text-[13px] text-[#a2a2a2]">
+                    {s.text}
+                  </div>
+                </div>
+
+                {/* Developer-only annotation */}
+                <div className="pl-7">
+                  <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1">
+                    <ShieldCheck className="h-3 w-3 text-emerald-500" />
+                    <span className="text-[10px] text-emerald-400">
+                      Silently corrected — user never saw the hallucination
+                    </span>
+                    <span className="font-mono text-[10px] text-emerald-500/60">
+                      {s.confidence?.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          if (s.type === 'summary') {
+            return (
+              <div
+                key={i}
+                className="animate-[termLine_0.3s_cubic-bezier(0.16,1,0.3,1)_forwards] opacity-0"
+              >
+                <div className="mt-1 flex items-center gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2.5">
+                  <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-500" />
+                  <span className="text-[11px] text-emerald-400">{s.text}</span>
+                </div>
+              </div>
+            );
+          }
+
+          return null;
+        })}
       </div>
     </div>
   );
@@ -390,7 +449,6 @@ export function HeroCodeEditor() {
     <div className="flex flex-col gap-3">
       {/* Tab bar */}
       <div className="flex items-center overflow-hidden rounded-[10px] border border-[#252525] bg-[#161616]">
-        {/* Tab switcher */}
         <div className="flex items-center gap-0.5 rounded-[10px] bg-[#0a0a0a] p-1">
           <button
             onClick={() => setTab('live')}
@@ -425,7 +483,6 @@ export function HeroCodeEditor() {
           </button>
         </div>
 
-        {/* Install command (hidden on live tab) */}
         {tab !== 'live' && (
           <>
             <div className="mx-3 h-[18px] w-px bg-[#252525]" />
@@ -459,18 +516,17 @@ export function HeroCodeEditor() {
           </>
         )}
 
-        {/* Live tab label */}
         {tab === 'live' && (
           <>
             <div className="mx-3 h-[18px] w-px bg-[#252525]" />
-            <span className="flex-1 text-xs text-[#585858]">
-              support-ticket-classifier — live verification feed
+            <span className="flex-1 text-[11px] text-[#585858]">
+              support-bot — live session
             </span>
           </>
         )}
       </div>
 
-      {/* Content area */}
+      {/* Content */}
       <div className="relative overflow-hidden rounded-lg border border-[#252525] bg-[#161616]">
         {tab === 'live' ? (
           <HeroLiveDemo />
@@ -527,7 +583,6 @@ export function HeroCodeEditor() {
               />
             </SandpackProvider>
 
-            {/* Copy code button */}
             <button
               onClick={handleCopyCode}
               className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-lg border border-[#252525] bg-[#161616] transition-colors hover:bg-[#252525]"

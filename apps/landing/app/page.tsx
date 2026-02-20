@@ -35,14 +35,6 @@ export default function LandingPage() {
                 >
                   Start for Free
                 </a>
-                <a
-                  href="https://cal.com/abhishek-singh-bvoj1a/30min"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex h-12 items-center rounded-lg border border-[#252525] px-7 text-[15px] font-medium text-[#a2a2a2] transition-colors hover:border-[#585858] hover:text-white"
-                >
-                  Book Demo&ensp;&rarr;
-                </a>
               </div>
             </div>
 
@@ -629,14 +621,6 @@ export default function LandingPage() {
               >
                 <path d="M3 8h10M9 4l4 4-4 4" />
               </svg>
-            </a>
-            <a
-              href="https://cal.com/abhishek-singh-bvoj1a/30min"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center border border-[#252525] px-7 py-3.5 text-[15px] font-medium text-[#a2a2a2] transition-colors hover:border-[#585858] hover:text-white"
-            >
-              Book a Demo
             </a>
           </div>
 
