@@ -158,44 +158,24 @@ export default function HomepageCharts({
               current={planUsage.observationsUsed}
               limit={planLimits.observationsPerMonth}
             />
-            <UsageMeter
-              label="Verifications"
-              current={planUsage.verificationsUsed}
-              limit={planLimits.verificationsPerMonth}
-            />
-          </div>
-
-          {!planLimits.correctionsEnabled && (
-            <div className="mt-4 rounded-lg border border-[#FBBF24]/30 bg-[#FBBF24]/5 p-4">
-              <div className="flex items-start gap-3">
-                <Zap className="mt-0.5 h-4 w-4 shrink-0 text-[#FBBF24]" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-[#F0F0F0]">
-                    <Trans
-                      i18nKey="agentguard:homepage.upgradeCtaTitle"
-                      defaults="Verifications & Auto-Corrections are available on paid plans"
-                    />
-                  </p>
-                  <p className="text-muted-foreground mt-1 text-xs">
-                    <Trans
-                      i18nKey="agentguard:homepage.upgradeCtaDescription"
-                      defaults="Upgrade to Pro to unlock real-time verification, auto-correction cascade, webhook alerts, and 30-day data retention."
-                    />
-                  </p>
-                  <Link
-                    href={`/home/${accountSlug}/billing`}
-                    className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-[#FBBF24] hover:underline"
-                  >
-                    <Trans
-                      i18nKey="agentguard:homepage.upgradeCtaButton"
-                      defaults="Upgrade to Pro"
-                    />
-                    <ArrowUpRight className="h-3.5 w-3.5" />
-                  </Link>
-                </div>
+            {planLimits.correctionsEnabled ? (
+              <UsageMeter
+                label="Verifications"
+                current={planUsage.verificationsUsed}
+                limit={planLimits.verificationsPerMonth}
+              />
+            ) : (
+              <div className="bg-muted/30 flex items-center gap-2 rounded-lg px-4 py-3">
+                <Zap className="h-4 w-4 shrink-0 text-[#8C8C8C]" />
+                <p className="text-muted-foreground text-sm">
+                  <Trans
+                    i18nKey="agentguard:homepage.correctionsProOnly"
+                    defaults="Auto-Correction is available on paid plans"
+                  />
+                </p>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </CardContent>
       </Card>
 
