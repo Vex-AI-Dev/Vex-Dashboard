@@ -116,6 +116,7 @@ export function HowItWorks() {
     const interval = setInterval(() => {
       if (lineIndex >= lines.length) {
         clearInterval(interval);
+        setActiveLayer(0);
         return;
       }
       const line = lines[lineIndex];
