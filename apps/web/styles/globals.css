@@ -6,6 +6,7 @@
 
 /* Tailwind CSS */
 @import 'tailwindcss';
+@plugin '@tailwindcss/typography';
 
 /* local styles - update the below if you add a new style */
 @import './theme.css';

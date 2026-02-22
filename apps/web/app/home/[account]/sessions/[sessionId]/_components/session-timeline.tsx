@@ -5,6 +5,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 
 import { formatDistanceStrict } from 'date-fns';
+import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   AlertTriangle,
   Bot,
@@ -342,7 +344,9 @@ function ConversationTurnView({
       {/* User input */}
       {inputText && (
         <ContentBubble variant="user">
-          <p className="text-sm whitespace-pre-wrap">{inputText}</p>
+          <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-pre:my-2 prose-ul:my-1 prose-ol:my-1 prose-headings:my-2 prose-code:before:content-none prose-code:after:content-none">
+            <Markdown remarkPlugins={[remarkGfm]}>{inputText}</Markdown>
+          </div>
         </ContentBubble>
       )}
 
@@ -354,7 +358,9 @@ function ConversationTurnView({
       {/* Agent response */}
       {outputText && (
         <ContentBubble variant="agent">
-          <p className="text-sm whitespace-pre-wrap">{outputText}</p>
+          <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-pre:my-2 prose-ul:my-1 prose-ol:my-1 prose-headings:my-2 prose-code:before:content-none prose-code:after:content-none">
+            <Markdown remarkPlugins={[remarkGfm]}>{outputText}</Markdown>
+          </div>
         </ContentBubble>
       )}
 
