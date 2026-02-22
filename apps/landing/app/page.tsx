@@ -626,7 +626,7 @@ export default function LandingPage() {
 
           <div className="flex justify-center">
             <iframe
-              src="https://ghbtns.com/github-btn.html?user=Vex-AI-Dev&repo=Vex&type=star&count=true&size=large"
+              src="https://ghbtns.com/github-btn.html?user=Vex-AI-Dev&repo=Vex&type=star&count=true&size=large&color=dark"
               width="150"
               height="30"
               title="GitHub Stars"
