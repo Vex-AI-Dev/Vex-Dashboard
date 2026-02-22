@@ -15,7 +15,7 @@ and policy violations in real time, and continuously optimizes agent performance
 ## Links
 - Website: https://tryvex.dev
 - Docs: https://docs.tryvex.dev
-- GitHub: https://github.com/Vex-AI-Dev/Python-SDK
+- GitHub: https://github.com/Vex-AI-Dev/Vex
 - API: https://api.tryvex.dev
 - Pricing: https://tryvex.dev/pricing
 - Blog: https://tryvex.dev/blog

@@ -93,7 +93,7 @@ export default function RootLayout({
                   url: 'https://docs.tryvex.dev',
                 },
                 downloadUrl: 'https://pypi.org/project/vex-sdk/',
-                codeRepository: 'https://github.com/Vex-AI-Dev/Python-SDK',
+                codeRepository: 'https://github.com/Vex-AI-Dev/Vex',
                 license: 'https://opensource.org/licenses/Apache-2.0',
               },
               {

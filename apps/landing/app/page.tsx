@@ -624,7 +624,15 @@ export default function LandingPage() {
             </a>
           </div>
 
-          <p className="text-sm text-[#585858] italic">
+          <div className="flex justify-center">
+            <iframe
+              src="https://ghbtns.com/github-btn.html?user=Vex-AI-Dev&repo=Vex&type=star&count=true&size=large"
+              width="150"
+              height="30"
+              title="GitHub Stars"
+            />
+          </div>
+          <p className="mt-4 text-sm text-[#585858] italic">
             Or just star the repo and come back when your agent drifts in
             production. It will.
           </p>

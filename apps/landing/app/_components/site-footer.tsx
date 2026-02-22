@@ -5,7 +5,7 @@ const sections = [
     heading: 'Product',
     links: [
       { href: 'https://docs.tryvex.dev', label: 'Docs' },
-      { href: 'https://github.com/Vex-AI-Dev/Python-SDK', label: 'GitHub' },
+      { href: 'https://github.com/Vex-AI-Dev/Vex', label: 'GitHub' },
       { href: 'https://api.tryvex.dev', label: 'API' },
       { href: '/blog', label: 'Blog' },
       { href: '/pricing', label: 'Pricing' },

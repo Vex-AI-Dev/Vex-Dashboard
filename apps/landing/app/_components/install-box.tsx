@@ -80,7 +80,7 @@ export function InstallBox() {
       <p className="mt-3 text-center text-[13px] text-[#a2a2a2]">
         Open source &middot; Apache 2.0 &middot; Zero vendor lock-in &middot;{' '}
         <a
-          href="https://github.com/Vex-AI-Dev/Python-SDK"
+          href="https://github.com/Vex-AI-Dev/Vex"
           target="_blank"
           rel="noopener noreferrer"
           className="underline underline-offset-2 hover:text-white"
