@@ -20,7 +20,7 @@ export default createBillingSchema({
           interval: 'month',
           lineItems: [
             {
-              id: 'price_vex_starter_monthly',
+              id: 'price_1T3eAO2R0WSf5z7SEQKjage3',
               name: 'Starter',
               cost: 29,
               type: 'flat',
@@ -34,7 +34,7 @@ export default createBillingSchema({
           interval: 'year',
           lineItems: [
             {
-              id: 'price_vex_starter_yearly',
+              id: 'price_1T3eAO2R0WSf5z7SeC3piJTM',
               name: 'Starter',
               cost: 290,
               type: 'flat',
@@ -66,7 +66,7 @@ export default createBillingSchema({
           interval: 'month',
           lineItems: [
             {
-              id: 'price_vex_pro_monthly',
+              id: 'price_1T3eAI2R0WSf5z7Svg2YEAoU',
               name: 'Pro',
               cost: 99,
               type: 'flat',
@@ -80,7 +80,7 @@ export default createBillingSchema({
           interval: 'year',
           lineItems: [
             {
-              id: 'price_vex_pro_yearly',
+              id: 'price_1T3eAI2R0WSf5z7SPI8JtuRV',
               name: 'Pro',
               cost: 990,
               type: 'flat',
@@ -111,7 +111,7 @@ export default createBillingSchema({
           interval: 'month',
           lineItems: [
             {
-              id: 'price_vex_team_monthly',
+              id: 'price_1T3eA72R0WSf5z7SZuQmJTnk',
               name: 'Team',
               cost: 349,
               type: 'flat',
@@ -125,7 +125,7 @@ export default createBillingSchema({
           interval: 'year',
           lineItems: [
             {
-              id: 'price_vex_team_yearly',
+              id: 'price_1T3eA72R0WSf5z7SCHZr3Y2F',
               name: 'Team',
               cost: 3490,
               type: 'flat',
