@@ -68,6 +68,22 @@ export default function RootLayout({
 
   return (
     <html lang="en" className={cn(className, 'overflow-x-hidden')}>
+      <head>
+        <script
+          async
+          src="https://www.googletagmanager.com/gtag/js?id=G-F5LSR3VNPZ"
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-F5LSR3VNPZ');
+            `,
+          }}
+        />
+      </head>
       <body className="relative overflow-x-hidden">
         <script
           type="application/ld+json"
@@ -94,7 +110,7 @@ export default function RootLayout({
                 },
                 downloadUrl: 'https://pypi.org/project/vex-sdk/',
                 codeRepository: 'https://github.com/Vex-AI-Dev/Vex',
-                license: 'https://opensource.org/licenses/Apache-2.0',
+                license: 'https://github.com/Vex-AI-Dev/Vex/blob/main/LICENSING.md',
               },
               {
                 '@context': 'https://schema.org',
@@ -148,7 +164,7 @@ export default function RootLayout({
                     name: 'Is Vex open source?',
                     acceptedAnswer: {
                       '@type': 'Answer',
-                      text: 'Yes. Vex is fully open source under the Apache 2.0 license. Both the Python SDK and TypeScript SDK are available on GitHub.',
+                      text: 'Yes. Vex is fully open source. The SDKs (Python, TypeScript) are Apache 2.0. The core engine and dashboard are AGPLv3. Everything is on GitHub.',
                     },
                   },
                   {
