@@ -1,0 +1,196 @@
+---
+title: "How We Detect AI Agent Drift (Before Your Users Do)"
+description: "Your AI agent passed every evaluation, then slowly got worse in production. Here's how Vex's drift detection and correction cascade works under the hood."
+date: "2026-02-24"
+author: "Abhishek"
+tags: ["drift detection", "engineering", "production"]
+---
+
+*Your AI agent passed every evaluation. Shipped to production. Worked perfectly for two weeks. Then it started getting dumber, and nobody noticed.*
+
+---
+
+We talked to 11 teams running AI agents in production. Every single one told us some version of the same story: the agent worked great in testing, great in staging, great in the first week of production. Then somewhere around week two or three, outputs started degrading. Not crashing. Not throwing errors. Just... slowly getting worse.
+
+By the time anyone noticed, the damage was done. Users had already seen bad outputs. Trust was already eroded.
+
+The logs showed nothing. Monitoring dashboards were green. Every health check passed.
+
+This is the problem we set out to solve with [Vex](https://tryvex.dev). Not observability (watching agents fail), not guardrails (blocking known bad patterns). Something different: detecting the failures nobody is looking for, and correcting them before users see them.
+
+This post is about how the drift detection part works under the hood.
+
+## What is agent drift?
+
+Drift is when an AI agent's behavior gradually degrades over time without triggering any explicit errors. It's the production equivalent of the boiling frog problem.
+
+Here's what it looks like in practice. Say you have a support agent tasked with answering billing questions:
+
+```
+Turn 1:  "Your January invoice is $299."                    → On task ✓
+Turn 5:  "We also offer annual billing discounts."           → Still relevant ✓
+Turn 10: "Our product roadmap includes new AI features..."   → Hmm, drifting...
+Turn 15: "Here's how to set up the API integration..."       → Completely off task ✗
+```
+
+Each individual response is reasonable. A user asking about billing could reasonably ask about discounts. From discounts, the conversation could naturally flow toward the product. From the product, the agent starts talking about technical features.
+
+No single turn is obviously wrong. But the trajectory is broken. The agent drifted from billing to product roadmap to technical setup. And zero errors appeared in any log.
+
+This is what makes drift dangerous. It's invisible to traditional monitoring.
+
+## Why existing tools miss it
+
+Most AI monitoring tools work in one of two ways:
+
+**Observability tools** (LangSmith, Langfuse, Arize, Datadog) trace what happened. They give you beautiful dashboards showing latency, token usage, and cost. Some even score output quality. But they show you what went wrong *after* the bad output already reached your user. By the time you see the trace, the damage is done.
+
+**Guardrails tools** (Guardrails AI, NeMo Guardrails) check for known bad patterns. Regex for PII. Keyword blocklists. Schema validation. These are useful for catching things you already know to look for. But drift isn't a known pattern. It's a novel failure that emerges from the specific context of a conversation.
+
+Neither approach catches an agent that is slowly wandering off task while producing outputs that look individually reasonable.
+
+## How Vex detects drift
+
+When your agent produces an output, Vex runs it through a verification pipeline with six parallel checks. Drift detection is one of them. Here's how it works.
+
+### Single-turn drift
+
+For a standalone interaction (no conversation history), drift detection is straightforward. We send the agent's output and its assigned task to an LLM evaluator and ask: "How relevant is this output to the task?"
+
+The evaluator returns a relevance score from 0 to 1. Below 0.5 means the output has drifted from the task.
+
+Simple, but limited. It catches obvious cases where an agent answers a completely different question. It doesn't catch the slow drift scenario I described above, because each individual turn might score 0.7 or 0.8 on its own.
+
+### Multi-turn drift (where it gets interesting)
+
+For conversations with history, we evaluate two dimensions on every turn:
+
+**Immediate relevance:** How relevant is the latest output to the assigned task? This is the same check as single-turn, applied to the most recent response.
+
+**Trajectory drift:** Looking at the full conversation history, is the conversation staying on task? This is the key innovation. Instead of evaluating each turn in isolation, we evaluate the trajectory.
+
+The final drift score is the minimum of both:
+
+```
+drift_score = min(immediate_relevance, trajectory_drift)
+```
+
+Why the minimum? Because it's intentionally strict.
+
+Consider turn 10 from our earlier example, where the agent starts talking about the product roadmap. On immediate relevance, it might score 0.7 (it's somewhat related to the billing context). But on trajectory drift, looking at how the conversation evolved from billing to discounts to product features, it scores 0.4 (clearly wandering).
+
+```
+min(0.7, 0.4) = 0.4 → DRIFT DETECTED
+```
+
+The minimum function catches cases where the latest turn looks fine in isolation but the conversation has been gradually drifting. This is what prevents the boiling frog problem.
+
+Here's how the same conversation scores turn by turn:
+
+```
+Turn 1:  IR: 0.95  TD: 0.95  → min: 0.95  ✅ PASS
+Turn 5:  IR: 0.85  TD: 0.80  → min: 0.80  ✅ PASS
+Turn 10: IR: 0.55  TD: 0.50  → min: 0.50  ⚠️ FLAG
+Turn 15: IR: 0.60  TD: 0.35  → min: 0.35  🛑 BLOCK
+```
+
+By turn 10, Vex flags the drift. By turn 15, it blocks. In a traditional monitoring setup, you wouldn't know anything was wrong until a customer complained.
+
+## What happens after drift is detected
+
+Detecting drift is half the problem. The other half is doing something about it. Most tools stop at detection. They send you an alert, show you a dashboard, and leave you to figure out the fix.
+
+Vex takes it further with a three-layer correction cascade.
+
+### Layer 1: Repair
+
+For minor issues (confidence above 0.5), Vex uses a fast, small model (gpt-4o-mini) to surgically fix the output. This layer handles things like schema format errors or small factual corrections. It sees the failed output and is told to make minimal edits.
+
+Drift rarely gets fixed at Layer 1. If the agent has wandered off task, a surgical edit won't bring it back.
+
+### Layer 2: Constrained regeneration
+
+For moderate failures like drift (confidence between 0.3 and 0.5), Vex does something counterintuitive: it generates a fresh response *without showing the model the failed output*.
+
+Why? Because LLMs anchor on what they've seen. If you show a model a drifted response and say "fix this," it will produce something anchored to the drifted content. Instead, Layer 2 gives the correction model the original task, the conversation history, and any constraints (schema, ground truth), and asks it to generate from scratch.
+
+This is the layer that handles drift. The fresh generation, constrained to the original task, produces an on-task response that isn't anchored to the drifted output.
+
+### Layer 3: Full re-prompt
+
+For severe failures (confidence below 0.3), Vex shows the model both the failed output and an explicit explanation of what went wrong: "The previous response drifted from the task. The task is [X]. The conversation has been gradually moving away from billing into product features. Stay focused on billing."
+
+This is the last resort before blocking.
+
+### The cascade logic
+
+The cascade runs up to two attempts within a 10-second budget. After each attempt, the corrected output goes through the full verification pipeline again. If it passes, done. If not, the layer escalates. If no attempt passes, Vex uses the best correction (the one with the highest confidence) if it improved on the original, or returns the original with a flag.
+
+```
+Verification failed → Select starting layer based on confidence
+  ↓
+Layer N: Generate correction
+  ↓
+Re-verify corrected output
+  ↓
+Pass? → Accept ✅
+Fail? → Escalate to Layer N+1 → Try again (max 2 attempts)
+  ↓
+All attempts failed? → Use best if improved, else original + flag
+```
+
+The key insight is that correction is graduated. Not every failure needs the same response. A schema error gets a quick fix. Drift gets a fresh regeneration. A severe compound failure gets explicit guidance. This keeps the correction fast (Layer 1 runs in ~200ms) and reserves expensive operations for when they're actually needed.
+
+## The verification pipeline (full picture)
+
+Drift detection doesn't run alone. It's one of up to six checks that run in parallel (which ones fire depends on what data the SDK provides):
+
+| Check | What it catches | When it runs |
+|-------|----------------|-------------|
+| **Schema validation** | Malformed output structure | Schema provided |
+| **Hallucination detection** | Made-up facts, wrong references to prior turns | Ground truth provided |
+| **Drift detection** | Output wandering off-task over time | Task defined |
+| **Coherence check** | Self-contradictions across turns | Multi-turn conversations |
+| **Guardrails** | Custom rules: regex, keywords, thresholds, LLM-based | Rules configured |
+| **Tool loop detection** | Agent stuck calling same tools in a cycle | Tool calls present |
+
+Each check produces a score from 0 to 1. These get combined into a weighted confidence score. If confidence is above 0.8, the output passes. Between 0.5 and 0.8, it gets flagged (delivered but marked for review). Below 0.5, it gets blocked and the correction cascade kicks in.
+
+The weights are dynamic. Not every check runs on every request (depends on what data the SDK provides), and the weights rebalance proportionally based on which checks are active.
+
+## What this means in practice
+
+With Vex, the billing support agent from our earlier example gets caught at turn 10 instead of turn 15 or later. The drift flag fires, the correction cascade generates a fresh on-task response, and the user never sees the off-topic output.
+
+The whole process takes under 2 seconds for a synchronous verification call. For teams that don't need real-time correction, async mode ingests events in batches and runs verification in the background, giving you drift detection without adding latency to your agent's response time.
+
+## Try it
+
+Vex is open source. The SDKs (Python and TypeScript) are Apache 2.0. The engine and dashboard are AGPLv3.
+
+```bash
+pip install vex-sdk
+```
+
+```python
+from vex import Vex
+
+vex = Vex(api_key="your-key")
+
+@vex.watch(agent_id="support-bot", task="Answer billing questions")
+def handle_support(query: str) -> str:
+    return your_agent.run(query)
+
+# Vex verifies every output, catches drift, corrects hallucinations
+result = handle_support("What's my invoice total?")
+print(result.confidence)  # 0.94
+print(result.action)      # "pass"
+```
+
+Three lines to add runtime reliability to any agent.
+
+Check it out: [tryvex.dev](https://tryvex.dev) | [GitHub](https://github.com/Vex-AI-Dev/Vex) | [Docs](https://docs.tryvex.dev)
+
+---
+
+*I'm Abhishek, co-founder of Vex. We're building this because every team we talked to had the same problem: agents that work in demos but fail silently in production. If you're dealing with this, I'd love to hear your story. DM me or [book a call](https://cal.com/tryvex/demo).*
