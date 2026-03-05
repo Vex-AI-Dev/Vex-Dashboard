@@ -1,11 +1,14 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
+
 import { z } from 'zod';
 
 import { isSuperAdmin } from '@kit/admin';
 import { getLogger } from '@kit/shared/logger';
 import { requireUser } from '@kit/supabase/require-user';
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
+import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 const UpdatePlanSchema = z.object({
   accountId: z.string().uuid(),
@@ -26,9 +29,10 @@ export async function updateAccountPlan(
 ) {
   const data = UpdatePlanSchema.parse(input);
 
-  const auth = await requireUser();
+  const client = getSupabaseServerClient();
+  const auth = await requireUser(client);
 
-  if (!(await isSuperAdmin(auth.data))) {
+  if (auth.error || !(await isSuperAdmin(auth.data))) {
     throw new Error('Unauthorized');
   }
 
@@ -58,6 +62,8 @@ export async function updateAccountPlan(
     },
     'Admin updated account plan',
   );
+
+  revalidatePath(`/admin/accounts/${data.accountId}`);
 
   return { success: true };
 }
