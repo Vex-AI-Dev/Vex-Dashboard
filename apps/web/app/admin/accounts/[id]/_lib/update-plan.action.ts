@@ -32,7 +32,7 @@ export async function updateAccountPlan(
   const client = getSupabaseServerClient();
   const auth = await requireUser(client);
 
-  if (auth.error || !(await isSuperAdmin(auth.data))) {
+  if (auth.error || !(await isSuperAdmin(client))) {
     throw new Error('Unauthorized');
   }
 
