@@ -12,9 +12,9 @@ export function AppLogo({
 }) {
   const logo = (
     <div className={cn('flex items-center gap-2', className)}>
-      <div className="flex items-center justify-center rounded-lg bg-white/10 p-1.5">
+      <div className="flex items-center justify-center rounded-lg bg-white p-1.5">
         <Image
-          src="/images/vex-logo-white-transparent.svg"
+          src="/images/vex-icon-black-transparent.svg"
           alt="Vex"
           width={24}
           height={24}
