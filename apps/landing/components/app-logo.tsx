@@ -1,8 +1,7 @@
+import Image from 'next/image';
 import Link from 'next/link';
 
 import { cn } from '@kit/ui/utils';
-
-import { AnimatedLogo } from './animated-logo';
 
 export function AppLogo({
   href,
@@ -12,8 +11,16 @@ export function AppLogo({
   className?: string;
 }) {
   const logo = (
-    <div className={cn('flex items-center', className)}>
-      <AnimatedLogo width={140} height={50} fontSize={28} numParticles={200} />
+    <div className={cn('flex items-center gap-2', className)}>
+      <Image
+        src="/images/vex-logo-white-transparent.svg"
+        alt="Vex"
+        width={32}
+        height={32}
+      />
+      <span className="text-lg font-semibold tracking-tight text-white">
+        Vex
+      </span>
     </div>
   );
 
