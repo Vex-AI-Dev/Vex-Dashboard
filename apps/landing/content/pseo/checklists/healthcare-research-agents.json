@@ -1,0 +1,205 @@
+{
+  "meta": {
+    "industry": "healthcare",
+    "useCase": "research-agents",
+    "generatedAt": "2026-03-12"
+  },
+  "seo": {
+    "title": "Healthcare Research Agents AI Agent Checklist",
+    "description": "Production readiness checklist for research agents AI agents in healthcare. Covers HIPAA, FDA 21 CFR Part 11, HITECH Act.",
+    "keywords": [
+      "Healthcare AI checklist",
+      "Research Agents agent checklist",
+      "Healthcare AI compliance",
+      "AI agent production readiness",
+      "AI guardrails checklist"
+    ]
+  },
+  "content": {
+    "intro": "Deploying AI research agents in healthcare environments introduces compounding risks: agents that autonomously gather and synthesize medical literature can inadvertently process PHI, surface outdated clinical guidance, or generate plausible-sounding but inaccurate claims that influence patient care decisions. HIPAA, FDA 21 CFR Part 11, and HITECH Act requirements impose strict controls on data handling, audit trails, and decision accountability that must be architected into the agent pipeline before deployment. This checklist provides concrete, enforceable controls for healthcare organizations deploying multi-step web search and synthesis agents in research workflows.",
+    "sections": [
+      {
+        "heading": "PHI Safeguards & Data Boundary Controls",
+        "description": "Research agents must never transmit, process, or expose Protected Health Information outside the approved processing environment. These controls establish hard boundaries between patient data and LLM inference layers.",
+        "items": [
+          {
+            "label": "Implement PHI Detection Gateway Before LLM Calls",
+            "description": "Deploy an automated PHI scanner (e.g., using NLP-based de-identification tools like AWS Comprehend Medical or Microsoft Presidio) on all input data before it reaches any LLM API endpoint. Block and log any payload containing 18 HIPAA identifiers.",
+            "priority": "critical"
+          },
+          {
+            "label": "Enforce Data Residency Constraints on Agent Outputs",
+            "description": "Configure agent orchestration (e.g., LangChain, AutoGen) to route all intermediate and final outputs exclusively to on-premises or HIPAA Business Associate Agreement (BAA)-covered cloud environments. Disable any external webhook or export functionality by default.",
+            "priority": "critical"
+          },
+          {
+            "label": "Establish Separate Processing Environments for PHI and Research Data",
+            "description": "Maintain network-isolated environments: one for PHI-containing clinical data (air-gapped or VPC-restricted) and one for public research synthesis. Agents must not share memory, vector stores, or context windows across these environments.",
+            "priority": "critical"
+          },
+          {
+            "label": "Apply De-identification Before Any Web Search Query Construction",
+            "description": "Ensure that queries constructed by the research agent for external web searches are reviewed by a de-identification layer that strips patient names, dates, MRNs, and geographic identifiers before the query is dispatched to any external search API.",
+            "priority": "critical"
+          },
+          {
+            "label": "Sign BAAs with All Third-Party Tool Providers in the Agent Stack",
+            "description": "Obtain executed Business Associate Agreements from every vendor whose service touches agent data flows, including LLM API providers, vector database vendors, search API providers, and orchestration platform vendors.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement Encryption at Rest and In Transit for All Agent Data Stores",
+            "description": "Enforce AES-256 encryption for all agent memory stores, retrieved document caches, and synthesis outputs. Use TLS 1.2+ for all inter-service communication within the agent pipeline. Document encryption configurations for SOC 2 Type II evidence.",
+            "priority": "high"
+          },
+          {
+            "label": "Define and Enforce Data Retention Limits for Agent Context Windows",
+            "description": "Set explicit TTLs (time-to-live) on agent session memory and retrieved content caches. Ensure that any PHI inadvertently entering a context window is purged within the session and not persisted to long-term vector stores.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Audit Trail & Decision Accountability",
+        "description": "FDA 21 CFR Part 11 requires that all AI-assisted decisions in regulated research workflows maintain tamper-evident, timestamped audit logs. Every agent action, tool call, and synthesized output must be traceable to a specific model version, input, and timestamp.",
+        "items": [
+          {
+            "label": "Log Every Agent Tool Call with Input, Output, and Timestamp",
+            "description": "Instrument the agent orchestration layer to capture a structured log entry for every tool invocation (web search, document retrieval, summarization). Each entry must include: tool name, full input payload, raw output, model version, agent session ID, and UTC timestamp. Store logs in a WORM (Write Once Read Many) compliant store.",
+            "priority": "critical"
+          },
+          {
+            "label": "Assign Unique Trace IDs to Every Research Synthesis Run",
+            "description": "Generate a UUID for each end-to-end agent research task. Propagate this trace ID through all sub-agent calls, tool invocations, and LLM completions so that any synthesized output can be fully reconstructed from its constituent steps for regulatory review.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement Electronic Signature Controls for Agent-Assisted Research Outputs",
+            "description": "Require a qualified human reviewer to apply a 21 CFR Part 11-compliant electronic signature before any agent-generated research summary is used in a regulatory submission, clinical protocol, or patient care guideline. The signature must bind the reviewer's identity to the specific trace ID.",
+            "priority": "critical"
+          },
+          {
+            "label": "Maintain Immutable Model Version Records for All Deployed Agents",
+            "description": "Record the exact model version, system prompt hash, tool configuration, and temperature settings for every agent deployment. Store these records in a version-controlled, tamper-evident repository. Any model update must trigger a new deployment record and re-validation.",
+            "priority": "high"
+          },
+          {
+            "label": "Configure Audit Log Retention for Minimum 7 Years",
+            "description": "Align audit log retention with HIPAA's 6-year minimum and FDA 21 CFR Part 11's requirements for regulated research records. Implement automated archival to compliant cold storage (e.g., AWS S3 Glacier with Object Lock) with documented retrieval procedures.",
+            "priority": "high"
+          },
+          {
+            "label": "Enable Real-Time Alerting on Anomalous Agent Behavior",
+            "description": "Define behavioral baselines for agent tool call frequency, output length, and external domain access patterns. Configure SIEM alerts for deviations exceeding 2 standard deviations, unexpected domain access, or repeated failed PHI detection blocks.",
+            "priority": "high"
+          },
+          {
+            "label": "Conduct Quarterly Audit Log Reviews with Compliance Officer Sign-Off",
+            "description": "Schedule formal quarterly reviews of agent audit logs with a designated HIPAA Privacy Officer and Compliance Officer. Document findings, anomalies, and corrective actions. Retain review records as SOC 2 Type II evidence.",
+            "priority": "medium"
+          }
+        ]
+      },
+      {
+        "heading": "Source Verification & Research Accuracy Controls",
+        "description": "Healthcare research agents synthesizing medical literature must apply rigorous source validation to prevent the propagation of retracted studies, predatory journal content, or outdated clinical guidance into research outputs that could influence patient care.",
+        "items": [
+          {
+            "label": "Restrict Web Search to Approved Medical Source Domains",
+            "description": "Maintain an allowlist of approved sources for the agent's web search tool: PubMed/MEDLINE, ClinicalTrials.gov, Cochrane Library, FDA.gov, CDC.gov, WHO.int, and peer-reviewed journal domains. Block or flag any retrieved content from non-allowlisted domains before synthesis.",
+            "priority": "critical"
+          },
+          {
+            "label": "Integrate Retraction Database Checks for All Cited Papers",
+            "description": "Before including any paper in a synthesized output, programmatically query the Retraction Watch database or CrossRef API to verify the paper has not been retracted or issued an expression of concern. Flag and exclude retracted sources automatically.",
+            "priority": "critical"
+          },
+          {
+            "label": "Enforce Recency Filters Based on Clinical Guideline Update Cycles",
+            "description": "Apply publication date filters appropriate to the research domain: default to sources published within 5 years for clinical topics, 10 years for foundational science. Surface a recency warning when the agent relies on sources older than the domain threshold.",
+            "priority": "high"
+          },
+          {
+            "label": "Implement Citation Grounding: Require Every Claim to Map to a Source",
+            "description": "Configure the synthesis agent to produce structured outputs where every factual claim includes an inline citation with DOI, URL, publication date, and author. Reject or flag any synthesized paragraph that contains unsupported assertions without traceable source attribution.",
+            "priority": "high"
+          },
+          {
+            "label": "Run Automated Bias Detection on Synthesized Research Outputs",
+            "description": "Apply a secondary LLM-based review step that evaluates synthesized outputs for common research biases: publication bias, funding source bias, and demographic representation gaps. Include a bias assessment summary in every agent-generated research report.",
+            "priority": "high"
+          },
+          {
+            "label": "Validate Statistical Claims Against Source Data Before Inclusion",
+            "description": "For any numerical claim (efficacy rates, p-values, confidence intervals) included in a synthesis, implement a verification step that cross-references the statistic against the original source document. Flag discrepancies greater than 5% for human review.",
+            "priority": "high"
+          },
+          {
+            "label": "Require Human Expert Review Before Research Outputs Influence Clinical Decisions",
+            "description": "Establish a mandatory human-in-the-loop gate: no agent-synthesized research output may be used to inform a clinical protocol, treatment guideline, or patient care decision without review and approval by a qualified clinician or subject matter expert.",
+            "priority": "critical"
+          },
+          {
+            "label": "Track and Report Agent Hallucination Rate as a KPI",
+            "description": "Implement a monthly evaluation process using a held-out test set of verifiable medical claims to measure the agent's hallucination rate. Set an acceptable threshold (e.g., <2% unsupported claims) and trigger a model review if the threshold is exceeded.",
+            "priority": "medium"
+          }
+        ]
+      },
+      {
+        "heading": "Access Control, Incident Response & Ongoing Governance",
+        "description": "Healthcare AI deployments require role-based access controls, documented incident response procedures specific to AI failures, and a continuous governance program to maintain compliance as models and regulations evolve.",
+        "items": [
+          {
+            "label": "Implement Role-Based Access Control (RBAC) for Agent Deployment and Configuration",
+            "description": "Define distinct roles: Agent Administrator (can deploy/modify agents), Research User (can invoke agents, view outputs), Compliance Auditor (read-only access to logs), and Clinical Reviewer (can approve outputs). Enforce least-privilege access using your identity provider with MFA required for all roles.",
+            "priority": "critical"
+          },
+          {
+            "label": "Document an AI-Specific Incident Response Playbook",
+            "description": "Create a written incident response procedure covering: AI-generated misinformation reaching clinical staff, PHI exposure through agent outputs, model hallucination causing a near-miss patient safety event, and unauthorized agent access. Define escalation paths, containment steps, and HIPAA Breach Notification Rule timelines (60-day notification requirement).",
+            "priority": "critical"
+          },
+          {
+            "label": "Conduct Pre-Deployment Risk Assessment Using NIST AI RMF",
+            "description": "Complete a formal AI risk assessment using the NIST AI Risk Management Framework (AI RMF 1.0) before deploying any new agent or updating an existing one. Document identified risks, mitigations, and residual risk acceptance sign-off from the CISO and Chief Medical Officer.",
+            "priority": "high"
+          },
+          {
+            "label": "Perform Annual HIPAA Security Risk Analysis Inclusive of AI Systems",
+            "description": "Expand the organization's annual HIPAA Security Risk Analysis to explicitly include AI agent systems, their data flows, and associated third-party integrations. Document findings and remediation plans as required by 45 CFR § 164.308(a)(1).",
+            "priority": "high"
+          },
+          {
+            "label": "Establish a Model Change Management Process with Clinical Validation Gates",
+            "description": "Define a formal change management workflow for model updates: any change to the underlying LLM, system prompt, or tool configuration must pass a clinical validation test suite before production deployment. Require sign-off from both IT Security and a clinical stakeholder.",
+            "priority": "high"
+          },
+          {
+            "label": "Train All Research Staff on AI Tool Limitations and Appropriate Use",
+            "description": "Deliver annual training to all staff who interact with research agents covering: AI hallucination risks, PHI handling prohibitions, how to identify and report suspicious agent outputs, and the mandatory human review requirement before clinical application. Document training completion for compliance records.",
+            "priority": "high"
+          },
+          {
+            "label": "Schedule Quarterly Penetration Testing of Agent API Endpoints",
+            "description": "Engage a qualified third-party security firm to conduct quarterly penetration tests targeting agent API endpoints, focusing on prompt injection attacks, data exfiltration via agent tool calls, and unauthorized access to audit logs. Remediate critical findings within 30 days.",
+            "priority": "medium"
+          }
+        ]
+      }
+    ],
+    "regulatoryNotes": {
+      "heading": "Regulatory Considerations",
+      "notes": [
+        "HIPAA Privacy Rule (45 CFR § 164.514): AI research agents must apply the Expert Determination or Safe Harbor de-identification method to any dataset before processing with an LLM. The Safe Harbor method requires removal of all 18 enumerated identifiers. Failure to de-identify before LLM processing constitutes an unauthorized disclosure of PHI, triggering potential Tier 3 or Tier 4 penalties of $100,000–$1.9M per violation category per year.",
+        "FDA 21 CFR Part 11 (Electronic Records and Signatures): Any AI-assisted research output used in an FDA-regulated context (IND applications, clinical trial protocols, drug safety reports) must be generated, reviewed, and approved through a 21 CFR Part 11-compliant system with audit trails, access controls, and electronic signatures. The agent orchestration platform must be validated as part of a Computer System Validation (CSV) process before use in regulated research.",
+        "HITECH Act (42 U.S.C. § 17931): The HITECH Act extends HIPAA obligations directly to Business Associates and their subcontractors. Every third-party service in the agent stack (LLM API provider, vector database, search API) that may process PHI is a Business Associate and must have an executed BAA. HITECH also strengthens breach notification requirements: breaches affecting 500+ individuals in a state must be reported to HHS and prominent media outlets within 60 days of discovery.",
+        "SOC 2 Type II (Trust Services Criteria): For healthcare organizations requiring SOC 2 Type II certification, AI agent systems must be included in the audit scope under the Security, Availability, and Confidentiality trust service criteria. Auditors will examine: logical access controls to agent systems, encryption of agent data stores, monitoring and alerting configurations, and incident response procedures. Ensure agent audit logs are included in the evidence collection process and that the agent vendor's own SOC 2 report is reviewed annually as part of vendor management."
+      ]
+    },
+    "cta": {
+      "heading": "Automate Your Healthcare Agent Compliance",
+      "description": "Use Vex to continuously monitor your healthcare research agents against HIPAA, FDA 21 CFR Part 11, and HITECH requirements—automatically flagging PHI exposure risks, audit trail gaps, and source verification failures before they become regulatory violations."
+    }
+  }
+}

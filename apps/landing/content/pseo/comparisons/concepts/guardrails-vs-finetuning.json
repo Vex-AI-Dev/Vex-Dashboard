@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "slug": "guardrails-vs-finetuning",
+    "generatedAt": "2026-03-12"
+  },
+  "seo": {
+    "title": "Guardrails vs Fine-Tuning for Agent Reliability",
+    "description": "Compare Runtime Guardrails and Fine-Tuning for AI agent reliability. Understand trade-offs and when to use each approach.",
+    "keywords": [
+      "runtime guardrails",
+      "fine-tuning",
+      "AI agent reliability",
+      "agent safety comparison"
+    ]
+  },
+  "content": {
+    "intro": "When building reliable AI agents, teams face a fundamental choice: shape model behavior before deployment through fine-tuning, or enforce constraints dynamically at runtime. Both approaches address agent reliability, but they operate at different layers of the stack and carry distinct tradeoffs. Understanding where each excels helps teams make informed architectural decisions.",
+    "approachA": {
+      "name": "Runtime Guardrails",
+      "description": "Runtime guardrails intercept, inspect, and conditionally block or modify agent inputs and outputs as they occur during execution. This approach treats the model as a black box and enforces behavioral contracts externally, without altering the underlying weights. Tools like Vex implement this layer to provide observable, auditable control over agent behavior in production.",
+      "strengths": [
+        "Instantly deployable without retraining — policy changes take effect immediately",
+        "Model-agnostic, works across different LLMs and versions without rework",
+        "Provides full observability with logs, traces, and audit trails for every decision",
+        "Policies can be updated or rolled back in real time as requirements evolve"
+      ],
+      "weaknesses": [
+        "Adds latency to every inference call due to interception and evaluation overhead",
+        "Cannot improve the model's underlying reasoning or domain knowledge",
+        "Complex rule sets can become difficult to maintain at scale",
+        "Relies on accurate detection logic — poorly written rules can produce false positives or gaps"
+      ]
+    },
+    "approachB": {
+      "name": "Fine-Tuning",
+      "description": "Fine-tuning adapts a pre-trained model's weights using curated domain-specific or behavior-specific training data, embedding desired behaviors directly into the model itself. This approach can improve accuracy, tone, and compliance at the inference level without external intervention. It is particularly effective when consistent stylistic or domain constraints need to be deeply internalized by the model.",
+      "strengths": [
+        "Embeds behavioral norms directly into the model, reducing reliance on external checks",
+        "Can significantly improve domain accuracy and reduce hallucinations in specialized contexts",
+        "No runtime overhead once deployed — constraints are baked into inference",
+        "Produces a more coherent and consistent model persona or response style"
+      ],
+      "weaknesses": [
+        "Requires substantial labeled data, compute resources, and ML expertise to execute well",
+        "Policy changes require a full retraining cycle, slowing iteration speed",
+        "Fine-tuned behavior can degrade or drift when the base model is updated",
+        "Offers limited auditability — it is difficult to explain why the model behaved a certain way"
+      ]
+    },
+    "comparison": [
+      {
+        "dimension": "Time to Deploy",
+        "approachA": "Minutes — rules are configured and activated without model changes",
+        "approachB": "Days to weeks — requires data preparation, training runs, and evaluation"
+      },
+      {
+        "dimension": "Auditability",
+        "approachA": "High — every guardrail decision is logged with context and reasoning",
+        "approachB": "Low — model internals are opaque and decisions are hard to trace"
+      },
+      {
+        "dimension": "Adaptability",
+        "approachA": "Very high — policies update instantly without redeployment",
+        "approachB": "Low — adapting behavior requires a new training cycle"
+      },
+      {
+        "dimension": "Inference Latency",
+        "approachA": "Slightly higher — interception layer adds measurable overhead",
+        "approachB": "No added latency — constraints are native to the model"
+      },
+      {
+        "dimension": "Domain Depth",
+        "approachA": "Limited — guardrails enforce rules but do not improve model knowledge",
+        "approachB": "High — fine-tuning can deeply specialize the model for a domain"
+      }
+    ],
+    "recommendation": {
+      "heading": "Which Should You Choose?",
+      "summary": "For teams that need fast iteration, compliance auditability, or multi-model flexibility, runtime guardrails are the more practical starting point — especially in production environments where requirements change frequently. Fine-tuning is the right investment when you have stable, well-defined behavioral requirements, sufficient training data, and the resources to maintain a custom model over time. In practice, the most robust systems combine both: fine-tuning for domain depth and runtime guardrails for dynamic, observable enforcement."
+    },
+    "cta": {
+      "heading": "Try Runtime Verification with Vex",
+      "description": "See how Vex's runtime guardrails give your AI agents observable, auditable reliability without waiting on a retraining cycle — get started in minutes."
+    }
+  }
+}

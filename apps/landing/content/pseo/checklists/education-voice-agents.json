@@ -1,0 +1,205 @@
+{
+  "meta": {
+    "industry": "education",
+    "useCase": "voice-agents",
+    "generatedAt": "2026-03-12"
+  },
+  "seo": {
+    "title": "Education Voice Agents AI Agent Checklist",
+    "description": "Production readiness checklist for voice agents AI agents in education. Covers FERPA, COPPA, State education data privacy laws.",
+    "keywords": [
+      "Education AI checklist",
+      "Voice Agents agent checklist",
+      "Education AI compliance",
+      "AI agent production readiness",
+      "AI guardrails checklist"
+    ]
+  },
+  "content": {
+    "intro": "Deploying voice AI agents in educational settings introduces unique risks at the intersection of student data privacy, real-time speech processing, and age-appropriate content delivery. Violations of FERPA or COPPA can result in federal funding loss, institutional liability, and irreversible harm to minors. This checklist ensures your voice agent deployment meets regulatory requirements, protects student safety, and maintains pedagogical integrity.",
+    "sections": [
+      {
+        "heading": "Student Data Privacy & Consent",
+        "description": "Voice agents in education collect biometric-adjacent data (voice prints, speech patterns) and academic interaction data, both of which fall under FERPA and COPPA protections. Every data touchpoint must be mapped, consented to, and auditable.",
+        "items": [
+          {
+            "label": "Obtain verifiable parental consent for all users under 13",
+            "description": "Implement a COPPA-compliant consent flow before any voice data is collected from students under 13. Consent must be verifiable (not just a checkbox) and stored with a timestamp, parent identity record, and scope of data use.",
+            "priority": "critical"
+          },
+          {
+            "label": "Classify voice recordings as FERPA-protected education records",
+            "description": "Formally designate all student voice interactions, transcripts, and derived analytics as education records under FERPA. Update your institution's data classification policy and data map to reflect this classification.",
+            "priority": "critical"
+          },
+          {
+            "label": "Restrict third-party LLM and STT vendor data retention to zero",
+            "description": "Contractually prohibit your speech-to-text and LLM vendors from retaining, training on, or sharing student voice data. Require Data Processing Agreements (DPAs) that explicitly state zero retention and no model training on student inputs.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement role-based access controls for conversation logs",
+            "description": "Limit access to stored transcripts and voice logs to authorized school officials with a legitimate educational interest as defined by FERPA. Log every access event with user identity, timestamp, and stated purpose.",
+            "priority": "critical"
+          },
+          {
+            "label": "Publish a student-facing privacy notice in plain language",
+            "description": "Create a grade-appropriate privacy notice explaining what voice data is collected, how it is used, who can access it, and how students or parents can request deletion. Post this notice at the point of first interaction.",
+            "priority": "high"
+          },
+          {
+            "label": "Establish a data deletion workflow for student record requests",
+            "description": "Build an automated pipeline that allows parents or eligible students to request deletion of all voice data, transcripts, and derived records within 30 days. Deletion must cascade to all vendor sub-processors.",
+            "priority": "high"
+          },
+          {
+            "label": "Audit compliance with applicable state student data privacy laws",
+            "description": "Cross-reference your deployment against state-specific laws such as California SOPIPA, New York Education Law 2-d, and Texas SCOPE Act. Map each law's requirements to specific technical and contractual controls in your deployment.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Voice Pipeline Safety & Content Filtering",
+        "description": "The real-time STT → LLM → TTS pipeline must include multi-layer safety filtering to prevent harmful, biased, or age-inappropriate content from reaching students, while maintaining the sub-second latency required for natural tutoring interactions.",
+        "items": [
+          {
+            "label": "Deploy a pre-LLM input safety classifier on all student speech transcripts",
+            "description": "Before passing STT output to the LLM, run a low-latency classifier (target under 20ms) that detects crisis language, profanity, personally identifiable information, and off-topic requests. Route flagged inputs to a safe fallback response and alert a human supervisor.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement a post-LLM output filter before text-to-speech synthesis",
+            "description": "Apply a content safety layer to every LLM response before it is passed to TTS. Filter for age-inappropriate content, political bias, medical or legal advice, and any content that could constitute instruction replacement. Block and log any filtered response.",
+            "priority": "critical"
+          },
+          {
+            "label": "Define and enforce a strict topic scope for the voice agent",
+            "description": "Configure the LLM system prompt and a retrieval-augmented generation (RAG) boundary to restrict responses to the approved curriculum scope. Test with adversarial prompts weekly to verify the agent cannot be jailbroken into off-topic or harmful content.",
+            "priority": "critical"
+          },
+          {
+            "label": "Integrate a real-time crisis detection and escalation pathway",
+            "description": "Train a dedicated classifier to detect student distress signals including self-harm language, abuse disclosures, and bullying reports. When triggered, immediately pause the voice session, play a pre-recorded safe message with crisis resources, and alert a designated school counselor within 60 seconds.",
+            "priority": "critical"
+          },
+          {
+            "label": "Validate bias-free content across demographic groups before launch",
+            "description": "Run structured red-team evaluations testing the voice agent's responses across race, gender, disability, and socioeconomic prompts. Document results and remediate any disparate response quality or stereotyping before student-facing deployment.",
+            "priority": "high"
+          },
+          {
+            "label": "Set maximum response length and complexity thresholds by grade level",
+            "description": "Configure grade-band-specific response parameters (e.g., vocabulary level, sentence length, concept depth) using Flesch-Kincaid or equivalent readability scoring. Validate TTS output against these thresholds in automated regression tests.",
+            "priority": "high"
+          },
+          {
+            "label": "Log all safety filter triggers with full context for weekly human review",
+            "description": "Store every instance where input or output filters activate, including the raw transcript, filter category, and action taken. A designated safety reviewer must audit these logs weekly and update filter rules based on findings.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Latency, Reliability & Accessibility",
+        "description": "Educational voice agents must meet sub-second end-to-end latency to support natural learning interactions, while also complying with Section 508 accessibility standards to serve students with disabilities. Performance and accessibility are both compliance requirements, not optional enhancements.",
+        "items": [
+          {
+            "label": "Establish and monitor end-to-end latency budgets for each pipeline stage",
+            "description": "Define latency SLAs for each component: STT under 200ms, LLM inference under 500ms, TTS synthesis under 150ms, total round-trip under 900ms. Instrument each stage with distributed tracing and alert on P95 breaches in real time.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement graceful degradation when latency thresholds are exceeded",
+            "description": "When any pipeline stage exceeds its SLA, trigger a pre-recorded acknowledgment phrase (e.g., 'Let me think about that') to maintain conversational flow while the response completes. Never leave students in silence for more than 1.5 seconds.",
+            "priority": "high"
+          },
+          {
+            "label": "Provide real-time captions for all voice agent output",
+            "description": "Display synchronized text captions of every TTS response on the student interface to comply with Section 508 and support students with hearing impairments or auditory processing differences. Captions must appear within 100ms of audio playback start.",
+            "priority": "critical"
+          },
+          {
+            "label": "Support alternative input modalities for students who cannot use voice",
+            "description": "Provide a text-input fallback that routes through the same LLM and safety pipeline as the voice path. Ensure the text interface meets WCAG 2.1 AA standards and is operable with screen readers and switch access devices.",
+            "priority": "critical"
+          },
+          {
+            "label": "Test voice agent performance across diverse accents, speech rates, and disabilities",
+            "description": "Conduct STT accuracy benchmarking with student voice samples representing regional accents, non-native English speakers, and students with speech impediments. Require a minimum word error rate of under 10% across all tested groups before deployment.",
+            "priority": "high"
+          },
+          {
+            "label": "Define uptime SLAs and a student-facing fallback for service outages",
+            "description": "Set a minimum 99.5% uptime SLA for the voice agent during school hours. Prepare a teacher-facing outage notification and a student-facing fallback activity that does not require the voice agent, deployable within 5 minutes of an outage declaration.",
+            "priority": "high"
+          },
+          {
+            "label": "Conduct annual Section 508 conformance testing with a certified evaluator",
+            "description": "Engage a third-party Section 508 certified accessibility evaluator to audit the full voice agent interface annually. Document findings in a Voluntary Product Accessibility Template (VPAT) and remediate all critical findings within 30 days.",
+            "priority": "medium"
+          }
+        ]
+      },
+      {
+        "heading": "Pedagogical Integrity & Human Oversight",
+        "description": "Regulations explicitly prohibit AI tutoring from replacing qualified instruction. Voice agents must be positioned as supplemental tools under educator supervision, with clear escalation paths to human teachers and ongoing monitoring of learning outcomes.",
+        "items": [
+          {
+            "label": "Define and document the voice agent's role as supplemental, not instructional",
+            "description": "Create a formal policy document signed by academic leadership stating that the voice agent supports but does not replace certified teacher instruction. Include this policy in teacher training materials, student handbooks, and vendor contracts.",
+            "priority": "critical"
+          },
+          {
+            "label": "Require educator review and approval of all curriculum content loaded into the agent",
+            "description": "Establish a content governance workflow where a certified educator reviews and approves every knowledge base document, prompt template, and response example before it is deployed to students. Maintain a version-controlled content approval log.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement a live teacher escalation trigger within every voice session",
+            "description": "Provide a clearly announced voice command (e.g., 'Talk to my teacher') that immediately pauses the AI session and sends a real-time alert to the assigned teacher with the session transcript. The teacher must be able to join or review within 2 minutes.",
+            "priority": "critical"
+          },
+          {
+            "label": "Generate weekly learning interaction reports for teacher review",
+            "description": "Automatically produce per-student summaries of voice agent interactions including topics covered, questions asked, safety flags triggered, and estimated engagement time. Deliver these reports to the assigned teacher every Monday before class.",
+            "priority": "high"
+          },
+          {
+            "label": "Prohibit the voice agent from providing grades, assessments, or academic evaluations",
+            "description": "Configure the LLM system prompt and output filters to block any response that assigns scores, grades, or formal assessments to student work. All evaluative feedback must be routed to a human teacher for review and delivery.",
+            "priority": "critical"
+          },
+          {
+            "label": "Conduct quarterly pedagogical audits with licensed educators",
+            "description": "Engage licensed educators to review a random sample of 100 voice agent interaction transcripts per quarter. Evaluate response accuracy, age-appropriateness, alignment to curriculum standards, and absence of instructional replacement. Document findings and required updates.",
+            "priority": "high"
+          },
+          {
+            "label": "Train all teachers and administrators on voice agent capabilities and limitations",
+            "description": "Deliver a mandatory 2-hour training to all educators before deployment covering what the agent can and cannot do, how to interpret interaction reports, how to trigger escalations, and how to report safety concerns. Require annual recertification.",
+            "priority": "high"
+          },
+          {
+            "label": "Establish a student feedback mechanism for reporting uncomfortable interactions",
+            "description": "Provide a simple, anonymous reporting button accessible during and after every voice session that allows students to flag interactions that felt inappropriate, confusing, or upsetting. Route all reports to a designated safeguarding officer within 1 hour.",
+            "priority": "high"
+          }
+        ]
+      }
+    ],
+    "regulatoryNotes": {
+      "heading": "Regulatory Considerations",
+      "notes": [
+        "FERPA requires that voice interaction transcripts and derived analytics be treated as education records, meaning they cannot be shared with third parties including AI vendors without explicit consent or a qualifying exception. Your STT and LLM vendor contracts must include a School Official exception clause with strict use limitation language, or you must obtain separate written consent from parents or eligible students before any data leaves your institutional control.",
+        "COPPA imposes strict requirements on collecting voice data from children under 13, including verifiable parental consent before any audio is recorded or processed. Because voice prints can function as biometric identifiers, several state laws including Illinois BIPA and Texas CUBI may impose additional consent and deletion requirements on top of COPPA, requiring you to audit your deployment against both federal and applicable state biometric privacy statutes.",
+        "At least 15 states have enacted student data privacy laws that go beyond FERPA and COPPA, including New York Education Law 2-d which requires vendor contracts to include specific data security and breach notification provisions, and California SOPIPA which prohibits using student data for targeted advertising or building profiles for non-educational purposes. Before deploying in any state, map your data flows against that state's specific statute and update vendor DPAs accordingly.",
+        "Section 508 of the Rehabilitation Act requires that any electronic and information technology used in federally funded educational programs be accessible to students with disabilities. For voice agents, this means providing equivalent access through alternative modalities, ensuring captions meet timing and accuracy standards, and documenting conformance in a VPAT. Failure to meet Section 508 requirements can result in complaints to the U.S. Access Board, OCR investigations, and loss of federal education funding."
+      ]
+    },
+    "cta": {
+      "heading": "Automate Your Education Agent Compliance",
+      "description": "Use Vex to continuously monitor your voice agent deployment against FERPA, COPPA, and state education privacy requirements—so your team spends less time on manual audits and more time improving student outcomes."
+    }
+  }
+}

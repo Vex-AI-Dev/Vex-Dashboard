@@ -1,0 +1,205 @@
+{
+  "meta": {
+    "industry": "education",
+    "useCase": "code-generation",
+    "generatedAt": "2026-03-12"
+  },
+  "seo": {
+    "title": "Education Code Generation AI Agent Checklist",
+    "description": "Production readiness checklist for code generation AI agents in education. Covers FERPA, COPPA, State education data privacy laws.",
+    "keywords": [
+      "Education AI checklist",
+      "Code Generation agent checklist",
+      "Education AI compliance",
+      "AI agent production readiness",
+      "AI guardrails checklist"
+    ]
+  },
+  "content": {
+    "intro": "Deploying AI code generation agents in educational settings introduces compounding risks: student data protected under FERPA and COPPA intersects with the inherent dangers of executing AI-generated code in shared environments. Institutions face institutional liability, potential loss of accreditation, and exposure of minors to harmful content if these systems are not rigorously governed. This checklist provides concrete, education-specific controls to ensure your AI coding agent meets legal, ethical, and technical safety standards.",
+    "sections": [
+      {
+        "heading": "Student Data Privacy & Consent",
+        "description": "Ensure all student interactions with the code generation agent comply with FERPA, COPPA, and applicable state education data privacy laws before any data is collected or processed.",
+        "items": [
+          {
+            "label": "Obtain verifiable parental consent for users under 13",
+            "description": "Implement a COPPA-compliant consent flow that requires documented parental or guardian approval before any student under 13 can interact with the AI agent. Store consent records with timestamps and parent identity verification.",
+            "priority": "critical"
+          },
+          {
+            "label": "Classify and tag all student-generated code submissions as education records",
+            "description": "Configure your data pipeline to automatically classify code submissions, prompts, and AI responses as FERPA-protected education records. Apply access controls restricting visibility to authorized school officials only.",
+            "priority": "critical"
+          },
+          {
+            "label": "Prohibit training on student-generated data without explicit consent",
+            "description": "Contractually and technically prevent the LLM provider from using student code submissions, prompts, or interaction logs to train or fine-tune models. Include this restriction in your Data Processing Agreement (DPA).",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement data minimization for student interaction logs",
+            "description": "Configure the agent to collect only the minimum data necessary for code generation functionality. Strip personally identifiable information (PII) from logs before storage, retaining only anonymized session metadata.",
+            "priority": "high"
+          },
+          {
+            "label": "Define and enforce data retention limits aligned with state law",
+            "description": "Set automated deletion schedules for student interaction data that comply with your state's student data privacy law (e.g., California SOPIPA, New York Education Law 2-d). Default to 90-day retention unless a longer period is legally required.",
+            "priority": "high"
+          },
+          {
+            "label": "Publish a student-facing privacy notice in plain language",
+            "description": "Create an age-appropriate privacy notice explaining what data the AI agent collects, how it is used, and how students or parents can request deletion. Post this notice at the point of first interaction.",
+            "priority": "high"
+          },
+          {
+            "label": "Conduct a FERPA-compliant vendor assessment for the LLM provider",
+            "description": "Verify the LLM provider qualifies as a 'school official' under FERPA or execute a compliant third-party service agreement. Document the legitimate educational interest justification for each data access point.",
+            "priority": "critical"
+          }
+        ]
+      },
+      {
+        "heading": "Code Safety & Sandbox Execution Controls",
+        "description": "AI-generated code executed in educational environments must be isolated, validated, and free from dangerous patterns before any student or system is exposed to its output.",
+        "items": [
+          {
+            "label": "Enforce network-isolated sandbox execution for all AI-generated code",
+            "description": "Run all generated code in a containerized sandbox (e.g., gVisor, Firecracker, or equivalent) with no outbound network access, no filesystem persistence beyond the session, and strict CPU/memory limits to prevent resource exhaustion attacks.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement a static analysis pre-execution scan for dangerous code patterns",
+            "description": "Before executing any AI-generated code, run it through a static analysis tool (e.g., Bandit for Python, ESLint security plugins for JavaScript) that flags file system access, subprocess calls, network socket creation, and eval/exec usage.",
+            "priority": "critical"
+          },
+          {
+            "label": "Block import and use of non-whitelisted third-party dependencies",
+            "description": "Maintain an explicit allowlist of approved libraries for each supported language. Reject code that attempts to import or install packages outside this list. Scan all whitelisted dependencies weekly against CVE databases.",
+            "priority": "critical"
+          },
+          {
+            "label": "Scan generated code for hardcoded credentials, API keys, and secrets",
+            "description": "Integrate a secrets detection tool (e.g., detect-secrets, TruffleHog patterns) into the code validation pipeline. Automatically redact or reject any generated code containing patterns matching API keys, passwords, or tokens before displaying to students.",
+            "priority": "critical"
+          },
+          {
+            "label": "Enforce execution time limits and kill switches for runaway processes",
+            "description": "Set a maximum execution timeout of 10 seconds per code run with automatic process termination. Implement a circuit breaker that suspends a student session after 3 consecutive timeout events and alerts an instructor.",
+            "priority": "high"
+          },
+          {
+            "label": "Log all code execution attempts with immutable audit trails",
+            "description": "Record every code generation request, static analysis result, and execution outcome in an append-only audit log. Include anonymized student session ID, timestamp, code hash, and safety scan verdict. Retain logs for minimum 1 year.",
+            "priority": "high"
+          },
+          {
+            "label": "Validate syntax and test coverage before presenting code to students",
+            "description": "Run generated code through a syntax validator and execute the agent's built-in test suite before surfacing results. Only present code that passes both syntax validation and at least one functional test case to prevent students from learning from broken examples.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Age-Appropriate Content & Pedagogical Integrity",
+        "description": "AI-generated code and explanations must be educationally appropriate, free from bias, and structured to supplement rather than replace qualified instruction.",
+        "items": [
+          {
+            "label": "Configure content filters calibrated to the student's grade band",
+            "description": "Implement tiered content filtering profiles (K-5, 6-8, 9-12, higher education) that restrict generated code examples, comments, and explanations to age-appropriate complexity and vocabulary. Apply the most restrictive profile by default for unverified age.",
+            "priority": "critical"
+          },
+          {
+            "label": "Block generation of code that accesses adult content APIs or services",
+            "description": "Maintain a blocklist of domains, API endpoints, and service categories (adult content, gambling, weapons) that the agent must never reference or generate code to interact with, regardless of student prompt.",
+            "priority": "critical"
+          },
+          {
+            "label": "Require instructor review before AI-generated code is used as curriculum material",
+            "description": "Implement a workflow where any AI-generated code snippet flagged for reuse as a teaching example must be reviewed and approved by a qualified instructor before being saved to a shared resource library.",
+            "priority": "high"
+          },
+          {
+            "label": "Audit generated code explanations for algorithmic bias and stereotyping",
+            "description": "Quarterly, sample 200 AI-generated code explanations and review for biased variable naming, stereotyped example scenarios (e.g., gendered role assumptions in problem statements), or culturally exclusionary content. Document findings and retune prompts accordingly.",
+            "priority": "high"
+          },
+          {
+            "label": "Display clear AI disclosure labels on all generated code and explanations",
+            "description": "Attach a visible 'AI-Generated Content' label to every code block and explanation produced by the agent. Include a one-sentence note that students should verify the code with their instructor before using it in graded work.",
+            "priority": "high"
+          },
+          {
+            "label": "Prevent the agent from completing entire assignments on behalf of students",
+            "description": "Configure the agent's system prompt and output length limits to provide hints, partial solutions, and explanations rather than complete assignment solutions. Detect and refuse prompts that match the exact wording of known assignment templates.",
+            "priority": "high"
+          },
+          {
+            "label": "Ensure all UI and generated content meets Section 508 and WCAG 2.1 AA standards",
+            "description": "Validate that code output rendering, syntax highlighting, and explanation text meet WCAG 2.1 AA contrast ratios, support screen readers, and provide text alternatives for any visual code diagrams. Run automated accessibility scans on every UI release.",
+            "priority": "medium"
+          }
+        ]
+      },
+      {
+        "heading": "Institutional Governance & Incident Response",
+        "description": "Establish clear ownership, monitoring, and response procedures to protect the institution from liability and maintain compliance with education-specific regulatory obligations.",
+        "items": [
+          {
+            "label": "Designate a FERPA-responsible AI system owner with documented authority",
+            "description": "Assign a named individual (e.g., Chief Privacy Officer or designated school official) as the accountable owner of the AI code generation system. Document their authority to suspend the system, approve data access requests, and respond to FERPA complaints.",
+            "priority": "critical"
+          },
+          {
+            "label": "Establish a 72-hour student data breach notification procedure",
+            "description": "Create a written incident response plan specific to this AI system that defines breach detection triggers, internal escalation steps, and the process for notifying affected students, parents, and the institution's legal counsel within 72 hours of confirmed exposure.",
+            "priority": "critical"
+          },
+          {
+            "label": "Conduct a Privacy Impact Assessment (PIA) before production deployment",
+            "description": "Complete a formal PIA documenting all data flows between the student, the LLM agent, the sandbox execution environment, and any third-party services. Submit the PIA to your institution's privacy office for sign-off before go-live.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement real-time monitoring for anomalous code generation patterns",
+            "description": "Deploy monitoring rules that alert administrators when the agent generates unusual volumes of network-access code, credential-like strings, or code matching known exploit patterns. Set alert thresholds and assign on-call response owners.",
+            "priority": "high"
+          },
+          {
+            "label": "Perform annual third-party security penetration testing of the sandbox environment",
+            "description": "Engage an external security firm to conduct penetration testing of the code execution sandbox annually, specifically targeting container escape, privilege escalation, and data exfiltration vectors. Remediate all critical and high findings within 30 days.",
+            "priority": "high"
+          },
+          {
+            "label": "Train all instructors and administrators on AI system limitations and FERPA obligations",
+            "description": "Deliver a mandatory 2-hour training module to all staff who interact with or oversee the AI coding agent. Cover FERPA obligations, how to identify AI-generated content issues, and the process for reporting concerns or incidents.",
+            "priority": "high"
+          },
+          {
+            "label": "Establish a student and parent grievance process for AI-related complaints",
+            "description": "Create a documented, accessible process for students and parents to submit complaints about AI-generated content, data handling, or system behavior. Assign a response SLA of 10 business days and log all complaints for annual review.",
+            "priority": "medium"
+          },
+          {
+            "label": "Review and update system configurations at the start of each academic year",
+            "description": "Schedule an annual review before each school year to update content filter profiles for new grade cohorts, refresh the dependency allowlist against current CVE data, and re-validate that all vendor DPAs remain current and compliant.",
+            "priority": "medium"
+          }
+        ]
+      }
+    ],
+    "regulatoryNotes": {
+      "heading": "Regulatory Considerations",
+      "notes": [
+        "FERPA requires that any LLM vendor processing student interaction data be designated as a 'school official' with a legitimate educational interest, or the institution must obtain individual student consent. Generic commercial AI terms of service do not satisfy this requirement — a specific, FERPA-compliant Data Processing Agreement must be executed before deployment.",
+        "COPPA mandates verifiable parental consent before collecting personal information from children under 13. For a code generation agent, this includes not just explicit PII but also persistent identifiers, usage logs, and any data that could be used to build a profile of a minor. Schools acting as operators under COPPA must maintain consent records and honor deletion requests within 30 days.",
+        "State education data privacy laws such as California's SOPIPA, New York's Education Law 2-d, and similar statutes in 40+ states impose additional restrictions beyond FERPA, including prohibitions on targeted advertising using student data, requirements to publish a data inventory, and mandatory breach notification timelines that may be shorter than federal requirements. Compliance must be assessed state-by-state for each institution using the system.",
+        "Section 508 of the Rehabilitation Act requires that all electronic and information technology used in federally funded educational institutions be accessible to individuals with disabilities. For an AI code generation agent, this means the interface, all generated code output, syntax highlighting, error messages, and explanatory text must conform to WCAG 2.1 AA standards and be operable via assistive technologies including screen readers and keyboard-only navigation."
+      ]
+    },
+    "cta": {
+      "heading": "Automate Your Education Agent Compliance",
+      "description": "Use Vex to continuously monitor your AI code generation agent against FERPA, COPPA, and state education privacy requirements — catching compliance gaps before they become institutional liabilities."
+    }
+  }
+}

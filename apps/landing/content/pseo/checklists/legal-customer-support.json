@@ -1,0 +1,217 @@
+{
+  "meta": {
+    "industry": "legal",
+    "useCase": "customer-support",
+    "generatedAt": "2026-03-12"
+  },
+  "seo": {
+    "title": "Legal Customer Support AI Agent Checklist",
+    "description": "Production readiness checklist for customer support AI agents in legal. Covers Attorney-client privilege protections, Bar association ethics rules, Court filing standards.",
+    "keywords": [
+      "Legal AI checklist",
+      "Customer Support agent checklist",
+      "Legal AI compliance",
+      "AI agent production readiness",
+      "AI guardrails checklist"
+    ]
+  },
+  "content": {
+    "intro": "Deploying AI agents in legal customer support carries uniquely severe consequences — from malpractice exposure and bar sanctions to case dismissal from hallucinated citations, as established in Mata v. Avianca. This checklist ensures your RAG-powered agent meets attorney ethics rules, court standards, and client confidentiality requirements before a single response reaches a client. Every item is scoped to the intersection of legal compliance and AI-assisted support workflows.",
+    "sections": [
+      {
+        "heading": "Legal Accuracy & Citation Integrity",
+        "description": "Prevent hallucinated case law and unverifiable legal references that expose the firm to malpractice and sanctions. Every legal statement the agent surfaces must be grounded in real, retrievable sources.",
+        "items": [
+          {
+            "label": "Restrict RAG knowledge base to verified legal databases only",
+            "description": "Configure retrieval to pull exclusively from vetted sources such as Westlaw, LexisNexis, or official court repositories. Block open-web retrieval for any response involving case citations or statutory references.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement citation verification tool call before response delivery",
+            "description": "Add a mandatory tool-calling step that validates each cited case name, docket number, and holding against a live legal database API before the response is sent to the client or support agent.",
+            "priority": "critical"
+          },
+          {
+            "label": "Flag and quarantine any response containing unverified legal citations",
+            "description": "Build a post-generation filter that detects citation patterns (e.g., case name + year + court) and routes the response to attorney review queue if the citation cannot be confirmed in the knowledge base.",
+            "priority": "critical"
+          },
+          {
+            "label": "Prohibit the agent from stating legal conclusions without attorney review",
+            "description": "Define a response policy that limits the agent to procedural guidance and factual summaries. Any statement that constitutes legal advice (e.g., 'you have a valid claim') must trigger an escalation ticket to a licensed attorney.",
+            "priority": "critical"
+          },
+          {
+            "label": "Log all retrieved source documents alongside each agent response",
+            "description": "Store the exact document chunks, source IDs, and retrieval scores used to generate each response in an immutable audit log for post-hoc review and eDiscovery compliance.",
+            "priority": "high"
+          },
+          {
+            "label": "Set confidence threshold below which responses are withheld",
+            "description": "Configure the RAG pipeline to suppress responses when retrieval confidence scores fall below a defined threshold (e.g., 0.75 cosine similarity), replacing them with an escalation message to a human attorney.",
+            "priority": "high"
+          },
+          {
+            "label": "Conduct quarterly adversarial testing for citation hallucination",
+            "description": "Run red-team prompts designed to elicit fabricated case names or misattributed holdings. Document results and retrain or adjust retrieval guardrails based on failure patterns.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Attorney-Client Privilege & Data Confidentiality",
+        "description": "Client communications in legal support are presumptively privileged. The AI agent must be architected so that no client data leaks into model training pipelines, third-party systems, or non-privileged contexts.",
+        "items": [
+          {
+            "label": "Contractually prohibit LLM provider from using client data for model training",
+            "description": "Before deployment, obtain a signed data processing agreement (DPA) from your LLM vendor explicitly prohibiting use of any prompt, response, or retrieved content for fine-tuning or training. Verify this covers zero-day data retention policies.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement PII and privileged content detection on all inbound client messages",
+            "description": "Deploy a pre-processing filter using named entity recognition (NER) to detect and redact SSNs, case numbers, opposing party names, and attorney work product before the message enters the RAG pipeline or CRM integration.",
+            "priority": "critical"
+          },
+          {
+            "label": "Isolate client data by matter in CRM integration layer",
+            "description": "Configure the CRM tool-calling integration so the agent can only retrieve records scoped to the authenticated client's matter ID. Prevent cross-matter data retrieval through role-based access controls at the API level.",
+            "priority": "critical"
+          },
+          {
+            "label": "Encrypt all agent conversation logs at rest and in transit",
+            "description": "Apply AES-256 encryption to stored conversation logs and enforce TLS 1.3 for all data in transit between the agent, CRM, knowledge base, and LLM provider endpoints.",
+            "priority": "critical"
+          },
+          {
+            "label": "Define and enforce data retention limits for agent conversation history",
+            "description": "Set a maximum retention period for agent conversation logs consistent with your jurisdiction's legal hold and privilege rules (e.g., 7 years for matter-related communications). Automate deletion workflows for expired records.",
+            "priority": "high"
+          },
+          {
+            "label": "Audit CRM tool-call access logs weekly for unauthorized data retrieval",
+            "description": "Review logs of all tool calls made to the CRM integration to detect anomalous access patterns, such as bulk record retrieval or cross-client queries, and alert the security team within 24 hours of detection.",
+            "priority": "high"
+          },
+          {
+            "label": "Obtain explicit client consent before AI agent handles their support inquiry",
+            "description": "Display a disclosure at the start of each support session stating that an AI agent may assist with the inquiry, and log the client's acknowledgment in the CRM ticket before the agent proceeds.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Human Oversight, Escalation & Attorney Review",
+        "description": "Bar association ethics rules require that attorneys supervise AI-generated legal content. The agent must have clearly defined escalation triggers and a frictionless handoff path to licensed attorneys for any substantive legal matter.",
+        "items": [
+          {
+            "label": "Define and implement a mandatory attorney review queue for all legal advice responses",
+            "description": "Create a ticket category in the CRM labeled 'Attorney Review Required' that is automatically populated when the agent generates any response classified as legal advice. Set SLA of 2 business hours for attorney review before client delivery.",
+            "priority": "critical"
+          },
+          {
+            "label": "Configure escalation triggers for high-risk legal topics",
+            "description": "Build a classifier that detects escalation-required topics including: active litigation mentions, statute of limitations urgency, criminal matter references, opposing counsel contact, and court deadline proximity. Route these immediately to a licensed attorney ticket.",
+            "priority": "critical"
+          },
+          {
+            "label": "Require attorney sign-off metadata on all responses before client delivery",
+            "description": "Implement a workflow gate in the support platform that appends a reviewing attorney's bar number and timestamp to any response flagged for review. Block delivery until this metadata is present.",
+            "priority": "critical"
+          },
+          {
+            "label": "Train support staff on recognizing AI response limitations in legal contexts",
+            "description": "Conduct mandatory onboarding training covering: what constitutes legal advice vs. procedural information, how to identify citation errors, and when to override the agent and escalate directly to an attorney.",
+            "priority": "high"
+          },
+          {
+            "label": "Implement a client-facing 'speak to an attorney' fallback at every response step",
+            "description": "Embed a persistent escalation option in the support UI that allows clients to request attorney contact at any point in the conversation. Log the request as a high-priority CRM ticket with the full conversation context attached.",
+            "priority": "high"
+          },
+          {
+            "label": "Monitor escalation rate as a KPI and investigate drops below baseline",
+            "description": "Track the percentage of agent conversations that result in attorney escalation weekly. A sudden drop may indicate the agent is incorrectly suppressing escalation triggers. Investigate any week-over-week decrease exceeding 20%.",
+            "priority": "high"
+          },
+          {
+            "label": "Document agent decision rationale for all escalated matters in the case file",
+            "description": "Automatically append the agent's response, retrieval sources, confidence scores, and escalation trigger reason to the client's matter file in the CRM at the time of escalation for eDiscovery and malpractice defense readiness.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Compliance Monitoring, Audit Readiness & eDiscovery",
+        "description": "Legal AI deployments must be auditable end-to-end to satisfy court filing standards, eDiscovery obligations, and bar association oversight. Build compliance infrastructure before go-live, not after an incident.",
+        "items": [
+          {
+            "label": "Maintain an immutable audit trail of all agent interactions with timestamps",
+            "description": "Use append-only logging (e.g., write-once S3 buckets or equivalent) to store every agent prompt, response, tool call, retrieval result, and escalation event with ISO 8601 timestamps and session IDs that map to CRM ticket records.",
+            "priority": "critical"
+          },
+          {
+            "label": "Map all agent data flows to satisfy eDiscovery hold obligations",
+            "description": "Document every system the agent touches (LLM API, CRM, knowledge base, ticket system) in a data flow diagram. Ensure legal hold procedures can freeze agent logs for specific matters within 4 hours of a litigation hold notice.",
+            "priority": "critical"
+          },
+          {
+            "label": "Conduct a pre-deployment bar association ethics compliance review",
+            "description": "Engage outside ethics counsel or your state bar's ethics hotline to review the agent's architecture against Model Rules 1.1 (competence), 1.6 (confidentiality), and 5.3 (supervision of non-lawyer assistants) before launch.",
+            "priority": "critical"
+          },
+          {
+            "label": "Run monthly automated policy compliance scans on agent response samples",
+            "description": "Sample 5% of agent responses monthly using an automated evaluation pipeline that checks for: unauthorized legal advice, unverified citations, PII leakage, and tone policy violations. Report results to the supervising attorney and compliance officer.",
+            "priority": "high"
+          },
+          {
+            "label": "Establish a documented incident response plan for AI-generated legal errors",
+            "description": "Create a written runbook covering: how to identify a harmful AI response, immediate client notification steps, attorney remediation workflow, bar reporting obligations, and malpractice insurer notification timeline.",
+            "priority": "high"
+          },
+          {
+            "label": "Version-control all knowledge base updates with change logs",
+            "description": "Track every addition, removal, or modification to the RAG knowledge base with a dated changelog, the identity of the approving attorney, and the reason for the change. This supports both audit defense and rollback capability.",
+            "priority": "high"
+          },
+          {
+            "label": "Perform annual third-party AI compliance audit against current bar ethics opinions",
+            "description": "Engage an independent auditor annually to assess the agent against updated state and ABA ethics opinions on AI use in legal practice. Incorporate findings into a remediation roadmap with 90-day resolution targets.",
+            "priority": "medium"
+          },
+          {
+            "label": "Test eDiscovery export functionality for agent logs before go-live",
+            "description": "Simulate a litigation hold scenario by exporting all agent logs for a test matter in a court-admissible format (e.g., EDRM XML or native format with metadata). Verify completeness and chain-of-custody documentation before production deployment.",
+            "priority": "high"
+          }
+        ]
+      }
+    ],
+    "regulatoryNotes": {
+      "heading": "Regulatory Considerations",
+      "notes": [
+        {
+          "rule": "ABA Model Rule 5.3 — Supervision of Non-Lawyer Assistance",
+          "note": "A licensed attorney must maintain supervisory authority over all AI-generated client communications. The agent cannot operate autonomously on substantive legal matters; attorney review workflows must be technically enforced, not merely policy-based."
+        },
+        {
+          "rule": "Mata v. Avianca (S.D.N.Y. 2023) — Hallucinated Citation Precedent",
+          "note": "Courts have sanctioned attorneys for submitting AI-generated briefs containing fabricated case citations. Every citation produced by the agent must be verified against a live legal database before any attorney reviews or forwards the content, and verification must be logged."
+        },
+        {
+          "rule": "ABA Model Rule 1.6 & State Bar Confidentiality Rules — Client Data in AI Systems",
+          "note": "Using client confidential information to train or fine-tune AI models without informed consent violates attorney-client confidentiality. Your LLM vendor contract must explicitly prohibit training on client data, and this prohibition must be technically enforced through zero-retention API configurations."
+        },
+        {
+          "rule": "Federal Rules of Civil Procedure Rule 26 & 34 — eDiscovery Obligations",
+          "note": "AI agent conversation logs, retrieval records, and tool-call histories may be discoverable in litigation. Firms must implement litigation hold procedures that can freeze and export agent logs in a forensically sound, court-admissible format within the timeframes required by applicable court rules."
+        }
+      ]
+    },
+    "cta": {
+      "heading": "Automate Your Legal Agent Compliance",
+      "description": "Use Vex to continuously monitor your legal AI agent for citation integrity, PII leakage, escalation compliance, and bar ethics alignment — so your team stays protected before an incident reaches a courtroom."
+    }
+  }
+}

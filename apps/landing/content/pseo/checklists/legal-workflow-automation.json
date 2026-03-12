@@ -1,0 +1,205 @@
+{
+  "meta": {
+    "industry": "legal",
+    "useCase": "workflow-automation",
+    "generatedAt": "2026-03-12"
+  },
+  "seo": {
+    "title": "Legal Workflow Automation AI Agent Checklist",
+    "description": "Production readiness checklist for workflow automation AI agents in legal. Covers Attorney-client privilege protections, Bar association ethics rules, Court filing standards.",
+    "keywords": [
+      "Legal AI checklist",
+      "Workflow Automation agent checklist",
+      "Legal AI compliance",
+      "AI agent production readiness",
+      "AI guardrails checklist"
+    ]
+  },
+  "content": {
+    "intro": "Deploying AI agents in legal workflows carries extraordinary risk — a single hallucinated case citation or unauthorized disclosure of privileged communications can trigger malpractice liability, bar sanctions, and case dismissal. The Mata v. Avianca precedent established that courts will impose sanctions when AI-generated legal content is submitted without attorney verification, making human-in-the-loop controls non-negotiable. This checklist provides concrete, enforceable steps to deploy legal workflow automation agents that meet bar association ethics standards, protect attorney-client privilege, and produce verifiable, court-ready outputs.",
+    "sections": [
+      {
+        "heading": "Attorney-Client Privilege & Data Governance",
+        "description": "Ensure all client data handled by the AI agent is isolated, protected from model training pipelines, and governed by privilege-preserving access controls before any workflow automation goes live.",
+        "items": [
+          {
+            "label": "Enforce client data training exclusion",
+            "description": "Configure your AI provider contract and system settings to explicitly opt out of using any client-submitted documents, communications, or case data for model fine-tuning or training. Obtain written confirmation from the vendor and audit this setting quarterly.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement matter-scoped data isolation",
+            "description": "Architect the agent so each legal matter operates in a separate data namespace. Cross-matter data access must be blocked at the API and database layer, not just the UI layer, to prevent inadvertent privilege waiver.",
+            "priority": "critical"
+          },
+          {
+            "label": "Log all agent access to privileged documents",
+            "description": "Maintain immutable audit logs recording which agent action, triggered by which workflow step, accessed which privileged document, with timestamps and user attribution. Logs must be retained per your jurisdiction's record-keeping rules (minimum 5 years in most states).",
+            "priority": "critical"
+          },
+          {
+            "label": "Classify documents by privilege tier before ingestion",
+            "description": "Before the agent processes any document, run an automated privilege classification step (attorney-client, work product, or non-privileged) and attach metadata tags. The agent must respect these tags when deciding whether to include content in outputs or API calls to third-party services.",
+            "priority": "high"
+          },
+          {
+            "label": "Restrict third-party API calls involving privileged content",
+            "description": "Audit every external API integration in the workflow (e-signature, court filing, research tools) to confirm privileged content is not transmitted to services outside your data processing agreements. Block unapproved endpoints at the network layer.",
+            "priority": "high"
+          },
+          {
+            "label": "Define and enforce data retention and deletion workflows",
+            "description": "Build automated retention schedules into the agent so client data is purged or archived according to matter close dates and jurisdiction-specific retention rules. Include a verified deletion confirmation step with attorney sign-off.",
+            "priority": "high"
+          },
+          {
+            "label": "Conduct privilege impact assessment before deployment",
+            "description": "Before go-live, have a supervising attorney review the full data flow diagram of the agent to identify any step where privileged information could be exposed, logged externally, or inadvertently waived. Document findings and remediation actions.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Citation Accuracy & Hallucination Prevention",
+        "description": "Legal AI agents must never produce unverified case citations. Implement multi-layer verification to prevent the submission of fabricated or misquoted legal authority, as demonstrated by the Mata v. Avianca sanctions case.",
+        "items": [
+          {
+            "label": "Integrate real-time citation verification against authoritative databases",
+            "description": "Connect the agent to Westlaw, LexisNexis, or CourtListener APIs and require every generated case citation to be verified against the live database before inclusion in any output. The agent must return the verified citation URL and docket number alongside the citation text.",
+            "priority": "critical"
+          },
+          {
+            "label": "Block output delivery if any citation fails verification",
+            "description": "Implement a hard gate in the workflow: if any citation cannot be verified in the authoritative database, the entire document output must be flagged as 'UNVERIFIED — DO NOT FILE' and routed to attorney review before proceeding. Do not allow partial delivery.",
+            "priority": "critical"
+          },
+          {
+            "label": "Require attorney sign-off on all citation-bearing documents",
+            "description": "Build a mandatory human-in-the-loop approval step specifically for any document containing legal citations. The approving attorney must confirm they have independently reviewed each citation, and this confirmation must be logged with their bar number and timestamp.",
+            "priority": "critical"
+          },
+          {
+            "label": "Display confidence scores and source provenance for all legal assertions",
+            "description": "Configure the agent to surface the source document, page number, and retrieval confidence score for every legal assertion it makes. Attorneys must see this provenance data in the review interface, not just the final output text.",
+            "priority": "high"
+          },
+          {
+            "label": "Validate that cited cases have not been overruled or distinguished",
+            "description": "After verifying a citation exists, run an automated Shepard's or KeyCite check to confirm the case is still good law. Flag any citation with negative treatment (overruled, reversed, distinguished) with a red warning before attorney review.",
+            "priority": "high"
+          },
+          {
+            "label": "Prohibit the agent from generating citations from memory alone",
+            "description": "Enforce a retrieval-augmented generation (RAG) architecture where the agent can only cite cases it has retrieved from a verified legal database in the current session. Disable any workflow path that allows the model to generate citations from parametric knowledge without retrieval.",
+            "priority": "critical"
+          },
+          {
+            "label": "Log all citation verification results for post-filing audit",
+            "description": "Store the full citation verification audit trail — including database query, response, and attorney approval — in the matter file. This record must be producible if a court or bar association questions the provenance of cited authority.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Workflow Action Controls & Idempotency",
+        "description": "Multi-step legal workflow agents must execute actions with precision — duplicate filings, unauthorized submissions, or non-reversible actions can cause irreparable harm. Implement strict action controls, permission validation, and rollback mechanisms.",
+        "items": [
+          {
+            "label": "Implement idempotency keys for all court filing API calls",
+            "description": "Assign a unique idempotency key to every court filing or document submission action. The agent must check for an existing key before executing, preventing duplicate filings that could trigger sanctions or procedural complications.",
+            "priority": "critical"
+          },
+          {
+            "label": "Require explicit permission validation before each irreversible action",
+            "description": "Before executing any action that cannot be undone (filing, sending, deleting), the agent must query the permission store to confirm the triggering user has the required role (e.g., supervising attorney, authorized paralegal) and that the matter is in the correct workflow state.",
+            "priority": "critical"
+          },
+          {
+            "label": "Build rollback capability for every reversible workflow step",
+            "description": "For each workflow action that can be reversed (draft creation, internal document routing, calendar entries), implement a documented rollback procedure. Test rollback paths quarterly and ensure the agent can trigger rollback automatically on error detection.",
+            "priority": "high"
+          },
+          {
+            "label": "Enforce human approval gates before deadline-sensitive actions",
+            "description": "Identify all workflow steps involving court deadlines, statute of limitations dates, or filing windows. Require a licensed attorney to explicitly approve these steps with a timestamp, and build in a minimum 24-hour review buffer before the actual deadline.",
+            "priority": "critical"
+          },
+          {
+            "label": "Validate conditional logic branches against matter-specific rules",
+            "description": "Before the agent executes a conditional branch (e.g., 'if jurisdiction is California, apply CCPA rules'), validate that the jurisdiction and matter-type data driving the condition are accurate and sourced from the verified matter record, not inferred by the model.",
+            "priority": "high"
+          },
+          {
+            "label": "Implement action rate limiting to prevent runaway automation",
+            "description": "Set maximum action thresholds per matter per hour (e.g., no more than 5 external API calls, 1 filing submission) to prevent runaway agent loops from generating duplicate documents or exhausting court e-filing quotas.",
+            "priority": "medium"
+          },
+          {
+            "label": "Maintain a complete action ledger per matter for malpractice defense",
+            "description": "Record every agent action — including inputs, outputs, decision branches taken, and approvals received — in an immutable per-matter ledger. This ledger must be exportable in a court-admissible format and retained for the full malpractice statute of limitations period.",
+            "priority": "high"
+          },
+          {
+            "label": "Test all workflow paths in a sandboxed environment before production",
+            "description": "Run the complete agent workflow against synthetic matter data in a staging environment that mirrors production APIs (including court filing sandboxes where available). Document all test scenarios, expected outputs, and pass/fail results before any live matter is processed.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Bar Ethics Compliance & Supervising Attorney Accountability",
+        "description": "Bar association ethics rules require attorneys to supervise non-lawyer assistance, including AI tools. The agent deployment must be structured so that attorney oversight is meaningful, documented, and enforceable — not a rubber-stamp checkbox.",
+        "items": [
+          {
+            "label": "Assign a named supervising attorney to every AI-assisted matter",
+            "description": "Require that each matter processed by the agent has a designated supervising attorney recorded in the system. This attorney is accountable for all AI-generated work product on that matter and must be notified of every agent action requiring review.",
+            "priority": "critical"
+          },
+          {
+            "label": "Disclose AI involvement to clients in the engagement letter",
+            "description": "Update standard engagement letters to include a plain-language disclosure that AI tools may assist in document drafting, research, or workflow management, subject to attorney review. Obtain client acknowledgment before the agent processes any matter data.",
+            "priority": "critical"
+          },
+          {
+            "label": "Conduct a bar association ethics rule review for each jurisdiction",
+            "description": "Before deploying the agent for matters in a new jurisdiction, review that state bar's formal ethics opinions on AI use (e.g., California, New York, Florida bars have issued specific guidance). Document the review and any required workflow modifications in a jurisdiction compliance log.",
+            "priority": "high"
+          },
+          {
+            "label": "Implement competence verification for attorneys approving AI outputs",
+            "description": "Require that attorneys approving AI-generated legal work have completed a minimum training module on the agent's capabilities and limitations. Track completion in the system and block approval permissions for attorneys who have not completed training.",
+            "priority": "high"
+          },
+          {
+            "label": "Prohibit the agent from providing legal advice directly to clients",
+            "description": "Configure the agent's output routing so that no AI-generated content is delivered directly to clients without attorney review and approval. All client-facing communications must pass through an attorney approval queue with a logged sign-off.",
+            "priority": "critical"
+          },
+          {
+            "label": "Establish a conflict-of-interest check before agent accesses matter data",
+            "description": "Integrate the agent with the firm's conflict-of-interest database. Before the agent begins processing a new matter, it must run an automated conflict check and halt if a potential conflict is flagged, routing the issue to the supervising attorney for resolution.",
+            "priority": "high"
+          },
+          {
+            "label": "Document AI tool usage in the matter file for ethics compliance",
+            "description": "Record in the official matter file which AI tools were used, on which tasks, and which attorney reviewed the outputs. This documentation supports compliance with ethics rules requiring attorneys to supervise non-lawyer assistance and provides a defense record if conduct is questioned.",
+            "priority": "high"
+          }
+        ]
+      }
+    ],
+    "regulatoryNotes": {
+      "heading": "Regulatory Considerations",
+      "notes": [
+        "ABA Model Rule 5.3 requires attorneys to supervise non-lawyer assistance, which courts and bar associations are increasingly applying to AI tools. Your deployment must demonstrate that attorney oversight is substantive — including documented review of AI outputs — not merely nominal approval. Failure to supervise AI-generated work product that causes client harm can result in disciplinary proceedings under this rule.",
+        "The Mata v. Avianca (S.D.N.Y. 2023) sanctions order established that submitting AI-generated briefs containing fabricated citations, even unknowingly, exposes attorneys to Rule 11 sanctions and potential bar discipline. Your citation verification workflow must produce a documented audit trail showing each citation was independently verified against an authoritative legal database before filing, and this record must be preserved in the matter file.",
+        "Federal Rule of Civil Procedure 26 and the Sedona Principles governing eDiscovery require that any AI tool used in document review or production be validated for accuracy and that its methodology be defensible and disclosable. If your agent assists with eDiscovery workflows, you must be prepared to disclose the tool's error rate, validation methodology, and review protocol to opposing counsel or the court upon request.",
+        "State bar ethics opinions on AI use are evolving rapidly and vary by jurisdiction. As of 2024, California (Provisional Opinion 2023-L-0001), New York (Ethics Opinion 1102), and Florida (Ethics Opinion 24-1) have issued guidance requiring competence in AI tool use, client disclosure obligations, and prohibitions on unauthorized practice through AI. Before deploying in any jurisdiction, verify the current ethics opinion status and update your workflow configuration and client disclosures accordingly."
+      ]
+    },
+    "cta": {
+      "heading": "Automate Your Legal Agent Compliance",
+      "description": "Use Vex to map your legal AI agent workflows against this checklist, assign attorney accountability owners to every critical control, and generate a living compliance record that satisfies bar ethics requirements and protects your firm from malpractice exposure."
+    }
+  }
+}

@@ -1,0 +1,222 @@
+{
+  "meta": {
+    "industry": "legal",
+    "useCase": "content-generation",
+    "generatedAt": "2026-03-12"
+  },
+  "seo": {
+    "title": "Legal Content Generation AI Agent Checklist",
+    "description": "Production readiness checklist for content generation AI agents in legal. Covers Attorney-client privilege protections, Bar association ethics rules, Court filing standards.",
+    "keywords": [
+      "Legal AI checklist",
+      "Content Generation agent checklist",
+      "Legal AI compliance",
+      "AI agent production readiness",
+      "AI guardrails checklist"
+    ]
+  },
+  "content": {
+    "intro": "Deploying AI agents for legal content generation carries critical risks including malpractice exposure, bar sanctions, and case dismissal stemming from hallucinated citations — as demonstrated in Mata v. Avianca. This checklist ensures your AI content pipeline meets attorney ethics obligations, court filing standards, and client confidentiality requirements before any output reaches a client or courtroom. Every item is scoped to the intersection of LLM-powered generation and legal industry compliance.",
+    "sections": [
+      {
+        "heading": "Attorney Review & Oversight Controls",
+        "description": "Ensure every AI-generated legal output passes through a licensed attorney before delivery, filing, or client communication — satisfying bar association ethics rules on competence and supervision.",
+        "items": [
+          {
+            "label": "Mandatory Attorney Sign-Off Gate",
+            "description": "Implement a hard workflow gate that blocks any AI-generated legal document, brief, or client communication from being sent or filed until a licensed attorney in the relevant jurisdiction has reviewed and approved it.",
+            "priority": "critical"
+          },
+          {
+            "label": "Jurisdiction-Specific Attorney Assignment",
+            "description": "Automatically route AI-generated content to an attorney licensed in the jurisdiction where the content will be used, preventing unauthorized practice of law across state or national boundaries.",
+            "priority": "critical"
+          },
+          {
+            "label": "AI Disclosure Logging",
+            "description": "Log every instance of AI-generated content with timestamps, model version, prompt inputs, and reviewing attorney credentials to create an auditable trail for bar inquiries or malpractice defense.",
+            "priority": "critical"
+          },
+          {
+            "label": "Competence Verification for AI Tool Use",
+            "description": "Require attorneys supervising AI output to complete documented training on the specific LLM tool's limitations, hallucination risks, and citation verification procedures per ABA Model Rule 1.1 competence standards.",
+            "priority": "high"
+          },
+          {
+            "label": "Escalation Protocol for Uncertain Legal Conclusions",
+            "description": "Define a clear escalation path when the AI generates legal conclusions flagged as low-confidence, requiring senior attorney review before the content proceeds through the workflow.",
+            "priority": "high"
+          },
+          {
+            "label": "Client Communication Disclosure Policy",
+            "description": "Establish a written policy specifying when and how clients must be informed that AI tools assisted in drafting their legal documents, aligned with applicable state bar ethics opinions on AI disclosure.",
+            "priority": "high"
+          },
+          {
+            "label": "Supervision Chain Documentation",
+            "description": "Document the supervising attorney's name, bar number, and review date directly within each AI-assisted document's metadata to satisfy Model Rule 5.3 requirements for supervising non-lawyer assistance.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Citation Verification & Hallucination Prevention",
+        "description": "Prevent the Mata v. Avianca scenario by enforcing real-time citation validation against authoritative legal databases before any case reference appears in client-facing or court-filed content.",
+        "items": [
+          {
+            "label": "Real-Time Citation Validation Against Westlaw/Lexis",
+            "description": "Integrate the AI content pipeline with Westlaw, LexisNexis, or CourtListener APIs to automatically verify that every cited case, statute, or regulation exists and matches the quoted proposition before output is finalized.",
+            "priority": "critical"
+          },
+          {
+            "label": "Citation Existence Hard Block",
+            "description": "Configure the system to hard-block any document containing an unverified or non-existent citation from advancing to attorney review or filing, requiring manual resolution before the workflow continues.",
+            "priority": "critical"
+          },
+          {
+            "label": "Negative Treatment Check",
+            "description": "Run every cited case through a negative treatment check (Shepard's or KeyCite equivalent) to flag overruled, reversed, or distinguished precedents before they are submitted to a court or client.",
+            "priority": "critical"
+          },
+          {
+            "label": "Pinpoint Citation Accuracy Verification",
+            "description": "Verify that AI-generated pinpoint citations (page numbers, paragraph numbers, section references) match the actual text in the source document, not just that the case exists.",
+            "priority": "high"
+          },
+          {
+            "label": "Statute and Regulation Currency Check",
+            "description": "Automatically verify that cited statutes and regulations reflect the current version in force at the time of filing, flagging any provisions that have been amended or repealed since the AI's training cutoff.",
+            "priority": "high"
+          },
+          {
+            "label": "Hallucination Risk Scoring per Document Type",
+            "description": "Assign a hallucination risk score to each document type (e.g., appellate brief vs. blog post) and apply proportionally stricter citation verification thresholds for court-filed materials.",
+            "priority": "high"
+          },
+          {
+            "label": "Attorney Certification of Citation Accuracy",
+            "description": "Require the reviewing attorney to explicitly certify citation accuracy as a separate checklist step distinct from general content review, creating a documented record that mirrors Rule 11 certification obligations.",
+            "priority": "high"
+          },
+          {
+            "label": "Periodic Audit of AI Citation Error Rate",
+            "description": "Conduct monthly audits comparing AI-generated citations against verified sources, tracking error rates by document type and model version to inform retraining or prompt engineering decisions.",
+            "priority": "medium"
+          }
+        ]
+      },
+      {
+        "heading": "Client Confidentiality & Data Governance",
+        "description": "Protect attorney-client privilege and prevent confidential client data from being ingested into model training pipelines, satisfying Model Rules 1.6 and 1.9 alongside applicable data protection regulations.",
+        "items": [
+          {
+            "label": "Training Data Opt-Out Enforcement",
+            "description": "Contractually and technically confirm that the LLM provider cannot use any client matter data, prompts containing case facts, or firm work product for model training or fine-tuning, with audit rights to verify compliance.",
+            "priority": "critical"
+          },
+          {
+            "label": "Client Data Anonymization Before AI Input",
+            "description": "Implement automated PII and matter-specific detail stripping before any client information is passed to the LLM, replacing names, case numbers, and identifying facts with anonymized placeholders.",
+            "priority": "critical"
+          },
+          {
+            "label": "Privilege Log Integration",
+            "description": "Ensure AI-generated content created in connection with client matters is automatically flagged for inclusion in privilege logs, preserving attorney-client privilege and work product doctrine protections.",
+            "priority": "critical"
+          },
+          {
+            "label": "eDiscovery-Ready Retention Policy",
+            "description": "Define and enforce a retention policy for AI prompt logs, generated drafts, and review records that satisfies eDiscovery obligations, including litigation hold procedures when matters are active.",
+            "priority": "high"
+          },
+          {
+            "label": "Data Residency and Jurisdiction Controls",
+            "description": "Confirm that client data processed by the AI system remains within jurisdictions permitted by client engagement agreements and applicable bar rules, particularly for cross-border matters.",
+            "priority": "high"
+          },
+          {
+            "label": "Access Control by Matter",
+            "description": "Restrict AI system access to client matter data on a need-to-know basis, ensuring attorneys and staff can only input or retrieve content related to matters they are authorized to work on.",
+            "priority": "high"
+          },
+          {
+            "label": "Vendor Data Processing Agreement Review",
+            "description": "Obtain and review a Data Processing Agreement (DPA) from the LLM vendor that explicitly addresses legal professional privilege, confidentiality obligations, and breach notification timelines before deployment.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Content Quality, Brand Voice & Factual Accuracy",
+        "description": "Enforce editorial standards, brand voice consistency, SEO compliance, and factual accuracy across all AI-generated legal content to protect firm reputation and meet court filing standards.",
+        "items": [
+          {
+            "label": "Legal Brand Voice Style Guide Integration",
+            "description": "Embed the firm's approved style guide — including tone, terminology preferences, prohibited phrases, and jurisdiction-specific language standards — directly into system prompts and evaluated against every output before review.",
+            "priority": "high"
+          },
+          {
+            "label": "Automated Tone and Formality Scoring",
+            "description": "Run AI outputs through a tone analysis layer that scores formality, professionalism, and alignment with the intended audience (court, client, general public) and flags deviations for editorial correction.",
+            "priority": "high"
+          },
+          {
+            "label": "Originality and Plagiarism Screening",
+            "description": "Submit all AI-generated legal content through a plagiarism detection tool (e.g., iThenticate or Copyleaks) before publication or filing to identify unintentional reproduction of copyrighted legal texts or competitor content.",
+            "priority": "high"
+          },
+          {
+            "label": "SEO Compliance Without Legal Accuracy Compromise",
+            "description": "Establish editorial rules that permit SEO keyword optimization only in non-substantive sections (titles, meta descriptions, introductory paragraphs) and prohibit keyword insertion that distorts legal accuracy or creates misleading statements.",
+            "priority": "medium"
+          },
+          {
+            "label": "Court Filing Format Validation",
+            "description": "For content destined for court submission, run automated checks against jurisdiction-specific formatting rules (font, margin, word count, certificate of service requirements) before attorney review to reduce revision cycles.",
+            "priority": "high"
+          },
+          {
+            "label": "Factual Claim Source Mapping",
+            "description": "Require the AI system to output a source map alongside every factual claim in generated content, linking each assertion to a verifiable primary source that the reviewing attorney can independently confirm.",
+            "priority": "high"
+          },
+          {
+            "label": "Unauthorized Practice of Law (UPL) Content Screening",
+            "description": "Implement a content classifier that flags AI-generated text containing specific legal advice directed at identified individuals without attorney supervision, preventing UPL violations in public-facing content.",
+            "priority": "critical"
+          },
+          {
+            "label": "Version Control for All AI-Generated Drafts",
+            "description": "Maintain immutable version history for every AI-generated draft, capturing each iteration from initial generation through attorney edits to final output, supporting malpractice defense and eDiscovery production.",
+            "priority": "medium"
+          }
+        ]
+      }
+    ],
+    "regulatoryNotes": {
+      "heading": "Regulatory Considerations",
+      "notes": [
+        {
+          "heading": "ABA Model Rule 1.1 — Competence in AI Tool Use",
+          "body": "ABA Formal Opinion 512 (2024) clarifies that attorneys must understand the benefits and risks of AI tools to satisfy competence obligations under Model Rule 1.1. Firms must document attorney training on LLM limitations, including hallucination tendencies, before authorizing use in client matters. Ignorance of how the tool generates citations or legal conclusions is not a defense to a competence complaint."
+        },
+        {
+          "heading": "Mata v. Avianca (S.D.N.Y. 2023) — Judicial Sanctions for AI Citations",
+          "body": "Judge Castel's sanctions order in Mata v. Avianca established that submitting AI-generated briefs containing fabricated case citations violates FRCP Rule 11 and subjects both attorneys and clients to sanctions. Courts in multiple jurisdictions have since issued standing orders requiring disclosure of AI use in filings. Your pipeline must treat citation verification as a hard compliance requirement, not a best-effort check."
+        },
+        {
+          "heading": "Model Rule 1.6 — Confidentiality and LLM Vendor Agreements",
+          "body": "Sharing client confidential information with an LLM provider constitutes disclosure under Model Rule 1.6 unless the attorney reasonably believes the disclosure is impliedly authorized or the client consents. State bar ethics opinions (including NY, CA, FL) have specifically addressed that using cloud-based AI tools requires due diligence on vendor data handling, training data use, and breach notification — all of which must be addressed in a written DPA before deployment."
+        },
+        {
+          "heading": "State Bar AI Disclosure Requirements — Jurisdiction-Specific Variance",
+          "body": "As of 2024, courts in Texas, California, Colorado, and the Federal Circuit have issued local rules or standing orders requiring attorneys to disclose AI use in filed documents and certify human review of AI-generated content. These requirements vary significantly by jurisdiction and are evolving rapidly. Your deployment must include a jurisdiction-tracking mechanism that applies the correct disclosure language to filings based on the court or agency receiving the document."
+        }
+      ]
+    },
+    "cta": {
+      "heading": "Automate Your Legal Agent Compliance",
+      "description": "Use Vex to continuously monitor your AI legal content pipeline against these checklist requirements, automatically flagging citation risks, confidentiality violations, and missing attorney review gates before they become malpractice exposure."
+    }
+  }
+}

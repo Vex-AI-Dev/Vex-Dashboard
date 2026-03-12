@@ -1,0 +1,200 @@
+{
+  "meta": {
+    "industry": "education",
+    "useCase": "customer-support",
+    "generatedAt": "2026-03-12"
+  },
+  "seo": {
+    "title": "Education Customer Support AI Agent Checklist",
+    "description": "Production readiness checklist for customer support AI agents in education. Covers FERPA, COPPA, State education data privacy laws.",
+    "keywords": [
+      "Education AI checklist",
+      "Customer Support agent checklist",
+      "Education AI compliance",
+      "AI agent production readiness",
+      "AI guardrails checklist"
+    ]
+  },
+  "content": {
+    "intro": "Deploying AI agents in educational customer support environments carries exceptional responsibility due to the sensitive nature of student data, the vulnerability of minor users, and the strict regulatory landscape governed by FERPA, COPPA, and state-level privacy laws. A misconfigured RAG agent or improperly filtered CRM integration can expose personally identifiable student information, trigger federal compliance violations, and result in institutional liability or loss of accreditation. This checklist provides concrete, actionable steps to ensure your AI customer support agent meets the legal, ethical, and operational standards required in K-12 and higher education settings.",
+    "sections": [
+      {
+        "heading": "Data Privacy & FERPA/COPPA Compliance",
+        "description": "Ensure all data flows, storage, and retrieval mechanisms comply with FERPA, COPPA, and applicable state education data privacy laws before the agent goes live.",
+        "items": [
+          {
+            "label": "Obtain and document verifiable parental consent for all users under 13",
+            "description": "Before any COPPA-covered student interacts with the AI agent, implement a consent gate that collects, logs, and stores verifiable parental consent records with timestamps and consent method documentation.",
+            "priority": "critical"
+          },
+          {
+            "label": "Restrict CRM data access to education records only when FERPA-authorized",
+            "description": "Configure the CRM integration to enforce role-based access controls so the agent only retrieves student education records when the requesting party has a legitimate educational interest as defined under FERPA 34 CFR Part 99.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement real-time PII detection and redaction in all agent outputs",
+            "description": "Deploy a PII filtering layer (e.g., using NER models or regex pipelines) that scans every agent response before delivery to detect and redact student IDs, SSNs, grades, disciplinary records, and contact information.",
+            "priority": "critical"
+          },
+          {
+            "label": "Audit all third-party vendor data sharing agreements for FERPA compliance",
+            "description": "Review and update Data Processing Agreements (DPAs) with every vendor in the agent stack—including the LLM provider, CRM platform, and knowledge base host—to confirm they qualify as 'school officials' under FERPA or have signed compliant agreements.",
+            "priority": "critical"
+          },
+          {
+            "label": "Enforce data minimization in RAG retrieval queries",
+            "description": "Configure the RAG pipeline to retrieve only the minimum necessary student data fields required to answer a support query, blocking retrieval of full education records when a partial record suffices.",
+            "priority": "high"
+          },
+          {
+            "label": "Log all student data access events with immutable audit trails",
+            "description": "Implement append-only audit logging for every CRM lookup and knowledge base retrieval that involves student records, capturing user ID, timestamp, data fields accessed, and agent session ID for FERPA audit readiness.",
+            "priority": "high"
+          },
+          {
+            "label": "Define and enforce data retention and deletion schedules for agent interaction logs",
+            "description": "Establish a documented retention policy for conversation logs that aligns with your institution's FERPA records schedule, and implement automated deletion workflows to purge logs containing student PII after the retention period expires.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Content Safety & Age-Appropriate Interaction",
+        "description": "Guarantee that all AI-generated responses are age-appropriate, bias-free, and safe for student users across all grade levels and demographics.",
+        "items": [
+          {
+            "label": "Implement age-tier content filters mapped to K-12 and higher education grade bands",
+            "description": "Configure content moderation layers with distinct rule sets for elementary (K-5), middle school (6-8), high school (9-12), and college users, restricting vocabulary complexity, topic scope, and content type based on the authenticated user's grade band.",
+            "priority": "critical"
+          },
+          {
+            "label": "Block all responses that could substitute for licensed professional advice",
+            "description": "Add a classifier that detects queries requiring mental health counseling, legal advice, or medical guidance, and route these immediately to a human counselor or licensed professional rather than generating an AI response.",
+            "priority": "critical"
+          },
+          {
+            "label": "Run bias audits on the knowledge base and RAG retrieval results quarterly",
+            "description": "Schedule quarterly bias audits using a diverse review panel to evaluate knowledge base content and sampled RAG outputs for racial, gender, socioeconomic, and disability-related bias, documenting findings and remediation actions.",
+            "priority": "high"
+          },
+          {
+            "label": "Enforce a 'supplemental only' framing for any instructional content delivered by the agent",
+            "description": "Add a system prompt constraint and output validator that ensures any academic or instructional content is explicitly framed as supplemental support, includes a disclaimer that it does not replace qualified teacher instruction, and links to relevant educator resources.",
+            "priority": "high"
+          },
+          {
+            "label": "Test all knowledge base documents for reading level appropriateness before ingestion",
+            "description": "Run Flesch-Kincaid or equivalent readability scoring on every document before it is ingested into the RAG knowledge base, rejecting or flagging documents that exceed the target reading level for the intended user tier.",
+            "priority": "high"
+          },
+          {
+            "label": "Implement profanity and harmful content detection on both inputs and outputs",
+            "description": "Deploy bidirectional content moderation that screens student-submitted queries for harmful content (to protect support staff) and screens all agent outputs for profanity, violent, or sexually explicit content before delivery.",
+            "priority": "high"
+          },
+          {
+            "label": "Create and test a safe messaging protocol for crisis-related student queries",
+            "description": "Define a documented safe messaging workflow for queries involving self-harm, abuse, or crisis situations, test it with red-team scenarios monthly, and ensure the agent immediately surfaces crisis hotline information and escalates to a human counselor.",
+            "priority": "critical"
+          }
+        ]
+      },
+      {
+        "heading": "Accessibility & Section 508 Compliance",
+        "description": "Ensure the AI agent interface and all generated content meet Section 508 and WCAG 2.1 AA accessibility standards to serve students with disabilities without discrimination.",
+        "items": [
+          {
+            "label": "Validate the agent's front-end interface against WCAG 2.1 AA criteria before launch",
+            "description": "Conduct a formal accessibility audit using tools such as axe, WAVE, or a certified accessibility consultant to verify the chat interface meets all WCAG 2.1 AA success criteria, including keyboard navigation, screen reader compatibility, and color contrast ratios.",
+            "priority": "critical"
+          },
+          {
+            "label": "Ensure all agent-generated responses are compatible with assistive technologies",
+            "description": "Test agent output rendering with JAWS, NVDA, and VoiceOver screen readers to confirm that structured responses, tables, and links are announced correctly and that dynamic content updates are accessible via ARIA live regions.",
+            "priority": "critical"
+          },
+          {
+            "label": "Provide alternative text generation for any images or visual content surfaced by the agent",
+            "description": "Configure the agent's tool-calling pipeline to automatically generate descriptive alt text for any image URLs or visual attachments retrieved from the knowledge base or CRM before including them in a response.",
+            "priority": "high"
+          },
+          {
+            "label": "Offer a plain-language response mode for students with cognitive disabilities",
+            "description": "Implement a user-selectable 'simplified language' mode that instructs the LLM to use shorter sentences, common vocabulary, and bullet-point formatting, and ensure this preference is persisted in the CRM user profile.",
+            "priority": "high"
+          },
+          {
+            "label": "Test agent timeout and session management settings against accessibility needs",
+            "description": "Configure session timeout warnings to appear at least 20 seconds before expiration with an option to extend, and verify that timeout dialogs are fully keyboard-accessible and screen-reader-announced per WCAG 2.1 Success Criterion 2.2.1.",
+            "priority": "medium"
+          },
+          {
+            "label": "Document accessibility conformance in a Voluntary Product Accessibility Template (VPAT)",
+            "description": "Produce and publish a current VPAT for the AI agent deployment, updated annually or after any major interface change, to support institutional procurement compliance and demonstrate Section 508 conformance to accreditation bodies.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Escalation, Human Oversight & Operational Safeguards",
+        "description": "Define clear escalation triggers, human-in-the-loop checkpoints, and operational monitoring protocols to maintain accountability and prevent AI-driven harm in student support interactions.",
+        "items": [
+          {
+            "label": "Define and implement at least 8 mandatory escalation trigger conditions",
+            "description": "Document specific escalation triggers including: crisis/safety keywords, FERPA record amendment requests, complaints about discrimination or harassment, queries requiring legal interpretation, unresolved issues after 2 agent turns, requests to speak with a human, academic appeals, and any query the agent classifies as low-confidence (below defined threshold).",
+            "priority": "critical"
+          },
+          {
+            "label": "Configure the ticket creation tool to auto-tag FERPA-sensitive tickets for restricted handling",
+            "description": "Modify the ticket creation tool-call payload to include a 'ferpa_sensitive' boolean flag that is set to true whenever the interaction involved student education records, triggering a restricted-access workflow in the CRM that limits ticket visibility to authorized staff.",
+            "priority": "critical"
+          },
+          {
+            "label": "Establish a human review queue for all agent responses flagged as low-confidence",
+            "description": "Implement a confidence scoring mechanism on RAG retrieval results and set a threshold (e.g., below 0.75 cosine similarity) below which the agent response is held in a human review queue before delivery, with a maximum 4-hour SLA for human review.",
+            "priority": "high"
+          },
+          {
+            "label": "Conduct weekly sampling reviews of 5% of agent conversations for quality and compliance",
+            "description": "Assign a designated compliance reviewer to randomly sample at least 5% of weekly agent conversations, scoring each against a rubric covering response accuracy, PII handling, tone appropriateness, policy adherence, and escalation correctness, with findings reported to the AI governance committee.",
+            "priority": "high"
+          },
+          {
+            "label": "Implement response accuracy validation against authoritative institutional sources",
+            "description": "Before each knowledge base update, run a regression test suite of 50+ representative student support queries against the updated RAG pipeline, comparing outputs to ground-truth answers approved by institutional subject matter experts, and block deployment if accuracy drops below 90%.",
+            "priority": "high"
+          },
+          {
+            "label": "Create a documented incident response plan specific to AI agent failures in student support",
+            "description": "Draft and rehearse a written incident response plan that covers: PII exposure via agent output, harmful content delivery to a minor, FERPA breach via unauthorized record access, and agent downtime, with defined roles, notification timelines (including 72-hour FERPA breach notification), and remediation steps.",
+            "priority": "critical"
+          },
+          {
+            "label": "Require annual AI literacy and compliance training for all staff who oversee the agent",
+            "description": "Mandate annual training for all support staff and supervisors covering FERPA obligations in AI contexts, how to interpret agent escalation flags, how to handle COPPA consent issues, and how to report AI-related compliance concerns, with completion tracked in the LMS.",
+            "priority": "high"
+          },
+          {
+            "label": "Perform a full FERPA-focused AI risk assessment before each major model or pipeline update",
+            "description": "Before deploying any update to the LLM, RAG pipeline, or CRM integration, complete a structured risk assessment checklist that evaluates changes for new FERPA exposure vectors, altered PII handling behavior, and shifts in escalation trigger accuracy, requiring sign-off from the institution's FERPA compliance officer.",
+            "priority": "critical"
+          }
+        ]
+      }
+    ],
+    "regulatoryNotes": {
+      "heading": "Regulatory Considerations",
+      "notes": [
+        "FERPA (20 U.S.C. § 1232g) prohibits the disclosure of student education records without written consent from eligible students or parents of minor students. Any AI agent with CRM access to student records must enforce strict access controls, and all vendor agreements must designate vendors as 'school officials with legitimate educational interest' or obtain separate written consent before data is shared with the AI pipeline.",
+        "COPPA (15 U.S.C. §§ 6501–6506) requires verifiable parental consent before collecting, using, or disclosing personal information from children under 13. Educational AI agents must implement age-verification mechanisms at onboarding, maintain consent records for FTC audit readiness, and provide parents with the ability to review and delete their child's data upon request.",
+        "State education data privacy laws—including California's SOPIPA, New York's Education Law 2-d, and similar statutes in 40+ states—impose additional restrictions beyond FERPA, including prohibitions on targeted advertising using student data, requirements for data security plans, and mandatory breach notification timelines as short as 10 days in some jurisdictions. Institutions must map their AI agent data flows against the specific laws of every state in which they enroll students.",
+        "Section 508 of the Rehabilitation Act (29 U.S.C. § 794d) requires that electronic and information technology used by federal agencies and federally funded institutions be accessible to people with disabilities. Educational institutions receiving federal funding must ensure their AI agent interface and all generated content conform to the Revised 508 Standards (which incorporate WCAG 2.0 Level AA), and must document conformance in a current VPAT to satisfy procurement and accreditation requirements."
+      ]
+    },
+    "cta": {
+      "heading": "Automate Your Education Agent Compliance",
+      "description": "Use Vex to continuously monitor your education AI agent for FERPA violations, PII leakage, and escalation failures—so your institution stays compliant, your students stay protected, and your team stays focused on delivering exceptional support."
+    }
+  }
+}

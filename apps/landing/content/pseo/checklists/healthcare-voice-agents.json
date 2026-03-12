@@ -1,0 +1,210 @@
+{
+  "meta": {
+    "industry": "healthcare",
+    "useCase": "voice-agents",
+    "generatedAt": "2026-03-12"
+  },
+  "seo": {
+    "title": "Healthcare Voice Agents AI Agent Checklist",
+    "description": "Production readiness checklist for voice agents AI agents in healthcare. Covers HIPAA, FDA 21 CFR Part 11, HITECH Act.",
+    "keywords": [
+      "Healthcare AI checklist",
+      "Voice Agents agent checklist",
+      "Healthcare AI compliance",
+      "AI agent production readiness",
+      "AI guardrails checklist"
+    ]
+  },
+  "content": {
+    "intro": "Deploying voice agents in healthcare environments introduces unique risks where a misheard medication name or a delayed response can directly harm patients. This checklist addresses the intersection of real-time audio processing pipelines and strict HIPAA/HITECH requirements, ensuring every spoken word is handled with clinical-grade security and auditability. Failure to comply can result in fines up to $1.5M per violation, malpractice liability, and irreversible damage to patient trust.",
+    "sections": [
+      {
+        "heading": "PHI Handling & Data Sovereignty",
+        "description": "Voice agents in healthcare must ensure that Protected Health Information (PHI) never leaves the approved processing boundary and is de-identified before reaching any LLM inference layer.",
+        "items": [
+          {
+            "label": "Deploy STT within HIPAA-compliant boundary",
+            "description": "Run your speech-to-text engine (e.g., on-premise Whisper or a BAA-covered cloud STT service) inside your approved data processing environment. Validate that raw audio and transcripts never route through non-BAA third-party endpoints.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement real-time PHI scrubbing before LLM input",
+            "description": "Insert a PHI detection and de-identification layer between the STT output and the LLM prompt. Use NER models trained on clinical text (e.g., AWS Comprehend Medical or equivalent) to strip names, DOBs, MRNs, and insurance IDs before any LLM call.",
+            "priority": "critical"
+          },
+          {
+            "label": "Sign Business Associate Agreements with all vendors",
+            "description": "Obtain and retain signed BAAs from every vendor in the pipeline — STT provider, LLM host, TTS provider, logging service, and monitoring platform — before processing any live patient data.",
+            "priority": "critical"
+          },
+          {
+            "label": "Enforce data residency constraints at the infrastructure level",
+            "description": "Configure cloud regions, VPC routing rules, and egress policies so that audio, transcripts, and LLM prompts are processed only in jurisdictions permitted by your BAA and organizational policy.",
+            "priority": "critical"
+          },
+          {
+            "label": "Encrypt audio streams in transit and at rest",
+            "description": "Apply TLS 1.3 for all audio stream transmission and AES-256 encryption for any stored audio buffers or transcripts. Rotate encryption keys on a schedule compliant with your SOC 2 Type II key management policy.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement automatic session data purge policies",
+            "description": "Define and enforce retention windows for audio recordings, transcripts, and LLM interaction logs. Automate deletion after the retention period using lifecycle policies, and document purge events in your audit log.",
+            "priority": "high"
+          },
+          {
+            "label": "Validate de-identification against HIPAA Safe Harbor standard",
+            "description": "Periodically test your PHI scrubbing pipeline against the 18 HIPAA Safe Harbor identifiers using synthetic patient datasets. Document pass/fail results and remediate any identifier leakage before production deployment.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Real-Time Pipeline Safety & Latency Controls",
+        "description": "Voice agents must meet sub-second latency budgets without sacrificing safety filtering. Every stage of the STT → LLM → TTS pipeline must have defined latency budgets, circuit breakers, and fallback behaviors.",
+        "items": [
+          {
+            "label": "Define and instrument per-stage latency budgets",
+            "description": "Assign explicit latency targets to each pipeline stage: STT ≤150ms, PHI scrubbing ≤30ms, LLM inference ≤400ms, safety filter ≤20ms, TTS ≤150ms. Instrument each stage with percentile metrics (p50, p95, p99) and alert on budget breaches.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement a synchronous safety filter on all LLM outputs",
+            "description": "Before TTS synthesis, pass every LLM response through a rule-based and ML safety classifier that blocks clinical misinformation, medication dosage errors, and crisis language. This filter must complete within the 20ms budget and must not be bypassable.",
+            "priority": "critical"
+          },
+          {
+            "label": "Define safe fallback responses for pipeline failures",
+            "description": "Specify pre-approved, clinically reviewed fallback audio responses for each failure mode (STT timeout, LLM error, safety filter block). Fallbacks must direct patients to a human clinician and must never fabricate clinical guidance.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement circuit breakers for downstream service degradation",
+            "description": "Configure circuit breakers on LLM and TTS service calls with defined thresholds (e.g., >5% error rate in 30s triggers open state). In open state, the agent must gracefully escalate to a human operator rather than retrying indefinitely.",
+            "priority": "high"
+          },
+          {
+            "label": "Test pipeline under peak concurrent session load",
+            "description": "Conduct load tests simulating peak concurrent voice sessions (at least 2x expected peak) and verify that latency budgets and safety filter accuracy are maintained. Document results and set auto-scaling thresholds based on findings.",
+            "priority": "high"
+          },
+          {
+            "label": "Validate STT accuracy on clinical vocabulary",
+            "description": "Benchmark your STT model on a clinical vocabulary test set including drug names, anatomical terms, and dosage instructions. Require a minimum Word Error Rate (WER) of ≤5% on clinical terms before production deployment.",
+            "priority": "high"
+          },
+          {
+            "label": "Implement acoustic noise handling and confidence thresholds",
+            "description": "Configure STT confidence thresholds so that low-confidence transcriptions (e.g., <0.75 confidence score) trigger a clarification prompt rather than proceeding to LLM reasoning. This prevents misheard clinical instructions from propagating through the pipeline.",
+            "priority": "high"
+          },
+          {
+            "label": "Monitor and alert on conversation coherence degradation",
+            "description": "Deploy a conversation coherence scoring model that evaluates multi-turn dialogue consistency. Alert on-call staff when coherence scores drop below threshold, which may indicate context window overflow or prompt injection attempts.",
+            "priority": "medium"
+          }
+        ]
+      },
+      {
+        "heading": "Auditability & FDA 21 CFR Part 11 Compliance",
+        "description": "All AI-assisted clinical decisions made through the voice agent must be fully auditable with tamper-evident logs, satisfying both HIPAA audit requirements and FDA 21 CFR Part 11 electronic records standards.",
+        "items": [
+          {
+            "label": "Log every voice interaction with a tamper-evident audit trail",
+            "description": "Record a structured audit event for every session including: session ID, timestamp, de-identified transcript, LLM prompt hash, LLM response hash, safety filter decision, TTS output hash, and operator ID. Write logs to an append-only, cryptographically signed store (e.g., AWS CloudTrail with log file validation enabled).",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement electronic signature controls for AI-assisted clinical decisions",
+            "description": "For any voice agent interaction that results in a clinical recommendation (e.g., medication reminder confirmation, triage routing), require a clinician electronic signature linked to the audit record per FDA 21 CFR Part 11 §11.50 requirements.",
+            "priority": "critical"
+          },
+          {
+            "label": "Maintain LLM model version and prompt version in audit records",
+            "description": "Record the exact model version, system prompt hash, and inference parameters used for every LLM call. This enables retrospective audit of whether a specific model version contributed to an adverse outcome.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement role-based access controls on audit log access",
+            "description": "Restrict audit log access to authorized compliance and clinical staff using RBAC. Log all audit log access events separately. Ensure no single user can both generate and delete audit records.",
+            "priority": "high"
+          },
+          {
+            "label": "Define and test audit log retention for minimum 6 years",
+            "description": "Configure audit log retention for at least 6 years per HIPAA requirements (longer if state law requires). Test restoration from archived logs annually and document the restoration procedure.",
+            "priority": "high"
+          },
+          {
+            "label": "Conduct quarterly audit log integrity verification",
+            "description": "Run automated integrity checks on audit log cryptographic signatures quarterly. Investigate and escalate any integrity failures as a potential security incident within 24 hours per your incident response plan.",
+            "priority": "high"
+          },
+          {
+            "label": "Produce audit reports for regulatory inspection on demand",
+            "description": "Build and test a compliance reporting pipeline that can generate a complete interaction audit report for any session within 4 hours of a regulatory or legal request. Validate this capability during annual compliance drills.",
+            "priority": "medium"
+          }
+        ]
+      },
+      {
+        "heading": "Clinical Safety Guardrails & Human Escalation",
+        "description": "Voice agents must never substitute for licensed clinical judgment. Robust guardrails, escalation pathways, and ongoing clinical oversight are required to prevent patient harm and limit malpractice exposure.",
+        "items": [
+          {
+            "label": "Define and enforce a clinical scope boundary for the agent",
+            "description": "Document a precise list of permitted agent actions (e.g., appointment reminders, medication adherence prompts, symptom triage routing) and prohibited actions (e.g., diagnosing conditions, prescribing medications, interpreting lab results). Encode these boundaries in the system prompt and safety filter rules.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement mandatory escalation for high-acuity keywords",
+            "description": "Maintain a clinically reviewed keyword and phrase list (e.g., chest pain, suicidal ideation, allergic reaction, difficulty breathing) that triggers immediate escalation to a human clinician or 911 routing. Test this list quarterly with clinical staff and update based on adverse event reviews.",
+            "priority": "critical"
+          },
+          {
+            "label": "Require clinical review and sign-off on all system prompts",
+            "description": "Establish a change control process requiring a licensed clinician and compliance officer to review and approve any modification to the agent's system prompt before deployment. Document approvals with electronic signatures per 21 CFR Part 11.",
+            "priority": "critical"
+          },
+          {
+            "label": "Conduct pre-deployment clinical red-teaming",
+            "description": "Before each major deployment, run structured adversarial testing sessions with clinical staff attempting to elicit harmful, out-of-scope, or misleading responses. Document all findings, remediate critical issues, and retain red-team reports for regulatory review.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement real-time human monitoring for high-risk sessions",
+            "description": "For patient populations flagged as high-risk (e.g., post-discharge, chronic disease management), route voice sessions to a queue monitored by a clinical staff member who can intervene within 30 seconds. Define and test the intervention protocol.",
+            "priority": "high"
+          },
+          {
+            "label": "Establish an adverse event reporting pipeline for agent interactions",
+            "description": "Create a formal process for clinical staff to flag voice agent interactions that contributed to or nearly caused patient harm. Route flagged interactions to your patient safety committee within 24 hours and incorporate findings into model and prompt updates.",
+            "priority": "high"
+          },
+          {
+            "label": "Provide patients with clear disclosure of AI interaction",
+            "description": "At the start of every voice session, play a clinically reviewed disclosure statement informing the patient they are interacting with an AI agent, its limitations, and how to reach a human clinician. Log patient acknowledgment in the session audit record.",
+            "priority": "high"
+          },
+          {
+            "label": "Conduct annual clinical performance review of agent outcomes",
+            "description": "Annually analyze aggregated (de-identified) voice agent interaction outcomes against clinical KPIs (e.g., escalation accuracy, triage appropriateness, patient satisfaction). Present findings to clinical leadership and use results to update agent scope and guardrails.",
+            "priority": "medium"
+          }
+        ]
+      }
+    ],
+    "regulatoryNotes": {
+      "heading": "Regulatory Considerations",
+      "notes": [
+        "HIPAA §164.312(a)(2)(iv) requires automatic logoff and encryption controls for systems accessing PHI — your voice agent session manager must implement idle session termination and ensure all audio buffers are purged from memory upon session close, not just at the application layer but at the infrastructure level.",
+        "FDA 21 CFR Part 11 §11.10(e) mandates that audit trails for electronic records be computer-generated and include the date and time of operator entries and actions that create, modify, or delete electronic records — every LLM-assisted clinical decision output must be treated as an electronic record subject to this requirement, including the model version and prompt hash used to generate it.",
+        "HITECH Act §13402 requires breach notification within 60 days of discovery for breaches affecting 500 or more individuals — a voice agent pipeline breach (e.g., audio stream interception or LLM prompt log exposure) that involves PHI triggers this requirement, and your incident response plan must include voice-agent-specific breach detection and notification procedures.",
+        "SOC 2 Type II CC6.1 and CC7.2 controls require that logical access to systems processing sensitive data is restricted and that security events are detected and responded to — your voice agent infrastructure must be included in your SOC 2 scope, with access controls, anomaly detection on audio streams, and documented incident response procedures reviewed by your auditor annually."
+      ]
+    },
+    "cta": {
+      "heading": "Automate Your Healthcare Agent Compliance",
+      "description": "Use Vex to continuously monitor your healthcare voice agent pipeline against HIPAA, HITECH, and FDA 21 CFR Part 11 requirements — catching PHI leakage, latency budget breaches, and safety filter gaps before they become regulatory violations."
+    }
+  }
+}

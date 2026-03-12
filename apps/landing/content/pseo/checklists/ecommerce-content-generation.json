@@ -1,0 +1,205 @@
+{
+  "meta": {
+    "industry": "ecommerce",
+    "useCase": "content-generation",
+    "generatedAt": "2026-03-12"
+  },
+  "seo": {
+    "title": "E-Commerce Content Generation AI Agent Checklist",
+    "description": "Production readiness checklist for content generation AI agents in e-commerce. Covers FTC advertising guidelines, CCPA/GDPR, PCI DSS for payments.",
+    "keywords": [
+      "E-Commerce AI checklist",
+      "Content Generation agent checklist",
+      "E-Commerce AI compliance",
+      "AI agent production readiness",
+      "AI guardrails checklist"
+    ]
+  },
+  "content": {
+    "intro": "Deploying AI agents for e-commerce content generation introduces significant legal and reputational risks when product claims, pricing, or policies are misrepresented — even unintentionally. FTC enforcement actions, CCPA/GDPR violations, and customer trust erosion can result from unchecked AI-generated copy that drifts from verified facts or brand standards. This checklist ensures your LLM-powered content pipeline meets regulatory requirements, maintains brand integrity, and protects revenue at every stage of the content lifecycle.",
+    "sections": [
+      {
+        "heading": "Product Claims & Factual Accuracy Controls",
+        "description": "AI-generated product descriptions and marketing copy must be grounded in verified, substantiated data to comply with FTC advertising guidelines and avoid consumer deception claims.",
+        "items": [
+          {
+            "label": "Implement a product data source-of-truth binding",
+            "description": "Connect the LLM content pipeline directly to your product information management (PIM) system so all specifications, features, and claims are pulled from verified inventory data, not hallucinated by the model.",
+            "priority": "critical"
+          },
+          {
+            "label": "Deploy a claim substantiation validation layer",
+            "description": "Before publishing, run generated content through an automated checker that flags superlatives ('best,' 'fastest,' 'guaranteed') and requires a linked evidence source or removes the claim entirely.",
+            "priority": "critical"
+          },
+          {
+            "label": "Enforce real-time pricing accuracy synchronization",
+            "description": "Integrate a live pricing API feed so any AI-generated content referencing prices, discounts, or promotional offers reflects the current catalog price within a 15-minute refresh window.",
+            "priority": "critical"
+          },
+          {
+            "label": "Build a return/refund policy template lock",
+            "description": "Store approved return and refund policy language in a locked template library that the LLM must reference verbatim rather than paraphrase, preventing misrepresentation of policy terms.",
+            "priority": "high"
+          },
+          {
+            "label": "Set up a hallucination detection scoring threshold",
+            "description": "Implement a confidence scoring mechanism that flags content where the model generates product attributes (dimensions, materials, certifications) not present in the source product data feed.",
+            "priority": "high"
+          },
+          {
+            "label": "Require human editorial review for health or safety claims",
+            "description": "Any AI-generated content touching health benefits, safety certifications, or allergen information must be routed to a human reviewer before publication, with a documented approval timestamp.",
+            "priority": "critical"
+          },
+          {
+            "label": "Log all generated claims with source attribution",
+            "description": "Maintain an audit log that maps each factual claim in published content to its source data record, enabling rapid investigation if an FTC inquiry or customer dispute arises.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Brand Voice & Editorial Compliance",
+        "description": "Consistent brand voice and adherence to editorial guidelines protect brand equity and ensure AI-generated content aligns with approved messaging frameworks across all customer touchpoints.",
+        "items": [
+          {
+            "label": "Encode brand voice guidelines as system-level prompt constraints",
+            "description": "Translate your brand style guide (tone, vocabulary, prohibited phrases, reading level targets) into structured system prompt instructions that are version-controlled and applied to every content generation request.",
+            "priority": "high"
+          },
+          {
+            "label": "Maintain a prohibited terms and competitor mention blocklist",
+            "description": "Define and enforce a dynamic blocklist of prohibited words, competitor names, and legally sensitive phrases that the content pipeline screens for before any output is accepted.",
+            "priority": "high"
+          },
+          {
+            "label": "Run automated tone adherence scoring on all outputs",
+            "description": "Use a secondary classifier model to score each generated piece against your defined tone dimensions (e.g., friendly, authoritative, inclusive) and reject outputs falling below a defined threshold.",
+            "priority": "medium"
+          },
+          {
+            "label": "Implement originality and plagiarism detection",
+            "description": "Pass all AI-generated content through a plagiarism detection tool (e.g., Copyscape or equivalent) before publication to avoid copyright infringement and duplicate content SEO penalties.",
+            "priority": "high"
+          },
+          {
+            "label": "Version-control all editorial guideline updates",
+            "description": "Store brand voice and editorial guidelines in a versioned repository so any change is tracked, dated, and reflected in the LLM prompt configuration within 24 hours of approval.",
+            "priority": "medium"
+          },
+          {
+            "label": "Establish a content category routing matrix",
+            "description": "Define which content categories (product descriptions, email campaigns, blog posts, ad copy) require different levels of human review, and automate routing based on content type tags.",
+            "priority": "medium"
+          },
+          {
+            "label": "Conduct quarterly brand voice drift audits",
+            "description": "Sample 100 AI-generated content pieces per quarter and score them against brand guidelines to detect systematic drift in tone or vocabulary before it reaches customers at scale.",
+            "priority": "medium"
+          }
+        ]
+      },
+      {
+        "heading": "Privacy, Data Handling & Consent Compliance",
+        "description": "E-commerce AI content systems often process customer behavioral data for personalization, requiring strict CCPA and GDPR compliance controls to avoid regulatory penalties and customer trust violations.",
+        "items": [
+          {
+            "label": "Audit all customer data inputs used for content personalization",
+            "description": "Document every customer data field (purchase history, browsing behavior, location) fed into the LLM for personalized content generation, and verify each has a valid legal basis under CCPA/GDPR.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement data minimization in content generation prompts",
+            "description": "Strip personally identifiable information (PII) from LLM prompts before submission, using anonymized customer segment identifiers rather than individual customer data to generate personalized content.",
+            "priority": "critical"
+          },
+          {
+            "label": "Build an opt-out signal propagation pipeline",
+            "description": "Ensure that when a customer exercises CCPA opt-out or GDPR erasure rights, their data is removed from all content personalization inputs within 72 hours and confirmed via automated audit log.",
+            "priority": "critical"
+          },
+          {
+            "label": "Disclose AI-generated content where legally or ethically required",
+            "description": "Review FTC guidance on AI disclosure requirements and implement a disclosure label for AI-generated reviews, testimonials, or influencer-style content to avoid deceptive advertising violations.",
+            "priority": "high"
+          },
+          {
+            "label": "Conduct a DPIA for AI content personalization workflows",
+            "description": "Complete a Data Protection Impact Assessment (DPIA) for any content generation workflow that processes EU customer data, documenting risks and mitigations before deployment.",
+            "priority": "high"
+          },
+          {
+            "label": "Restrict LLM vendor data retention for content generation calls",
+            "description": "Confirm via contract that your LLM API vendor does not retain prompt data containing customer behavioral signals for model training, and obtain written confirmation annually.",
+            "priority": "high"
+          },
+          {
+            "label": "Implement consent-tier-based content personalization controls",
+            "description": "Build logic that adjusts the depth of AI content personalization based on the customer's consent tier, ensuring customers who declined marketing cookies receive only non-personalized content.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "SEO Compliance, Accessibility & Publishing Safeguards",
+        "description": "AI-generated content must meet technical SEO standards and ADA accessibility requirements while publishing safeguards prevent erroneous or non-compliant content from reaching customers.",
+        "items": [
+          {
+            "label": "Enforce ADA-compliant alt text generation for all product images",
+            "description": "Configure the content pipeline to automatically generate descriptive alt text for every product image, and validate that alt text meets WCAG 2.1 AA standards before the content is published.",
+            "priority": "high"
+          },
+          {
+            "label": "Validate reading level and accessibility of generated copy",
+            "description": "Run all AI-generated product descriptions and landing page copy through a readability scorer targeting a Flesch-Kincaid grade level appropriate for your audience, and flag content exceeding the threshold.",
+            "priority": "medium"
+          },
+          {
+            "label": "Implement SEO compliance checks before publication",
+            "description": "Integrate an automated SEO validation step that checks for keyword stuffing, duplicate meta descriptions, missing H1 tags, and title length violations before content is pushed to the CMS.",
+            "priority": "high"
+          },
+          {
+            "label": "Set up a pre-publication content staging environment",
+            "description": "Route all AI-generated content through a staging environment where automated compliance checks (pricing accuracy, claim validation, plagiarism, tone scoring) must all pass before content is promoted to production.",
+            "priority": "critical"
+          },
+          {
+            "label": "Configure rollback triggers for published content errors",
+            "description": "Define specific error conditions (incorrect pricing published, prohibited claim detected post-publication, policy misrepresentation) that trigger an automated content rollback and alert to the editorial team within 15 minutes.",
+            "priority": "critical"
+          },
+          {
+            "label": "Monitor published AI content for post-deployment drift",
+            "description": "Set up weekly automated scans of live AI-generated content to detect pricing discrepancies, outdated product claims, or broken policy references caused by catalog or policy changes after publication.",
+            "priority": "high"
+          },
+          {
+            "label": "Maintain a content generation audit trail for dispute resolution",
+            "description": "Log every content generation request with timestamp, model version, prompt template version, source data snapshot, and reviewer identity to support FTC inquiries, refund disputes, or legal proceedings.",
+            "priority": "high"
+          },
+          {
+            "label": "Test AI content pipeline outputs against screen reader tools quarterly",
+            "description": "Run generated product pages through NVDA and VoiceOver screen readers quarterly to verify that AI-generated content structure, labels, and alt text remain accessible to users with disabilities.",
+            "priority": "medium"
+          }
+        ]
+      }
+    ],
+    "regulatoryNotes": {
+      "heading": "Regulatory Considerations",
+      "notes": [
+        "FTC Advertising Guidelines require that all product claims in AI-generated content — including performance claims, testimonials, and endorsements — be truthful, non-deceptive, and substantiated with competent and reliable evidence before publication. AI systems that generate superlative or comparative claims without grounding in verified product data create direct FTC enforcement exposure.",
+        "CCPA and GDPR impose strict requirements on the use of customer behavioral data for AI-driven content personalization. E-commerce operators must document the legal basis for processing, honor opt-out and erasure requests within mandated timeframes, and ensure LLM vendors do not use customer data for model training without explicit consent.",
+        "Pricing accuracy is a legal obligation under consumer protection laws in most jurisdictions. AI-generated content that displays outdated, promotional, or incorrect prices — even briefly — can trigger refund disputes, state attorney general investigations, and class action exposure. Real-time price synchronization between the content pipeline and the product catalog is a compliance requirement, not an optimization.",
+        "ADA Title III and WCAG 2.1 AA standards apply to e-commerce websites, meaning AI-generated content must include accessible alt text, proper heading structures, and sufficient color contrast. Courts have consistently held that inaccessible e-commerce sites violate the ADA, and AI content pipelines that bypass accessibility validation introduce both legal liability and customer exclusion risks."
+      ]
+    },
+    "cta": {
+      "heading": "Automate Your E-Commerce Agent Compliance",
+      "description": "Use Vex to continuously monitor your AI content pipeline against FTC guidelines, pricing accuracy requirements, and brand standards — catching compliance gaps before they reach customers or regulators."
+    }
+  }
+}

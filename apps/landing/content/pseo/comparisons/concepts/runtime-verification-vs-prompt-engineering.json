@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "slug": "runtime-verification-vs-prompt-engineering",
+    "generatedAt": "2026-03-12"
+  },
+  "seo": {
+    "title": "Runtime Verification vs Prompt Engineering",
+    "description": "Compare Runtime Verification and Prompt Engineering for AI agent reliability. Understand trade-offs and when to use each approach.",
+    "keywords": [
+      "runtime verification",
+      "prompt engineering",
+      "AI agent reliability",
+      "agent safety comparison"
+    ]
+  },
+  "content": {
+    "intro": "Building reliable AI agents requires deliberate strategies for managing unpredictable model behavior. Both runtime verification and prompt engineering offer distinct philosophies for achieving consistency and safety. Understanding their trade-offs helps teams choose the right tool—or combination—for their reliability requirements.",
+    "approachA": {
+      "name": "Runtime Verification",
+      "description": "Runtime verification intercepts and validates AI agent outputs, decisions, and actions as they happen—before they affect downstream systems or users. Rather than trying to shape model behavior through instructions, it enforces correctness through external checks, constraints, and guardrails applied at execution time. This approach treats the model as an untrusted component whose outputs must be verified against defined policies.",
+      "strengths": [
+        "Provides deterministic, enforceable guarantees regardless of model behavior or prompt drift",
+        "Catches failures in real time before they propagate into production systems or cause harm",
+        "Works across model versions and providers without requiring re-tuning or re-prompting",
+        "Creates auditable logs of every verification decision for compliance and debugging"
+      ],
+      "weaknesses": [
+        "Requires upfront investment in defining verification rules and policies",
+        "Can introduce latency overhead if checks are not optimized for performance",
+        "May produce false positives that block legitimate agent actions if rules are too strict",
+        "Needs ongoing maintenance as agent capabilities and use cases evolve"
+      ]
+    },
+    "approachB": {
+      "name": "Prompt Engineering",
+      "description": "Prompt engineering shapes AI agent behavior by crafting precise instructions, examples, and constraints directly within the model's input context. It leverages the model's instruction-following capabilities to guide outputs toward desired formats, tones, and safety boundaries. This approach is often the first line of defense teams reach for due to its low barrier to entry and rapid iteration cycle.",
+      "strengths": [
+        "Fast to implement and iterate—changes require only editing text, not deploying code",
+        "Can significantly improve output quality and consistency for well-defined tasks",
+        "No additional infrastructure required beyond the model API itself",
+        "Effective for shaping style, format, and general behavioral tendencies"
+      ],
+      "weaknesses": [
+        "Provides no hard guarantees—models can ignore or misinterpret instructions unpredictably",
+        "Brittle across model updates, as new versions may respond differently to the same prompts",
+        "Susceptible to prompt injection attacks that override carefully crafted instructions",
+        "Difficult to audit or prove compliance since behavior is probabilistic, not deterministic"
+      ]
+    },
+    "comparison": [
+      {
+        "dimension": "Reliability Guarantee",
+        "approachA": "Deterministic enforcement via external checks—violations are always caught",
+        "approachB": "Probabilistic—model may comply most of the time but offers no hard guarantees"
+      },
+      {
+        "dimension": "Implementation Speed",
+        "approachA": "Slower initial setup requiring policy definition and integration work",
+        "approachB": "Very fast—iterate in minutes by editing prompt text directly"
+      },
+      {
+        "dimension": "Security Against Adversarial Inputs",
+        "approachA": "Robust—external verification cannot be overridden by injected instructions",
+        "approachB": "Vulnerable—prompt injection can bypass safety instructions embedded in prompts"
+      },
+      {
+        "dimension": "Model Portability",
+        "approachA": "High—verification rules apply consistently across different models and versions",
+        "approachB": "Low—prompts often require significant re-tuning when switching models"
+      },
+      {
+        "dimension": "Observability & Compliance",
+        "approachA": "Full audit trail of every check, decision, and policy violation",
+        "approachB": "Limited—model reasoning is opaque and hard to audit systematically"
+      }
+    ],
+    "recommendation": {
+      "heading": "Which Should You Choose?",
+      "summary": "Prompt engineering is a valuable starting point for shaping agent behavior and is often sufficient for low-stakes, exploratory use cases where occasional failures are acceptable. However, for production systems where reliability, security, and compliance matter, runtime verification provides the enforceable guarantees that prompt engineering simply cannot. The strongest architectures use both: prompts to guide model behavior and runtime verification as the safety net that ensures nothing critical slips through."
+    },
+    "cta": {
+      "heading": "Try Runtime Verification with Vex",
+      "description": "See how Vex adds a deterministic verification layer to your AI agents—without replacing the prompt engineering work you've already done."
+    }
+  }
+}

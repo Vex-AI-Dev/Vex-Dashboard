@@ -1,0 +1,222 @@
+{
+  "meta": {
+    "industry": "legal",
+    "useCase": "voice-agents",
+    "generatedAt": "2026-03-12"
+  },
+  "seo": {
+    "title": "Legal Voice Agents AI Agent Checklist",
+    "description": "Production readiness checklist for voice agents AI agents in legal. Covers Attorney-client privilege protections, Bar association ethics rules, Court filing standards.",
+    "keywords": [
+      "Legal AI checklist",
+      "Voice Agents agent checklist",
+      "Legal AI compliance",
+      "AI agent production readiness",
+      "AI guardrails checklist"
+    ]
+  },
+  "content": {
+    "intro": "Deploying voice AI agents in legal practice carries extraordinary risk: a single hallucinated case citation or inadvertent privilege waiver can trigger malpractice liability, bar sanctions, or case dismissal. The Mata v. Avianca precedent established that courts will sanction attorneys who submit AI-generated citations without verification, making human oversight non-negotiable. This checklist operationalizes the specific technical, ethical, and regulatory controls required before any legal voice agent goes live with clients or court-facing workflows.",
+    "sections": [
+      {
+        "heading": "Attorney-Client Privilege & Data Governance",
+        "description": "Voice pipelines introduce unique privilege risks because audio, transcripts, and LLM context windows all constitute potential disclosure surfaces. Every data touchpoint must be governed before deployment.",
+        "items": [
+          {
+            "label": "Opt-out of model training on client audio and transcripts",
+            "description": "Confirm in writing with your STT, LLM, and TTS vendors that zero client conversation data is used for model fine-tuning or evaluation. Obtain Data Processing Agreements (DPAs) explicitly prohibiting training use and audit annually.",
+            "priority": "critical"
+          },
+          {
+            "label": "Encrypt audio streams end-to-end with AES-256 in transit and at rest",
+            "description": "Ensure the real-time audio pipeline (WebRTC or SIP) uses TLS 1.3 in transit and AES-256 at rest for all stored recordings and transcripts. Document encryption key ownership and rotation schedules.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement per-client data isolation in LLM context windows",
+            "description": "Architect the LLM prompt pipeline so that no prior client's conversation history, facts, or documents can bleed into another client's session. Use session-scoped context with hard resets between matters.",
+            "priority": "critical"
+          },
+          {
+            "label": "Define and enforce data retention and deletion schedules",
+            "description": "Establish retention policies aligned with your jurisdiction's bar rules (typically 5–7 years for client files). Implement automated deletion workflows for audio recordings, transcripts, and LLM logs beyond the retention window.",
+            "priority": "high"
+          },
+          {
+            "label": "Obtain informed client consent before initiating AI-assisted voice sessions",
+            "description": "Deliver a plain-language disclosure to clients explaining that an AI voice agent will assist in the call, that the conversation will be transcribed, and how data is stored. Capture affirmative consent and log it with a timestamp.",
+            "priority": "critical"
+          },
+          {
+            "label": "Restrict third-party vendor access to privileged content via contractual controls",
+            "description": "Ensure all vendors in the voice pipeline (STT, LLM API, TTS, telephony) are bound by Business Associate Agreements or equivalent legal contracts that acknowledge the privileged nature of the data and prohibit unauthorized disclosure.",
+            "priority": "high"
+          },
+          {
+            "label": "Log all voice session metadata with tamper-evident audit trails",
+            "description": "Record session start/end times, attorney assigned, matter number, and AI model version used in an append-only audit log. This log must be producible in the event of a bar complaint or malpractice discovery request.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Citation Accuracy & Hallucination Prevention",
+        "description": "Following Mata v. Avianca, courts and bar associations treat AI-hallucinated citations as sanctionable attorney misconduct. Voice agents that verbally cite cases must have verification gates before any citation reaches a client or court document.",
+        "items": [
+          {
+            "label": "Integrate real-time citation verification against Westlaw, Lexis, or Fastcase APIs",
+            "description": "Before the TTS layer vocalizes any case citation, route it through a legal database API call to confirm the case exists, the citation format is correct, and the holding matches the agent's characterization. Block vocalization if verification fails.",
+            "priority": "critical"
+          },
+          {
+            "label": "Configure the LLM to refuse citation generation when confidence is below threshold",
+            "description": "Add a system prompt instruction and output parser that forces the model to respond with 'I need to verify this citation before sharing it' rather than generating a plausible-sounding but unverified case name. Set a hard refusal for any citation the model cannot ground in retrieved context.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement Retrieval-Augmented Generation (RAG) with verified legal corpora only",
+            "description": "Ground all legal reasoning responses in a RAG pipeline connected exclusively to verified, dated legal databases. Do not allow the LLM to rely solely on parametric knowledge for any statement of law, statute, or case holding.",
+            "priority": "critical"
+          },
+          {
+            "label": "Flag and queue any verbally stated legal conclusion for attorney review before action",
+            "description": "When the voice agent states a legal conclusion (e.g., 'you have a valid breach of contract claim'), automatically generate a review task in the firm's matter management system for a licensed attorney to confirm before any client-facing document is drafted.",
+            "priority": "critical"
+          },
+          {
+            "label": "Test citation accuracy with a red-team suite of obscure and fictitious case names monthly",
+            "description": "Run a monthly automated test suite that injects requests for real obscure cases and completely fabricated case names into the agent. Measure hallucination rate and block deployment if the fabricated-case refusal rate falls below 100%.",
+            "priority": "high"
+          },
+          {
+            "label": "Display real-time citation verification status to the supervising attorney during calls",
+            "description": "Provide a live dashboard visible to the supervising attorney showing which citations the agent has stated and their verification status (verified, pending, failed). Allow the attorney to interrupt the call if a failed citation is detected.",
+            "priority": "high"
+          },
+          {
+            "label": "Prohibit the voice agent from citing unpublished opinions without explicit disclosure",
+            "description": "Configure jurisdiction-specific rules about unpublished opinion citation (e.g., FRAP 32.1, state equivalents). If the agent references an unpublished opinion, it must verbally disclose its unpublished status and confirm the jurisdiction permits citation.",
+            "priority": "medium"
+          }
+        ]
+      },
+      {
+        "heading": "Real-Time Voice Pipeline Performance & Safety",
+        "description": "Sub-second latency requirements in legal voice agents create tension with the safety checks required by the high-risk profile. The pipeline must be architected so that safety filtering does not degrade to the point of being bypassed under latency pressure.",
+        "items": [
+          {
+            "label": "Establish and enforce latency budgets with safety checks included, not excluded",
+            "description": "Define end-to-end latency budgets (e.g., STT: 150ms, LLM reasoning + safety filter: 400ms, TTS: 200ms) that include safety filtering time. Never architect safety checks as optional steps that are skipped when the pipeline is under load.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement a parallel safety filter that does not block the primary response path",
+            "description": "Run a lightweight safety classifier in parallel with the LLM response generation. If the safety classifier flags a response, trigger a hold on TTS output and route to attorney review rather than blocking the entire pipeline and causing silence.",
+            "priority": "high"
+          },
+          {
+            "label": "Configure graceful degradation to human attorney handoff when latency SLAs are breached",
+            "description": "If the pipeline cannot meet its latency budget (e.g., due to API timeouts), automatically trigger a warm transfer to a human attorney rather than delivering a degraded or unverified response. Define the handoff trigger threshold in milliseconds.",
+            "priority": "critical"
+          },
+          {
+            "label": "Test STT accuracy on legal terminology, Latin phrases, and proper nouns at 95%+ accuracy",
+            "description": "Run STT accuracy benchmarks specifically on legal vocabulary (habeas corpus, certiorari, voir dire, specific judge and case names). Require 95% word error rate performance on legal terminology before production deployment.",
+            "priority": "high"
+          },
+          {
+            "label": "Implement conversation coherence monitoring to detect topic drift and non-sequiturs",
+            "description": "Deploy a lightweight coherence scorer that flags when the agent's response is semantically disconnected from the prior conversational context. Non-sequitur responses in legal calls can constitute misleading advice and must be caught before vocalization.",
+            "priority": "high"
+          },
+          {
+            "label": "Conduct load testing at 3x peak concurrent call volume before production launch",
+            "description": "Simulate 3x your expected peak concurrent legal call volume and verify that safety filters, citation verification, and latency budgets all hold under load. Document results and set auto-scaling thresholds to maintain performance.",
+            "priority": "high"
+          },
+          {
+            "label": "Implement audio quality monitoring with automatic call quality alerts",
+            "description": "Monitor real-time audio quality metrics (MOS score, packet loss, jitter). If audio quality degrades below a threshold that could cause STT misinterpretation of legal terms, alert the supervising attorney and offer to reschedule or switch to text.",
+            "priority": "medium"
+          },
+          {
+            "label": "Validate TTS pronunciation of legal terms and case names before deployment",
+            "description": "Compile a pronunciation dictionary for legal Latin phrases, case names, and jurisdiction-specific terminology. Test TTS output against this dictionary and correct mispronunciations that could mislead clients about the law being discussed.",
+            "priority": "medium"
+          }
+        ]
+      },
+      {
+        "heading": "Bar Ethics Compliance & Attorney Supervision",
+        "description": "Bar association ethics rules in every U.S. jurisdiction require attorneys to supervise non-lawyer work product, which now explicitly extends to AI-generated content under ABA Formal Opinion 512 and state equivalents. The voice agent must be architected as a supervised tool, not an autonomous practitioner.",
+        "items": [
+          {
+            "label": "Assign a licensed supervising attorney to every active voice agent session",
+            "description": "Require that every voice agent call be assigned to a specific licensed attorney in the firm's matter management system before the call begins. The supervising attorney must be reachable for real-time intervention and is professionally responsible for all agent outputs.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement a mandatory attorney review gate before any AI-drafted document is filed or sent",
+            "description": "Enforce a workflow rule that no document, email, or court filing generated or summarized by the voice agent can be transmitted to a court, opposing counsel, or client without a licensed attorney's explicit digital approval. Log the approving attorney's identity and timestamp.",
+            "priority": "critical"
+          },
+          {
+            "label": "Configure the agent to proactively disclose its AI nature at the start of every call",
+            "description": "Program the voice agent's opening statement to clearly identify itself as an AI assistant working under attorney supervision, not a licensed attorney. This disclosure must occur before any substantive legal discussion begins, per emerging bar ethics guidance.",
+            "priority": "critical"
+          },
+          {
+            "label": "Restrict the agent from providing jurisdiction-specific legal advice without attorney confirmation",
+            "description": "Build a jurisdiction check into the agent's response logic. When a client asks a question requiring jurisdiction-specific legal advice, the agent must confirm the applicable jurisdiction with the supervising attorney before responding, or defer to a human attorney.",
+            "priority": "critical"
+          },
+          {
+            "label": "Conduct quarterly ethics compliance reviews with bar association guidance updates",
+            "description": "Schedule quarterly reviews of the agent's behavior against updated bar association ethics opinions (ABA, state bars). Assign a responsible attorney to monitor new formal opinions on AI use and update agent configuration within 30 days of material guidance changes.",
+            "priority": "high"
+          },
+          {
+            "label": "Implement conflict-of-interest screening before the agent engages with any new caller",
+            "description": "Integrate the voice agent intake flow with the firm's conflict-of-interest database. Before the agent discusses any matter details with a new caller, run an automated conflict check and halt the session if a potential conflict is detected, routing to a human attorney.",
+            "priority": "critical"
+          },
+          {
+            "label": "Maintain complete verbatim transcripts of all agent calls as part of the client file",
+            "description": "Store timestamped, verbatim transcripts of every voice agent session in the client's matter file in the firm's case management system. These transcripts are part of the client file and subject to the same retention, privilege, and production obligations as attorney notes.",
+            "priority": "high"
+          },
+          {
+            "label": "Train all attorneys and staff on AI tool competence obligations under Model Rule 1.1",
+            "description": "Deliver documented training to every attorney and paralegal who supervises or uses the voice agent, covering ABA Model Rule 1.1 competence obligations for technology, the specific capabilities and limitations of the deployed agent, and the firm's supervision protocols.",
+            "priority": "high"
+          }
+        ]
+      }
+    ],
+    "regulatoryNotes": {
+      "heading": "Regulatory Considerations",
+      "notes": [
+        {
+          "heading": "Mata v. Avianca (S.D.N.Y. 2023) — Citation Hallucination Sanctions Precedent",
+          "body": "This case established that attorneys who submit AI-generated briefs containing fabricated citations without independent verification face personal sanctions, fee awards against them, and potential bar referrals. Your voice agent must never verbally state a case citation that has not been verified against a live legal database in real time. Implement hard technical blocks, not just policy guidance, to prevent unverified citations from reaching clients or court documents."
+        },
+        {
+          "heading": "ABA Formal Opinion 512 (2024) — Generative AI and Attorney Competence",
+          "body": "The ABA's formal opinion on generative AI clarifies that using AI tools without understanding their limitations violates Model Rule 1.1 (Competence). Attorneys supervising voice agents must be trained on the specific model's known failure modes, including hallucination rates, knowledge cutoff dates, and jurisdictional gaps. Firms must document this training and update it when the underlying model is changed or updated."
+        },
+        {
+          "heading": "State Bar Ethics Rules on AI Disclosure to Clients",
+          "body": "Multiple state bars (California, Florida, New York, and others) have issued guidance requiring disclosure to clients when AI tools are used in their representation. For voice agents, this means the AI nature of the agent must be disclosed verbally at the start of every call. Failure to disclose can constitute a violation of Model Rule 1.4 (Communication) and Rule 8.4 (Misconduct). Review your specific jurisdiction's guidance as requirements vary."
+        },
+        {
+          "heading": "eDiscovery and Federal Rules of Civil Procedure (FRCP) Rule 26 — AI-Generated Content Preservation",
+          "body": "AI voice agent call transcripts, LLM reasoning logs, and audio recordings may be discoverable as electronically stored information (ESI) under FRCP Rule 26 and state equivalents. Firms must implement litigation hold procedures that extend to voice agent logs, ensure these records are not auto-deleted when a matter enters litigation, and be prepared to produce the AI model version and system prompts used during the relevant period as part of ESI production."
+        }
+      ]
+    },
+    "cta": {
+      "heading": "Automate Your Legal Agent Compliance",
+      "description": "Use Vex to continuously monitor your legal voice agent against this checklist, automatically flag citation verification failures, and generate audit-ready compliance reports for bar inquiries and malpractice defense."
+    }
+  }
+}

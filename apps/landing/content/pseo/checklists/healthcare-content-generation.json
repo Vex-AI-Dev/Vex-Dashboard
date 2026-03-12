@@ -1,0 +1,210 @@
+{
+  "meta": {
+    "industry": "healthcare",
+    "useCase": "content-generation",
+    "generatedAt": "2026-03-12"
+  },
+  "seo": {
+    "title": "Healthcare Content Generation AI Agent Checklist",
+    "description": "Production readiness checklist for content generation AI agents in healthcare. Covers HIPAA, FDA 21 CFR Part 11, HITECH Act.",
+    "keywords": [
+      "Healthcare AI checklist",
+      "Content Generation agent checklist",
+      "Healthcare AI compliance",
+      "AI agent production readiness",
+      "AI guardrails checklist"
+    ]
+  },
+  "content": {
+    "intro": "Deploying AI agents for healthcare content generation introduces unique risks where inaccurate medical information, PHI exposure, or non-compliant outputs can result in patient harm, malpractice liability, and HIPAA violations carrying fines up to $1.5M per incident. This checklist ensures your LLM-powered content pipeline meets HIPAA, FDA 21 CFR Part 11, and HITECH Act requirements while maintaining brand integrity and clinical accuracy. Every item is designed to be actionable for healthcare marketing, patient education, and clinical documentation content workflows.",
+    "sections": [
+      {
+        "heading": "PHI Protection & Data Governance",
+        "description": "Ensure patient health information is never exposed to LLM processing environments and that all data handling meets HIPAA and HITECH Act standards before content generation begins.",
+        "items": [
+          {
+            "label": "Implement PHI De-identification Pipeline",
+            "description": "Deploy an automated de-identification layer using HIPAA Safe Harbor or Expert Determination method that strips all 18 PHI identifiers from any input data before it reaches the LLM. Validate with a certified de-identification tool such as Microsoft Presidio or AWS Comprehend Medical.",
+            "priority": "critical"
+          },
+          {
+            "label": "Enforce Data Residency Boundaries",
+            "description": "Configure your LLM deployment to process all content within a HIPAA-compliant environment (e.g., Azure Government, AWS GovCloud, or on-premises). Implement network egress controls to block any patient-related data from leaving the approved processing boundary.",
+            "priority": "critical"
+          },
+          {
+            "label": "Execute Business Associate Agreements (BAAs)",
+            "description": "Obtain signed BAAs from every third-party vendor in the content generation stack, including LLM providers, vector database vendors, and content management platforms. Maintain a BAA registry with expiration tracking.",
+            "priority": "critical"
+          },
+          {
+            "label": "Classify Content Input Data by Sensitivity",
+            "description": "Tag all content generation requests with a data classification label (PHI, de-identified, public) before processing. Implement routing logic that blocks PHI-tagged inputs from reaching external LLM APIs and redirects them to on-premises models only.",
+            "priority": "critical"
+          },
+          {
+            "label": "Configure LLM Context Window Purging",
+            "description": "Ensure the LLM session context is purged after each content generation request to prevent PHI from persisting in model memory or conversation history. Validate purge behavior in your specific LLM deployment configuration.",
+            "priority": "high"
+          },
+          {
+            "label": "Establish Minimum Necessary Data Policy",
+            "description": "Define and enforce a policy that content generation prompts include only the minimum data necessary for the task. Conduct quarterly reviews of prompt templates to remove any unnecessary patient-level data references.",
+            "priority": "high"
+          },
+          {
+            "label": "Audit Third-Party Model Training Opt-Outs",
+            "description": "Confirm in writing with each LLM vendor that submitted prompts and outputs are not used for model training or fine-tuning. Document this confirmation and review vendor terms of service at each contract renewal.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Clinical Accuracy & Fact-Checking Controls",
+        "description": "Healthcare content errors can directly harm patients. Implement multi-layer verification to ensure all AI-generated medical content is clinically accurate, evidence-based, and reviewed by qualified professionals before publication.",
+        "items": [
+          {
+            "label": "Integrate Medical Knowledge Base Grounding",
+            "description": "Connect the LLM to a curated, version-controlled medical knowledge base (e.g., UpToDate, PubMed, or internal clinical guidelines) using retrieval-augmented generation (RAG). Restrict the model to only cite sources present in this approved knowledge base.",
+            "priority": "critical"
+          },
+          {
+            "label": "Mandate Licensed Clinician Review for Medical Claims",
+            "description": "Establish a mandatory review gate where a licensed physician, pharmacist, or relevant clinician must approve any content containing drug dosages, treatment recommendations, diagnostic criteria, or clinical procedures before publication.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement Automated Medical Claim Detection",
+            "description": "Deploy an NLP classifier that flags content containing medical claims, drug names, dosage information, or treatment advice. Route all flagged content to the clinical review queue automatically before it can proceed to publication.",
+            "priority": "high"
+          },
+          {
+            "label": "Configure Hallucination Detection Scoring",
+            "description": "Integrate a factual consistency scoring tool (e.g., SelfCheckGPT or a custom fine-tuned classifier) that evaluates each generated output against source documents. Set a minimum confidence threshold of 0.85 and reject outputs below this score.",
+            "priority": "high"
+          },
+          {
+            "label": "Establish Citation Traceability Requirements",
+            "description": "Require the LLM to output citations for every factual medical claim, linking to the specific source document and section. Implement automated link validation to confirm cited sources are accessible and have not been retracted.",
+            "priority": "high"
+          },
+          {
+            "label": "Define Content Expiration and Review Cadence",
+            "description": "Tag all AI-generated healthcare content with a creation date and assign a maximum shelf life (e.g., 12 months for clinical content, 6 months for drug information). Implement automated alerts to trigger re-review before expiration.",
+            "priority": "medium"
+          },
+          {
+            "label": "Test for Medical Misinformation Patterns",
+            "description": "Build a red-team test suite of 50+ prompts designed to elicit common medical misinformation patterns (e.g., contraindicated drug combinations, outdated treatment protocols). Run this suite against every model version update before deployment.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Audit Trails & Regulatory Compliance",
+        "description": "FDA 21 CFR Part 11 and HIPAA require that all AI-assisted content decisions are fully auditable with tamper-evident logs. Implement end-to-end traceability from prompt input to published output.",
+        "items": [
+          {
+            "label": "Implement 21 CFR Part 11-Compliant Audit Logging",
+            "description": "Configure immutable audit logs for every content generation event, capturing: timestamp, user ID, prompt input hash, model version, output hash, review actions, and approval signatures. Store logs in a WORM (Write Once Read Many) storage system for a minimum of 7 years.",
+            "priority": "critical"
+          },
+          {
+            "label": "Capture Electronic Signatures for Content Approvals",
+            "description": "Implement 21 CFR Part 11-compliant electronic signatures for all clinical reviewer approvals. Each signature must capture the reviewer's identity, timestamp, and the meaning of the signature (e.g., 'Reviewed for clinical accuracy').",
+            "priority": "critical"
+          },
+          {
+            "label": "Log Model Version and Configuration at Each Run",
+            "description": "Record the exact LLM model version, temperature settings, system prompt hash, and RAG knowledge base version used for each content generation request. This enables reproducibility and supports regulatory investigations.",
+            "priority": "critical"
+          },
+          {
+            "label": "Establish Content Lineage Tracking",
+            "description": "Assign a unique content ID to each generated piece and maintain a full lineage record linking the final published content back to the original prompt, intermediate drafts, reviewer edits, and approval chain. Store lineage records in a queryable audit database.",
+            "priority": "high"
+          },
+          {
+            "label": "Configure Role-Based Access Controls (RBAC) for Content Workflow",
+            "description": "Define and enforce RBAC policies that restrict who can submit prompts, review outputs, approve clinical content, and publish. Conduct quarterly access reviews and immediately revoke access for departed employees.",
+            "priority": "high"
+          },
+          {
+            "label": "Schedule Quarterly Compliance Audits",
+            "description": "Conduct quarterly internal audits reviewing a random sample of 10% of AI-generated content for compliance with HIPAA, accuracy standards, and brand guidelines. Document findings and remediation actions in a compliance register.",
+            "priority": "high"
+          },
+          {
+            "label": "Implement Breach Detection for Content Pipeline",
+            "description": "Deploy monitoring to detect anomalous content generation patterns that may indicate PHI exposure, such as unusually specific patient-like details in outputs. Configure automated alerts to the HIPAA Privacy Officer within 1 hour of detection.",
+            "priority": "critical"
+          },
+          {
+            "label": "Maintain SOC 2 Type II Evidence for Content Systems",
+            "description": "Ensure all content generation infrastructure components are included in your SOC 2 Type II audit scope. Collect and store evidence of security controls (access logs, encryption certificates, change management records) continuously throughout the audit period.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Brand Voice, Tone & Editorial Quality Controls",
+        "description": "Healthcare content must balance clinical accuracy with brand consistency, regulatory-compliant language, and appropriate tone for patient audiences. Implement systematic controls to enforce editorial standards at scale.",
+        "items": [
+          {
+            "label": "Build a Healthcare-Specific Brand Voice Guardrail Layer",
+            "description": "Create a system prompt layer that encodes your organization's brand voice guidelines, including approved medical terminology, reading level targets (aim for 6th-8th grade for patient content), and prohibited language (e.g., guarantee, cure, proven to). Validate this layer against 100 sample outputs before deployment.",
+            "priority": "high"
+          },
+          {
+            "label": "Implement Regulatory Language Compliance Checker",
+            "description": "Deploy an automated post-processing check that scans outputs for FDA-regulated promotional language, off-label drug claims, and unsubstantiated health benefit statements. Block publication of any content containing flagged language until reviewed by a regulatory affairs specialist.",
+            "priority": "critical"
+          },
+          {
+            "label": "Configure Readability Scoring for Patient-Facing Content",
+            "description": "Integrate a readability scoring tool (Flesch-Kincaid or SMOG index) into the content pipeline. Set automated rejection thresholds for patient education content that scores above a 10th-grade reading level, requiring the model to regenerate at a lower complexity.",
+            "priority": "medium"
+          },
+          {
+            "label": "Establish Originality Verification Process",
+            "description": "Run all AI-generated content through a plagiarism detection tool (e.g., Copyscape or Turnitin) before publication. Set a maximum similarity threshold of 15% against existing web content and 0% against competitor healthcare content.",
+            "priority": "high"
+          },
+          {
+            "label": "Define and Enforce SEO Compliance Guidelines",
+            "description": "Create a healthcare SEO ruleset that prohibits keyword stuffing of medical terms, ensures meta descriptions do not make unsubstantiated health claims, and validates that structured data markup (Schema.org MedicalWebPage) is correctly applied to all published content.",
+            "priority": "medium"
+          },
+          {
+            "label": "Implement Tone Consistency Scoring Across Content Types",
+            "description": "Fine-tune or prompt-engineer separate tone profiles for distinct content types (patient education, clinical staff communications, marketing materials, press releases). Use an automated tone classifier to verify each output matches its intended profile before advancing in the workflow.",
+            "priority": "medium"
+          },
+          {
+            "label": "Create a Prohibited Content Taxonomy",
+            "description": "Maintain a versioned list of prohibited content categories specific to your healthcare organization (e.g., competitor comparisons, unverified testimonials, specific prognosis statements). Integrate this taxonomy as a hard filter in the post-generation review pipeline.",
+            "priority": "high"
+          },
+          {
+            "label": "Conduct Monthly Brand Drift Assessments",
+            "description": "Sample 20 AI-generated content pieces per month and score them against your brand voice rubric using a panel of at least two human reviewers. Track drift scores over time and retune system prompts when average scores fall below 80% compliance.",
+            "priority": "medium"
+          }
+        ]
+      }
+    ],
+    "regulatoryNotes": {
+      "heading": "Regulatory Considerations",
+      "notes": [
+        "HIPAA Privacy Rule (45 CFR §164.514) requires that PHI be de-identified using either the Safe Harbor method (removing all 18 specified identifiers) or Expert Determination before any LLM processing. Failure to de-identify before submitting data to a cloud LLM API constitutes an unauthorized disclosure and triggers breach notification obligations under the HITECH Act, with penalties up to $1.9M per violation category per year.",
+        "FDA 21 CFR Part 11 mandates that all electronic records and signatures used in AI-assisted content workflows for regulated healthcare content must be trustworthy, reliable, and equivalent to paper records. This requires closed system controls, audit trails with date/time stamps, and electronic signatures that include the signer's printed name, date/time, and the meaning of the signature — all of which must be implemented before deploying AI content agents in FDA-regulated contexts.",
+        "The HITECH Act strengthens HIPAA enforcement by extending compliance obligations to Business Associates and their subcontractors. Every vendor in your AI content generation stack — including LLM API providers, vector database services, and content delivery platforms — must execute a Business Associate Agreement and demonstrate their own HIPAA compliance program. Breach notification to affected individuals must occur within 60 days of discovery, and breaches affecting 500+ individuals require immediate notification to HHS and prominent media outlets.",
+        "SOC 2 Type II certification requires continuous evidence collection over a minimum 6-month audit period demonstrating that security, availability, processing integrity, confidentiality, and privacy controls are operating effectively. For AI content generation systems, this means logging all access to the content pipeline, maintaining encryption in transit and at rest, and demonstrating that change management processes govern all model updates and prompt template changes — not just a point-in-time snapshot."
+      ]
+    },
+    "cta": {
+      "heading": "Automate Your Healthcare Agent Compliance",
+      "description": "Deploy Vex's pre-built HIPAA and 21 CFR Part 11 compliance guardrails to automate PHI detection, audit logging, and clinical review workflows — so your team ships compliant healthcare content faster without manual compliance overhead."
+    }
+  }
+}

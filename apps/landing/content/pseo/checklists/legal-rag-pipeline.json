@@ -1,0 +1,205 @@
+{
+  "meta": {
+    "industry": "legal",
+    "useCase": "rag-pipeline",
+    "generatedAt": "2026-03-12"
+  },
+  "seo": {
+    "title": "Legal RAG Pipeline AI Agent Checklist",
+    "description": "Production readiness checklist for rag pipeline AI agents in legal. Covers Attorney-client privilege protections, Bar association ethics rules, Court filing standards.",
+    "keywords": [
+      "Legal AI checklist",
+      "RAG Pipeline agent checklist",
+      "Legal AI compliance",
+      "AI agent production readiness",
+      "AI guardrails checklist"
+    ]
+  },
+  "content": {
+    "intro": "Deploying a RAG pipeline in legal contexts carries extraordinary risk: a single hallucinated case citation can trigger malpractice liability, bar sanctions, and case dismissal, as demonstrated by the Mata v. Avianca precedent. Legal RAG systems must enforce attorney-client privilege, ensure every retrieved citation is verifiable, and guarantee that no client confidential data leaks into model training pipelines. This checklist provides concrete, enforceable controls across the full RAG lifecycle—from document ingestion to final attorney review.",
+    "sections": [
+      {
+        "heading": "Document Ingestion & Vector Store Governance",
+        "description": "Controls for how legal documents are ingested, chunked, embedded, and stored in the vector database, ensuring privilege boundaries and data isolation are enforced before retrieval ever occurs.",
+        "items": [
+          {
+            "label": "Privilege Tagging at Ingestion",
+            "description": "Tag every ingested document with privilege classification (attorney-client, work product, public record) at the metadata level before embedding. Retrieval queries must filter by privilege tier to prevent cross-matter leakage.",
+            "priority": "critical"
+          },
+          {
+            "label": "Matter-Level Namespace Isolation",
+            "description": "Partition the vector store into separate namespaces or collections per client matter. Enforce namespace-scoped retrieval so that a query for Matter A cannot surface documents from Matter B under any query condition.",
+            "priority": "critical"
+          },
+          {
+            "label": "Training Data Firewall",
+            "description": "Implement a contractual and technical block preventing any ingested client document, query log, or retrieved chunk from being used as fine-tuning or RLHF data by the LLM provider. Obtain written confirmation from the LLM vendor and audit annually.",
+            "priority": "critical"
+          },
+          {
+            "label": "Source Document Provenance Logging",
+            "description": "Record the original source (court docket, client upload, public database) and ingestion timestamp for every document chunk stored in the vector index. This log must be immutable and producible in eDiscovery.",
+            "priority": "high"
+          },
+          {
+            "label": "PII and Confidential Data Redaction Pipeline",
+            "description": "Run an automated redaction step on all documents before embedding to strip SSNs, account numbers, and non-party PII. Log redaction actions and retain originals in a separate access-controlled store.",
+            "priority": "high"
+          },
+          {
+            "label": "Stale Document Expiry Policy",
+            "description": "Define a TTL (time-to-live) policy for embedded documents tied to matter closure dates. Automatically purge or archive vector embeddings when a matter closes to prevent outdated legal positions from surfacing in future queries.",
+            "priority": "medium"
+          },
+          {
+            "label": "Chunk Boundary Integrity for Legal Citations",
+            "description": "Configure chunking strategy to never split a case citation, statute reference, or holding across chunk boundaries. Use sentence-aware or paragraph-aware chunking with a minimum overlap of 150 tokens to preserve citation context.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Retrieval Quality & Citation Verification",
+        "description": "Controls ensuring that retrieved context is relevant, that every case citation references a real and verifiable legal authority, and that hallucinated or fabricated citations are detected before reaching the attorney review stage.",
+        "items": [
+          {
+            "label": "Real-Time Citation Existence Check",
+            "description": "After LLM synthesis, extract all case citations using regex and NLP parsing, then verify each citation against Westlaw, LexisNexis, or CourtListener API before the output is presented. Block any output containing an unverified citation.",
+            "priority": "critical"
+          },
+          {
+            "label": "Source Faithfulness Scoring",
+            "description": "Run a faithfulness evaluation (e.g., using an NLI model or LLM-as-judge prompt) on every generated paragraph to confirm that each factual claim is grounded in a retrieved chunk. Flag outputs with faithfulness score below 0.85 for mandatory attorney review.",
+            "priority": "critical"
+          },
+          {
+            "label": "Retrieval Relevance Threshold Enforcement",
+            "description": "Set a minimum cosine similarity threshold (e.g., 0.75) for retrieved chunks. Discard chunks below threshold rather than passing low-relevance context to the LLM, which increases hallucination risk when the model attempts to fill gaps.",
+            "priority": "high"
+          },
+          {
+            "label": "Pinpoint Source Attribution in Output",
+            "description": "Every sentence or paragraph in the synthesized output must include an inline citation to the specific retrieved chunk, including document name, page number, and paragraph. Do not allow the LLM to generate unsourced legal assertions.",
+            "priority": "critical"
+          },
+          {
+            "label": "Holding vs. Dicta Distinction Validation",
+            "description": "Implement a post-retrieval classifier that flags whether a cited passage represents a binding holding, persuasive dicta, or dissent. Surface this classification to the reviewing attorney to prevent misrepresentation of legal authority.",
+            "priority": "high"
+          },
+          {
+            "label": "Negative Treatment Detection",
+            "description": "Before finalizing any case citation, query the citation service for negative treatment flags (overruled, distinguished, limited). Automatically warn the attorney if a cited case has been negatively treated since the document was ingested.",
+            "priority": "critical"
+          },
+          {
+            "label": "Context Window Overflow Audit",
+            "description": "Log cases where retrieved chunks exceed the LLM context window and require truncation. Truncated context must never silently drop a cited source; instead, surface a warning that the full context was not evaluated.",
+            "priority": "medium"
+          }
+        ]
+      },
+      {
+        "heading": "Attorney Review & Ethics Compliance",
+        "description": "Controls ensuring that AI-generated legal content is never delivered directly to clients or filed with courts without licensed attorney review, in compliance with bar association ethics rules and court filing standards.",
+        "items": [
+          {
+            "label": "Mandatory Attorney Sign-Off Gate",
+            "description": "Implement a hard workflow gate that prevents any AI-generated legal document, brief, or advice from being sent to a client or filed with a court without a logged attorney approval action. The approval must capture the attorney's bar number and timestamp.",
+            "priority": "critical"
+          },
+          {
+            "label": "AI Disclosure Labeling on Drafts",
+            "description": "Watermark all AI-generated drafts with a visible 'AI-Assisted Draft — Not Reviewed' label until attorney approval is recorded. Remove the label only upon attorney sign-off to prevent accidental transmission of unreviewed content.",
+            "priority": "critical"
+          },
+          {
+            "label": "Court Filing AI Disclosure Compliance",
+            "description": "Check the jurisdiction-specific court rules for AI disclosure requirements (e.g., SDNY, N.D. Tex., and growing list of federal courts requiring AI certification). Automatically append the required disclosure language to filings generated with AI assistance.",
+            "priority": "critical"
+          },
+          {
+            "label": "Competence Standard Audit Trail",
+            "description": "Maintain a complete audit log of every query, retrieved chunk, synthesized output, and attorney modification for each matter. This log must be retained for the jurisdiction's malpractice statute of limitations period (minimum 3 years, up to 10 years).",
+            "priority": "high"
+          },
+          {
+            "label": "Unauthorized Practice of Law (UPL) Scope Limiter",
+            "description": "Configure the system prompt and output filters to prevent the RAG pipeline from providing jurisdiction-specific legal advice to non-attorney users. Enforce role-based access so only licensed attorneys can receive synthesized legal conclusions.",
+            "priority": "critical"
+          },
+          {
+            "label": "Conflict of Interest Screening Integration",
+            "description": "Before allowing a query against a client matter's document namespace, run an automated conflict check against the firm's conflict database. Block access and alert the supervising attorney if a potential conflict is detected.",
+            "priority": "high"
+          },
+          {
+            "label": "Model Output Confidence Disclosure",
+            "description": "Surface a confidence indicator and a list of retrieved source documents alongside every AI output presented to the reviewing attorney. Attorneys must not be presented with outputs that obscure the AI's uncertainty or source limitations.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Security, eDiscovery & Incident Response",
+        "description": "Controls for protecting confidential legal data at rest and in transit, ensuring the system's outputs and logs are producible under eDiscovery obligations, and defining response procedures when a data breach or hallucination incident occurs.",
+        "items": [
+          {
+            "label": "End-to-End Encryption for All Legal Data",
+            "description": "Enforce AES-256 encryption at rest for all vector embeddings, source documents, and query logs. Enforce TLS 1.3 in transit for all API calls between the retrieval system, LLM provider, and client-facing interface.",
+            "priority": "critical"
+          },
+          {
+            "label": "eDiscovery-Ready Query and Output Logging",
+            "description": "Structure all query logs, retrieved chunks, and synthesized outputs in a format that can be exported as a litigation hold package (e.g., EDRM-compatible XML or JSON with metadata). Test export functionality quarterly.",
+            "priority": "high"
+          },
+          {
+            "label": "Hallucination Incident Response Playbook",
+            "description": "Define and document a specific incident response procedure for hallucinated citation events: immediate notification to supervising attorney, matter hold on affected outputs, client notification assessment within 24 hours, and root cause analysis within 72 hours.",
+            "priority": "critical"
+          },
+          {
+            "label": "Third-Party LLM Vendor Data Processing Agreement",
+            "description": "Execute a Data Processing Agreement (DPA) with the LLM API provider that explicitly prohibits use of legal query data for model training, specifies data residency requirements, and defines breach notification timelines of 72 hours or less.",
+            "priority": "critical"
+          },
+          {
+            "label": "Role-Based Access Control with Least Privilege",
+            "description": "Assign access to document namespaces strictly by matter team membership. Paralegals, associates, and partners must have differentiated permission levels. Access logs must be reviewed monthly and revoked immediately upon matter closure or personnel departure.",
+            "priority": "high"
+          },
+          {
+            "label": "Penetration Testing of Retrieval Endpoints",
+            "description": "Conduct annual penetration testing specifically targeting the vector search API endpoints for prompt injection attacks, namespace traversal vulnerabilities, and indirect prompt injection via malicious document ingestion.",
+            "priority": "high"
+          },
+          {
+            "label": "Client Notification Protocol for Data Incidents",
+            "description": "Establish a written protocol for notifying clients if their confidential documents were exposed through a retrieval error, namespace breach, or LLM provider incident. Protocol must comply with state bar ethics rules on client communication and applicable breach notification laws.",
+            "priority": "critical"
+          },
+          {
+            "label": "Litigation Hold Integration",
+            "description": "When a litigation hold is placed on a matter, automatically freeze the associated vector namespace to prevent document deletion, re-embedding, or TTL expiry. Holds must be logged and require explicit attorney release to lift.",
+            "priority": "high"
+          }
+        ]
+      }
+    ],
+    "regulatoryNotes": {
+      "heading": "Regulatory Considerations",
+      "notes": [
+        "Mata v. Avianca (S.D.N.Y. 2023) established that attorneys who submit AI-generated briefs containing fabricated citations face sanctions under FRCP Rule 11. Your RAG pipeline must implement a citation verification gate against authoritative legal databases (Westlaw, LexisNexis, CourtListener) before any output reaches an attorney for filing consideration—verification cannot be delegated to the attorney's manual review alone.",
+        "ABA Model Rule 1.6 (Confidentiality) and its state equivalents require that law firms take reasonable measures to prevent unauthorized disclosure of client information. Deploying a RAG pipeline using a third-party LLM API requires a written vendor agreement prohibiting training data use, and firms must assess whether the LLM provider's data handling meets the 'reasonable measures' standard under their jurisdiction's ethics opinions on cloud computing.",
+        "Growing federal and state court AI disclosure requirements—including standing orders from the Northern District of Texas, Southern District of New York, and the Judicial Conference's ongoing rulemaking—require attorneys to certify whether AI was used in drafting filings and to confirm that a human attorney reviewed AI-generated content. Your system must track AI involvement per document and auto-populate jurisdiction-specific disclosure certifications.",
+        "eDiscovery obligations under FRCP Rule 26 and the Sedona Principles require that all electronically stored information (ESI) used in litigation be preserved and producible. Query logs, retrieved chunks, and AI-synthesized outputs that informed legal strategy or document drafting may constitute discoverable ESI. Firms must implement litigation hold procedures that extend to the RAG pipeline's logs and ensure the system's outputs are retained in a format that satisfies proportionality and accessibility standards."
+      ]
+    },
+    "cta": {
+      "heading": "Automate Your Legal Agent Compliance",
+      "description": "Use Vex to continuously monitor your Legal RAG pipeline against these controls, automatically flag citation verification failures and privilege boundary violations, and generate audit-ready compliance reports for every client matter."
+    }
+  }
+}

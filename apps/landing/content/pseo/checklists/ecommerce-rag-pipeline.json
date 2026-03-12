@@ -1,0 +1,217 @@
+{
+  "meta": {
+    "industry": "ecommerce",
+    "useCase": "rag-pipeline",
+    "generatedAt": "2026-03-12"
+  },
+  "seo": {
+    "title": "E-Commerce RAG Pipeline AI Agent Checklist",
+    "description": "Production readiness checklist for rag pipeline AI agents in e-commerce. Covers FTC advertising guidelines, CCPA/GDPR, PCI DSS for payments.",
+    "keywords": [
+      "E-Commerce AI checklist",
+      "RAG Pipeline agent checklist",
+      "E-Commerce AI compliance",
+      "AI agent production readiness",
+      "AI guardrails checklist"
+    ]
+  },
+  "content": {
+    "intro": "Deploying a RAG pipeline in e-commerce introduces compounding risks: a retrieval error or hallucinated product claim can trigger FTC enforcement, PCI DSS violations, or mass refund disputes before a human reviewer ever sees the output. Because the LLM synthesizes answers from dynamically retrieved documents—product catalogs, pricing feeds, policy pages—every layer of the pipeline must be audited for faithfulness, accuracy, and regulatory alignment. This checklist operationalizes the controls needed to ship a compliant, trustworthy e-commerce AI agent.",
+    "sections": [
+      {
+        "heading": "RAG Pipeline Integrity & Source Faithfulness",
+        "description": "Ensure the retrieval and synthesis layers produce outputs that are grounded in verified source documents, with no fabricated product details, pricing, or policy terms.",
+        "items": [
+          {
+            "label": "Implement hallucination detection scoring on every LLM response",
+            "description": "Use a secondary model or rule-based scorer (e.g., NLI entailment check) to flag any generated claim not directly supported by the retrieved context chunks before the response is served to the user.",
+            "priority": "critical"
+          },
+          {
+            "label": "Enforce strict context-grounding prompts that prohibit speculation",
+            "description": "System prompts must explicitly instruct the LLM to answer only from retrieved documents and to respond with 'I don't have that information' rather than inferring or extrapolating product details, availability, or pricing.",
+            "priority": "critical"
+          },
+          {
+            "label": "Attach source citations with document ID and retrieval timestamp to every response",
+            "description": "Each synthesized answer must reference the specific document chunk(s) used, including the source URL or catalog ID and the time the document was indexed, so claims can be audited post-hoc.",
+            "priority": "high"
+          },
+          {
+            "label": "Set a minimum cosine similarity threshold for retrieved chunks before inclusion",
+            "description": "Define and enforce a relevance cutoff (e.g., ≥0.78 cosine similarity) so that loosely related documents are excluded from context assembly, reducing the risk of off-topic or misleading synthesis.",
+            "priority": "high"
+          },
+          {
+            "label": "Run automated citation accuracy tests on a weekly sample of live responses",
+            "description": "Sample 200+ production responses per week, verify each cited source actually contains the claim made, and track citation accuracy rate with a target above 98%.",
+            "priority": "high"
+          },
+          {
+            "label": "Log full retrieval context alongside generated output for every session",
+            "description": "Store the exact chunks passed to the LLM, the query embedding, and the final response in an immutable audit log with a minimum 24-month retention period to support FTC or legal review.",
+            "priority": "high"
+          },
+          {
+            "label": "Validate that product availability and inventory status are retrieved in real time, not from stale index",
+            "description": "Connect inventory and availability fields to a live data source or enforce a maximum index staleness of 15 minutes; never serve cached availability data older than this threshold.",
+            "priority": "medium"
+          }
+        ]
+      },
+      {
+        "heading": "Pricing, Product Claims & FTC Compliance",
+        "description": "All pricing information and product claims surfaced by the agent must be accurate, substantiated, and compliant with FTC advertising guidelines to avoid enforcement action and customer disputes.",
+        "items": [
+          {
+            "label": "Sync pricing index with the authoritative pricing database on a maximum 10-minute refresh cycle",
+            "description": "Stale pricing in the vector index is the single highest-risk FTC violation surface. Implement a pipeline trigger that re-indexes any SKU whose price changes within 10 minutes of the update in the source-of-truth system.",
+            "priority": "critical"
+          },
+          {
+            "label": "Block the LLM from generating price estimates or ranges not present in retrieved documents",
+            "description": "Add a post-generation regex and semantic filter that detects approximate pricing language ('around $X', 'roughly $X') and replaces it with a redirect to the live product page.",
+            "priority": "critical"
+          },
+          {
+            "label": "Require substantiation metadata for all product performance or feature claims in the index",
+            "description": "Before indexing product descriptions, validate that any efficacy or performance claim (e.g., '30% faster', 'clinically tested') is tagged with a substantiation source; claims without this tag must be stripped or flagged before indexing.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement a promotional pricing expiry check before serving discount claims",
+            "description": "When the agent retrieves a promotional price or discount, cross-reference the promotion's end date against the current timestamp and suppress the claim if the promotion has expired.",
+            "priority": "high"
+          },
+          {
+            "label": "Display a disclosure label on all AI-generated product recommendations",
+            "description": "Per FTC endorsement and disclosure guidelines, any AI-generated recommendation or comparison must be visibly labeled as AI-assisted (e.g., 'Suggested by AI') in the UI adjacent to the response.",
+            "priority": "high"
+          },
+          {
+            "label": "Conduct quarterly red-team tests for price manipulation and claim fabrication",
+            "description": "Have a dedicated QA team attempt adversarial prompts designed to elicit fabricated discounts, false product comparisons, or unsupported health/safety claims, and document remediation for each finding.",
+            "priority": "high"
+          },
+          {
+            "label": "Establish an automated alert when retrieved price deviates more than 5% from live checkout price",
+            "description": "Compare the price surfaced in the agent response against the real-time checkout API price; if the delta exceeds 5%, suppress the agent's price and display a 'See current price' link instead.",
+            "priority": "medium"
+          }
+        ]
+      },
+      {
+        "heading": "Privacy, Data Handling & CCPA/GDPR Compliance",
+        "description": "The RAG pipeline must handle user queries, session data, and any PII embedded in retrieved documents in strict compliance with CCPA, GDPR, and PCI DSS requirements.",
+        "items": [
+          {
+            "label": "Scrub PII from all documents before indexing into the vector store",
+            "description": "Run a PII detection pass (using a tool such as Microsoft Presidio or AWS Comprehend) on every document prior to embedding; redact or pseudonymize names, emails, phone numbers, and payment data before the document enters the index.",
+            "priority": "critical"
+          },
+          {
+            "label": "Never pass raw payment card data through the LLM context window",
+            "description": "Enforce a hard architectural rule that PCI DSS in-scope data (PANs, CVVs, expiry dates) is never included in retrieval queries, context chunks, or LLM prompts; route payment flows exclusively through PCI-compliant tokenization services.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement user consent gating before personalizing RAG responses with purchase history",
+            "description": "If the pipeline retrieves a user's order history or browsing data to personalize responses, verify that the user has provided explicit CCPA/GDPR consent for AI-based personalization before including that data in context assembly.",
+            "priority": "critical"
+          },
+          {
+            "label": "Honor data deletion requests within 72 hours across the vector index and session logs",
+            "description": "Build a deletion pipeline that, upon receiving a CCPA/GDPR erasure request, removes the user's embedded query vectors, session logs, and any personalization data from all pipeline stores within 72 hours.",
+            "priority": "high"
+          },
+          {
+            "label": "Encrypt all vector embeddings and session logs at rest using AES-256",
+            "description": "Ensure the vector database and session log storage are configured with AES-256 encryption at rest and TLS 1.2+ in transit; document encryption key management procedures in the security runbook.",
+            "priority": "high"
+          },
+          {
+            "label": "Publish a clear AI data use disclosure in the privacy policy describing RAG query logging",
+            "description": "Update the site privacy policy to explicitly disclose that user queries to the AI assistant may be logged, embedded, and used for retrieval purposes, with opt-out instructions compliant with CCPA.",
+            "priority": "high"
+          },
+          {
+            "label": "Conduct a DPIA (Data Protection Impact Assessment) before launching the RAG pipeline to EU customers",
+            "description": "Complete a formal GDPR Article 35 DPIA documenting data flows, retention periods, third-party LLM data sharing, and risk mitigations before the pipeline processes any EU resident data.",
+            "priority": "medium"
+          },
+          {
+            "label": "Restrict third-party LLM API calls to data processing agreements that prohibit training on customer data",
+            "description": "Ensure any external LLM provider (e.g., OpenAI, Anthropic) has a signed DPA explicitly prohibiting use of submitted prompts or context for model training, and verify this contractually before go-live.",
+            "priority": "medium"
+          }
+        ]
+      },
+      {
+        "heading": "Return/Refund Policy Accuracy & ADA Accessibility",
+        "description": "The agent must faithfully represent return and refund policies without distortion, and the interface must meet ADA and WCAG 2.1 AA accessibility standards to avoid discrimination claims and legal exposure.",
+        "items": [
+          {
+            "label": "Index return and refund policy documents as a dedicated, version-controlled corpus",
+            "description": "Maintain return/refund policy documents in a separate, clearly labeled index partition with version history; when policies change, immediately re-index and deprecate old versions to prevent the agent from citing outdated terms.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement a policy-specific retrieval route that bypasses general product search for policy queries",
+            "description": "Detect policy-intent queries (e.g., 'how do I return', 'refund timeline') and route them exclusively to the policy document partition rather than the general product index to prevent cross-contamination with marketing copy.",
+            "priority": "critical"
+          },
+          {
+            "label": "Add a post-generation policy faithfulness check comparing agent output to the canonical policy text",
+            "description": "After the LLM synthesizes a policy response, run an NLI entailment check against the exact policy document to confirm no terms have been softened, extended, or omitted; block responses that fail this check.",
+            "priority": "high"
+          },
+          {
+            "label": "Display a direct link to the full policy page alongside every AI-generated policy summary",
+            "description": "Never allow the agent's policy summary to stand alone; always append a clearly labeled link to the authoritative policy page so customers can verify the full terms independently.",
+            "priority": "high"
+          },
+          {
+            "label": "Ensure the chat interface meets WCAG 2.1 AA contrast, keyboard navigation, and screen reader standards",
+            "description": "Audit the AI chat widget for minimum 4.5:1 color contrast ratio, full keyboard operability, ARIA labels on all interactive elements, and compatibility with NVDA and VoiceOver screen readers before launch.",
+            "priority": "high"
+          },
+          {
+            "label": "Provide an equivalent non-AI support path for users who cannot or choose not to use the AI agent",
+            "description": "ADA compliance requires that AI-gated support does not create a barrier; ensure a human chat, phone, or email support option is always accessible and equally prominent in the UI.",
+            "priority": "high"
+          },
+          {
+            "label": "Test policy response accuracy monthly using a standardized set of 50 policy scenario queries",
+            "description": "Maintain a regression test suite of 50 policy queries covering edge cases (partial returns, digital goods, international orders) and run it monthly; require 100% policy accuracy before any pipeline update is promoted to production.",
+            "priority": "medium"
+          }
+        ]
+      }
+    ],
+    "regulatoryNotes": {
+      "heading": "Regulatory Considerations",
+      "notes": [
+        {
+          "regulation": "FTC Advertising Guidelines (16 CFR Part 255 & Dot Com Disclosures)",
+          "note": "The FTC treats AI-generated product claims with the same scrutiny as human advertising copy. Any performance claim, discount representation, or product comparison surfaced by the RAG agent must be substantiated by competent and reliable evidence in the retrieved source documents. Failure to substantiate claims or to clearly disclose AI-generated recommendations can result in civil penalties up to $51,744 per violation under Section 5 of the FTC Act."
+        },
+        {
+          "regulation": "CCPA (Cal. Civ. Code §1798.100) & GDPR (Articles 13, 17, 22)",
+          "note": "Under CCPA, California residents have the right to know what personal data is collected during AI interactions, the right to delete it, and the right to opt out of its sale. Under GDPR Article 22, if the RAG pipeline makes automated decisions with legal or significant effects (e.g., personalized pricing), users must be informed and given the right to human review. Both regulations require privacy notices to be updated to reflect AI query logging and embedding practices."
+        },
+        {
+          "regulation": "PCI DSS v4.0 (Requirements 3, 4, and 6)",
+          "note": "PCI DSS Requirement 3 prohibits storage of sensitive authentication data post-authorization; Requirement 4 mandates encryption of cardholder data in transit. Any RAG pipeline that could inadvertently retrieve or process order records containing PANs must implement tokenization at the data layer before indexing. Requirement 6.4.3 also mandates that all payment page scripts—including AI chat widgets—be inventoried, authorized, and integrity-checked to prevent skimming attacks."
+        },
+        {
+          "regulation": "ADA Title III & WCAG 2.1 AA (DOJ Guidance 2024)",
+          "note": "Following the DOJ's March 2024 final rule clarifying that Title III of the ADA applies to web content, e-commerce AI interfaces must meet WCAG 2.1 Level AA standards. This includes the AI chat widget, any modal dialogs it triggers, and all response content. Businesses that deploy AI agents as the primary support channel without an accessible alternative face exposure to ADA Title III lawsuits, which have averaged over 4,000 federal filings per year in recent years."
+        }
+      ]
+    },
+    "cta": {
+      "heading": "Automate Your E-Commerce Agent Compliance",
+      "description": "Use Vex to continuously monitor your RAG pipeline for hallucinations, pricing drift, policy misrepresentation, and regulatory violations—so your e-commerce AI agent stays compliant and trustworthy at every customer interaction."
+    }
+  }
+}

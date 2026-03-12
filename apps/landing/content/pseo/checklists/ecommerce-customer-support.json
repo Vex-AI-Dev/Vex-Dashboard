@@ -1,0 +1,217 @@
+{
+  "meta": {
+    "industry": "ecommerce",
+    "useCase": "customer-support",
+    "generatedAt": "2026-03-12"
+  },
+  "seo": {
+    "title": "E-Commerce Customer Support AI Agent Checklist",
+    "description": "Production readiness checklist for customer support AI agents in e-commerce. Covers FTC advertising guidelines, CCPA/GDPR, PCI DSS for payments.",
+    "keywords": [
+      "E-Commerce AI checklist",
+      "Customer Support agent checklist",
+      "E-Commerce AI compliance",
+      "AI agent production readiness",
+      "AI guardrails checklist"
+    ]
+  },
+  "content": {
+    "intro": "Deploying an AI agent for e-commerce customer support introduces significant legal and operational risk, as errors in pricing, product claims, or refund policy representation can trigger FTC enforcement actions, CCPA/GDPR violations, and mass customer churn. With a RAG architecture pulling from live knowledge bases and CRM integrations, the agent must be continuously validated to ensure retrieved content is accurate, PII is protected, and escalation paths are functioning correctly. This checklist provides concrete, auditable steps to deploy responsibly and maintain compliance across the full customer support lifecycle.",
+    "sections": [
+      {
+        "heading": "Data Governance & Privacy Compliance",
+        "description": "Ensure all customer data handled by the agent — including order history, PII, and payment references — complies with CCPA, GDPR, and PCI DSS requirements throughout the support interaction lifecycle.",
+        "items": [
+          {
+            "label": "PII Detection & Redaction Pipeline",
+            "description": "Implement an automated PII filter that detects and redacts credit card numbers, SSNs, full addresses, and email addresses from all agent inputs and outputs before logging or storing any conversation data.",
+            "priority": "critical"
+          },
+          {
+            "label": "PCI DSS Scope Exclusion for Payment Data",
+            "description": "Confirm the agent never stores, transmits, or logs full payment card numbers. Integrate with a PCI-compliant tokenization service (e.g., Stripe, Braintree) so the agent only references masked card identifiers during order lookups.",
+            "priority": "critical"
+          },
+          {
+            "label": "CCPA/GDPR Data Subject Request Handling",
+            "description": "Define and document a workflow for when customers request data deletion or access via the support agent. The agent must recognize these requests and route them to a human agent or dedicated DSR processing system within 24 hours.",
+            "priority": "critical"
+          },
+          {
+            "label": "Consent Logging for Chat Interactions",
+            "description": "Display a clear disclosure at the start of each AI-assisted chat session stating the customer is interacting with an AI agent, and log timestamped consent records in your CRM for audit purposes.",
+            "priority": "high"
+          },
+          {
+            "label": "Data Retention Policy Enforcement",
+            "description": "Set automated deletion schedules for conversation logs containing PII — no longer than 90 days unless required for active dispute resolution — and verify these schedules are enforced in your CRM and vector store.",
+            "priority": "high"
+          },
+          {
+            "label": "Cross-Border Data Transfer Safeguards",
+            "description": "If serving EU customers, confirm your RAG knowledge base and CRM vendor have Standard Contractual Clauses (SCCs) or equivalent mechanisms in place, and document the data flow map for GDPR Article 30 records.",
+            "priority": "high"
+          },
+          {
+            "label": "Third-Party Tool Data Sharing Audit",
+            "description": "Audit every tool the agent calls (ticket creation, order lookup, CRM write-back) to confirm none of these integrations expose raw PII to third-party vendors without a signed Data Processing Agreement (DPA).",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Response Accuracy & Policy Fidelity",
+        "description": "Validate that the agent's RAG retrieval and response generation accurately reflect current pricing, product claims, and return/refund policies — misrepresentation in any of these areas creates direct FTC and consumer protection liability.",
+        "items": [
+          {
+            "label": "Real-Time Pricing Sync Validation",
+            "description": "Establish a daily automated test that queries the agent for the prices of your top 50 SKUs and compares responses against your live product catalog API. Flag any discrepancy greater than $0.01 as a critical incident requiring immediate knowledge base refresh.",
+            "priority": "critical"
+          },
+          {
+            "label": "Return & Refund Policy Accuracy Testing",
+            "description": "Maintain a golden test set of 30+ questions about return windows, restocking fees, and non-returnable items. Run this test suite after every knowledge base update and block deployment if accuracy falls below 98%.",
+            "priority": "critical"
+          },
+          {
+            "label": "Product Claim Substantiation Guardrails",
+            "description": "Configure the agent's system prompt to prohibit generating superlative or unsubstantiated product claims (e.g., 'best,' 'guaranteed to cure') not present in the source knowledge base documents, and implement an output classifier to catch violations.",
+            "priority": "critical"
+          },
+          {
+            "label": "Knowledge Base Staleness Detection",
+            "description": "Tag all knowledge base documents with a 'valid_until' date. Implement a retrieval-time check that flags documents older than 30 days for human review and prevents the agent from citing them as authoritative for pricing or policy questions.",
+            "priority": "high"
+          },
+          {
+            "label": "Promotional & Discount Code Accuracy",
+            "description": "Before the agent communicates any promotional offer or discount code to a customer, validate the code against your promotions API in real time to confirm it is active, applicable to the customer's cart, and not expired.",
+            "priority": "high"
+          },
+          {
+            "label": "Hallucination Rate Monitoring",
+            "description": "Instrument the agent to log retrieval confidence scores for every response. Set an alert threshold so that any response generated with a retrieval confidence below 0.75 is flagged for human review and excluded from customer-facing output.",
+            "priority": "high"
+          },
+          {
+            "label": "Competitor Comparison Statement Prohibition",
+            "description": "Add an explicit guardrail preventing the agent from making comparative claims about competitor pricing or product quality, as unsubstantiated comparisons violate FTC comparative advertising guidelines.",
+            "priority": "medium"
+          }
+        ]
+      },
+      {
+        "heading": "Escalation, Oversight & Human-in-the-Loop Controls",
+        "description": "Define precise escalation triggers and oversight mechanisms to ensure high-stakes customer interactions — including disputes, fraud signals, and accessibility needs — are handed off to human agents reliably and without delay.",
+        "items": [
+          {
+            "label": "Mandatory Escalation Trigger Configuration",
+            "description": "Hardcode escalation to a human agent for the following scenarios: chargeback or fraud dispute mentions, requests involving orders over $500, customers expressing legal threats, three or more failed resolution attempts in a single session, and any mention of personal safety concerns.",
+            "priority": "critical"
+          },
+          {
+            "label": "Escalation Handoff Data Package",
+            "description": "When escalating, automatically pass the human agent a structured summary including: full conversation transcript, customer order history from CRM, detected sentiment score, and the specific trigger reason — eliminating the need for customers to repeat themselves.",
+            "priority": "high"
+          },
+          {
+            "label": "ADA Accessibility Compliance for Chat Interface",
+            "description": "Ensure the chat widget meets WCAG 2.1 AA standards: keyboard navigability, screen reader compatibility (ARIA labels), minimum 4.5:1 color contrast ratio, and a clearly labeled option to request human support at any point in the conversation.",
+            "priority": "high"
+          },
+          {
+            "label": "Agent Confidence Threshold Escalation",
+            "description": "Configure the agent to automatically offer human escalation when its internal confidence score for a response falls below a defined threshold (e.g., 0.70), rather than generating a potentially inaccurate answer.",
+            "priority": "high"
+          },
+          {
+            "label": "Supervisor Review Queue for Flagged Conversations",
+            "description": "Route all conversations flagged for policy violations, PII exposure attempts, or escalation triggers to a dedicated supervisor review queue in your CRM within 15 minutes, with SLA tracking for resolution.",
+            "priority": "high"
+          },
+          {
+            "label": "After-Hours Escalation Protocol",
+            "description": "Define a documented protocol for escalation requests received outside business hours: the agent must set explicit expectations on response time, create a priority ticket in the CRM, and send a confirmation email to the customer with a case number.",
+            "priority": "medium"
+          },
+          {
+            "label": "Escalation Rate KPI Tracking",
+            "description": "Track weekly escalation rates by trigger type and set a baseline. A sudden spike in any category (e.g., pricing disputes up 20% week-over-week) should automatically trigger a knowledge base audit and product team notification.",
+            "priority": "medium"
+          }
+        ]
+      },
+      {
+        "heading": "Ongoing Monitoring, Testing & Audit Readiness",
+        "description": "Establish continuous evaluation pipelines and documentation practices that demonstrate compliance to regulators, support internal audits, and enable rapid response when the agent produces harmful or non-compliant outputs.",
+        "items": [
+          {
+            "label": "Weekly Automated Red-Team Testing",
+            "description": "Run a weekly automated adversarial test suite covering prompt injection attempts, attempts to extract other customers' order data, requests for unauthorized discounts, and jailbreak attempts to bypass policy guardrails. Document pass/fail rates and remediation actions.",
+            "priority": "critical"
+          },
+          {
+            "label": "Conversation Sampling & Human Review Program",
+            "description": "Randomly sample 2% of all agent conversations weekly for human quality review against a standardized rubric covering accuracy, tone, policy compliance, and escalation appropriateness. Maintain review records for a minimum of 24 months.",
+            "priority": "critical"
+          },
+          {
+            "label": "Incident Response Playbook for Agent Failures",
+            "description": "Document a written incident response playbook specifying: who is notified within 1 hour of a critical agent failure (e.g., mass incorrect pricing), how the agent is disabled or overridden, customer notification procedures, and post-incident review requirements.",
+            "priority": "critical"
+          },
+          {
+            "label": "FTC Compliance Audit Trail",
+            "description": "Maintain immutable logs of all agent responses related to product claims, pricing, and promotions for a minimum of 24 months. Logs must include the retrieved source document, retrieval timestamp, and the exact response delivered to the customer.",
+            "priority": "high"
+          },
+          {
+            "label": "Tone & Brand Voice Consistency Monitoring",
+            "description": "Deploy a tone classifier that scores each agent response against your brand voice guidelines (e.g., empathetic, professional, non-dismissive). Flag responses scoring below threshold for review and use failures to fine-tune system prompt instructions monthly.",
+            "priority": "high"
+          },
+          {
+            "label": "Model & Prompt Version Control",
+            "description": "Maintain a versioned registry of all system prompts, RAG configurations, and model versions with deployment dates. Any change to these components must go through a documented change management process including regression testing before production deployment.",
+            "priority": "high"
+          },
+          {
+            "label": "Customer Satisfaction Correlation Analysis",
+            "description": "Integrate CSAT scores from post-interaction surveys with agent session IDs. Run monthly correlation analysis to identify agent response patterns associated with low satisfaction scores and prioritize those patterns for prompt or knowledge base remediation.",
+            "priority": "medium"
+          },
+          {
+            "label": "Quarterly Third-Party Compliance Review",
+            "description": "Engage an external auditor annually (or quarterly for high-volume deployments) to review agent outputs, data handling practices, and escalation logs against current FTC, CCPA/GDPR, and PCI DSS requirements, producing a written compliance attestation.",
+            "priority": "medium"
+          }
+        ]
+      }
+    ],
+    "regulatoryNotes": {
+      "heading": "Regulatory Considerations",
+      "notes": [
+        {
+          "regulation": "FTC Advertising & Endorsement Guidelines (16 CFR Part 255)",
+          "note": "Any product claim, testimonial, or promotional statement made by the AI agent is subject to FTC substantiation requirements. The agent must only reproduce claims that are documented and substantiated in your approved knowledge base. Automatically generated superlatives or performance guarantees not backed by evidence constitute deceptive advertising and can result in civil penalties up to $51,744 per violation."
+        },
+        {
+          "regulation": "CCPA (California Consumer Privacy Act) & GDPR",
+          "note": "Customers have the right to know what data is collected during AI chat interactions, request deletion, and opt out of data sale. Your agent must be able to recognize and route these requests within statutory timeframes (45 days under CCPA, 30 days under GDPR). Failure to honor these requests exposes the business to statutory damages of up to $7,500 per intentional violation under CCPA and up to 4% of global annual turnover under GDPR."
+        },
+        {
+          "regulation": "PCI DSS v4.0 — Requirement 12.8 & Scope Management",
+          "note": "If the customer support agent can access or reference any payment-related data, your entire agent infrastructure may fall within PCI DSS scope. Ensure the agent only interacts with tokenized payment references, never raw PANs, and that your RAG vector store and CRM are explicitly excluded from cardholder data environment (CDE) scope through documented network segmentation and a current PCI DSS SAQ or ROC."
+        },
+        {
+          "regulation": "ADA Title III & WCAG 2.1 AA — Digital Accessibility",
+          "note": "Federal courts have consistently held that e-commerce websites and their embedded tools (including chat widgets) are places of public accommodation subject to ADA Title III. Your AI chat interface must meet WCAG 2.1 AA standards. Non-compliance exposes the business to serial ADA litigation; document your accessibility audit results and remediation timelines as evidence of good-faith compliance efforts."
+        }
+      ]
+    },
+    "cta": {
+      "heading": "Automate Your E-Commerce Agent Compliance",
+      "description": "Use Vex to continuously monitor your customer support AI agent for pricing accuracy, PII exposure, policy violations, and escalation failures — so you stay compliant, protect your brand, and resolve issues before they become FTC enforcement actions."
+    }
+  }
+}

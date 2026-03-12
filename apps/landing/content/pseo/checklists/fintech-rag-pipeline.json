@@ -1,0 +1,217 @@
+{
+  "meta": {
+    "industry": "fintech",
+    "useCase": "rag-pipeline",
+    "generatedAt": "2026-03-12"
+  },
+  "seo": {
+    "title": "Fintech RAG Pipeline AI Agent Checklist",
+    "description": "Production readiness checklist for rag pipeline AI agents in fintech. Covers SOX, PCI DSS, GDPR.",
+    "keywords": [
+      "Fintech AI checklist",
+      "RAG Pipeline agent checklist",
+      "Fintech AI compliance",
+      "AI agent production readiness",
+      "AI guardrails checklist"
+    ]
+  },
+  "content": {
+    "intro": "Deploying a RAG pipeline in fintech environments introduces compounded risk: retrieval errors, hallucinated citations, and stale financial data can trigger SEC enforcement actions, PCI DSS violations, or BSA/AML non-compliance. Unlike general-purpose AI deployments, fintech RAG systems must ensure every synthesized response is traceable to a verified source document, with audit trails satisfying SOX and GDPR requirements simultaneously. This checklist operationalizes the specific controls needed to safely deploy document retrieval and LLM synthesis in a critical financial context.",
+    "sections": [
+      {
+        "heading": "Data Ingestion & Document Source Controls",
+        "description": "Establish strict governance over which documents enter the vector store, ensuring only verified, compliant financial documents are retrievable by the LLM synthesis layer.",
+        "items": [
+          {
+            "label": "Document Provenance Registry",
+            "description": "Maintain a versioned registry of every ingested document including source URL or file path, ingestion timestamp, document owner, and regulatory classification (e.g., SEC filing, internal policy, market data feed). Each document must have a unique immutable ID tied to its vector embeddings.",
+            "priority": "critical"
+          },
+          {
+            "label": "PCI DSS Scope Exclusion for Cardholder Data",
+            "description": "Audit all documents before ingestion to confirm no Primary Account Numbers (PANs), CVVs, or full magnetic stripe data are embedded in PDFs, spreadsheets, or text files. Implement automated PII/PAN scanning using regex and ML classifiers before any document enters the embedding pipeline.",
+            "priority": "critical"
+          },
+          {
+            "label": "Document Freshness TTL Policy",
+            "description": "Define and enforce a Time-To-Live (TTL) for each document category: regulatory guidance (30-day max), market data (24-hour max), internal compliance policies (90-day max). Stale documents must be automatically flagged or removed from the vector store to prevent retrieval of outdated financial rules.",
+            "priority": "critical"
+          },
+          {
+            "label": "SOX-Compliant Change Control for Document Updates",
+            "description": "Any update to a document in the vector store must follow a change control process: dual approval from compliance and IT, a change log entry, and re-embedding with the new document version. Deletions must be logged and retained for 7 years per SOX Section 802.",
+            "priority": "high"
+          },
+          {
+            "label": "GDPR Data Subject Exclusion Mechanism",
+            "description": "Implement a documented process to identify and purge documents containing EU data subjects' personal data upon a Right to Erasure request. This includes re-indexing the vector store after deletion and confirming the embedding no longer surfaces the deleted content in retrieval tests.",
+            "priority": "high"
+          },
+          {
+            "label": "Encryption at Rest for Vector Store and Source Documents",
+            "description": "Ensure all source documents and their vector embeddings are encrypted at rest using AES-256. Key management must comply with PCI DSS Requirement 3.5, with keys stored in a dedicated HSM or cloud KMS, not co-located with the data.",
+            "priority": "critical"
+          },
+          {
+            "label": "BSA/AML Document Classification Tags",
+            "description": "Tag ingested documents with BSA/AML relevance flags (e.g., SAR guidance, FinCEN advisories, OFAC sanction lists) so the retrieval layer can apply stricter citation requirements and human-review triggers when these sources are retrieved in a response.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Retrieval Accuracy & Hallucination Prevention",
+        "description": "Implement technical controls within the vector search and context assembly stages to minimize retrieval of irrelevant chunks and prevent the LLM from generating unsupported financial claims.",
+        "items": [
+          {
+            "label": "Semantic Similarity Threshold Enforcement",
+            "description": "Set a minimum cosine similarity threshold (e.g., ≥0.82) below which retrieved chunks are rejected from the context window. Log all rejected retrievals for audit. Do not allow the LLM to synthesize responses when no chunks meet the threshold — return a 'no sufficient source found' response instead.",
+            "priority": "critical"
+          },
+          {
+            "label": "Chunk-Level Source Faithfulness Scoring",
+            "description": "After LLM synthesis, run each claim in the output through an automated faithfulness checker (e.g., NLI-based entailment model) that verifies every factual assertion is supported by a retrieved chunk. Flag responses where faithfulness score drops below 0.90 for human review before delivery.",
+            "priority": "critical"
+          },
+          {
+            "label": "Hallucination Detection for Numerical Financial Data",
+            "description": "Apply a specialized numerical consistency check that extracts all figures, percentages, dates, and monetary values from the LLM output and cross-references them against the retrieved source chunks. Any figure not present verbatim or calculably derivable from source chunks must trigger a hard block.",
+            "priority": "critical"
+          },
+          {
+            "label": "Context Window Contamination Prevention",
+            "description": "Implement chunk deduplication and cross-document contradiction detection before assembling the context window. If two retrieved chunks contain conflicting regulatory guidance (e.g., different interest rate thresholds), surface the conflict to the user rather than allowing the LLM to silently resolve it.",
+            "priority": "high"
+          },
+          {
+            "label": "Query Intent Classification Before Retrieval",
+            "description": "Classify incoming queries into intent categories (e.g., factual lookup, financial advice request, transaction inquiry, compliance question) before retrieval. Queries classified as 'financial advice' must route through an additional disclaimer injection layer and may require human-in-the-loop review.",
+            "priority": "high"
+          },
+          {
+            "label": "Retrieval Audit Log with Full Context Capture",
+            "description": "Log every retrieval event including: query text, retrieved chunk IDs and similarity scores, assembled context snapshot, LLM prompt sent, and final response. Retain logs for 7 years to satisfy SOX audit requirements and SEC examination readiness.",
+            "priority": "critical"
+          },
+          {
+            "label": "Out-of-Distribution Query Detection",
+            "description": "Deploy an OOD detector that identifies queries outside the domain of ingested documents (e.g., queries about asset classes not covered in the knowledge base). OOD queries must return a scoped refusal rather than allowing the LLM to hallucinate domain knowledge.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "LLM Output Controls & Regulatory Compliance",
+        "description": "Govern the synthesis layer to ensure all generated responses meet SEC, GDPR, and financial advice disclaimer requirements, with explainability controls for any decision that could affect credit or customer funds.",
+        "items": [
+          {
+            "label": "Mandatory Financial Advice Disclaimer Injection",
+            "description": "Implement a post-processing layer that detects when LLM output constitutes or resembles financial advice (using a classifier trained on SEC guidance definitions) and automatically appends the required disclaimer: 'This information is for informational purposes only and does not constitute financial, investment, or legal advice. Consult a licensed financial advisor.' This must be non-bypassable.",
+            "priority": "critical"
+          },
+          {
+            "label": "Citation Accuracy Verification with Source Linking",
+            "description": "Every factual claim in the LLM output must be accompanied by a citation to the specific source document and chunk. Implement automated citation accuracy checks that verify the cited chunk actually contains the attributed information. Broken or fabricated citations must block response delivery.",
+            "priority": "critical"
+          },
+          {
+            "label": "Explainability Report for Credit-Affecting Outputs",
+            "description": "For any RAG response that informs or influences a credit decision (loan eligibility, credit limit, risk scoring), generate a structured explainability report listing: which documents were retrieved, which passages were weighted most heavily, and what regulatory basis supports the output. Store this report linked to the decision record.",
+            "priority": "critical"
+          },
+          {
+            "label": "PII Redaction in LLM Outputs",
+            "description": "Run all LLM-generated responses through a PII detection and redaction layer before delivery. This must catch any PII that leaked from retrieved documents into the synthesis output, including names, account numbers, SSNs, and email addresses. Log all redaction events for GDPR Article 30 records.",
+            "priority": "critical"
+          },
+          {
+            "label": "Response Confidence Scoring and Uncertainty Communication",
+            "description": "Attach a confidence score to each response based on retrieval similarity scores and faithfulness metrics. When confidence falls below a defined threshold (e.g., <0.85), the response must explicitly communicate uncertainty to the user and recommend consulting a human advisor or official source.",
+            "priority": "high"
+          },
+          {
+            "label": "Prohibited Output Category Blocklist",
+            "description": "Maintain and enforce a blocklist of output categories the RAG system must never produce: specific buy/sell recommendations for securities, guaranteed return statements, OFAC-sanctioned entity endorsements, and advice that would constitute unlicensed investment advisory activity under the Investment Advisers Act of 1940.",
+            "priority": "critical"
+          },
+          {
+            "label": "TLS 1.3 Enforcement for All API Responses",
+            "description": "Ensure all RAG pipeline API endpoints delivering LLM responses enforce TLS 1.3 minimum. Disable TLS 1.0/1.1 and weak cipher suites. This satisfies PCI DSS Requirement 4.2.1 for data in transit and must be validated quarterly via automated TLS scanning.",
+            "priority": "critical"
+          },
+          {
+            "label": "Human-in-the-Loop Escalation for High-Stakes Queries",
+            "description": "Define a set of trigger conditions (e.g., query involves >$100K transaction guidance, BSA/AML flagged document retrieved, credit decision context detected) that automatically route the response to a licensed compliance officer for review before delivery to the end user.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Monitoring, Incident Response & Audit Readiness",
+        "description": "Establish continuous monitoring, anomaly detection, and incident response procedures that satisfy SOX, SEC, and GDPR requirements for ongoing operational oversight of the RAG pipeline.",
+        "items": [
+          {
+            "label": "Real-Time Hallucination Rate Dashboard",
+            "description": "Deploy a monitoring dashboard tracking hallucination rate, faithfulness score distribution, and citation accuracy rate in real time. Set alerting thresholds: if hallucination rate exceeds 2% over a 1-hour window, trigger an automatic pipeline pause and notify the compliance team within 15 minutes.",
+            "priority": "critical"
+          },
+          {
+            "label": "SOX-Compliant Immutable Audit Trail",
+            "description": "All pipeline events — document ingestion, retrieval, synthesis, output delivery, user feedback — must be written to an immutable, append-only audit log (e.g., AWS CloudTrail, Azure Immutable Blob Storage). Logs must be tamper-evident, retained for 7 years, and accessible to auditors within 24 hours of request.",
+            "priority": "critical"
+          },
+          {
+            "label": "GDPR Data Breach Detection and 72-Hour Notification Readiness",
+            "description": "Implement anomaly detection on RAG pipeline outputs to identify potential PII leakage events (e.g., sudden spike in PII redaction triggers, unusual retrieval patterns targeting personal data documents). Establish an incident response runbook that enables GDPR Article 33 supervisory authority notification within 72 hours of breach detection.",
+            "priority": "critical"
+          },
+          {
+            "label": "Monthly Red Team Adversarial Testing",
+            "description": "Conduct monthly adversarial testing of the RAG pipeline by a designated red team attempting prompt injection, retrieval manipulation, jailbreaking of financial advice guardrails, and citation fabrication attacks. Document findings, remediation actions, and retest results. Retain reports for SEC examination readiness.",
+            "priority": "high"
+          },
+          {
+            "label": "Model and Embedding Drift Monitoring",
+            "description": "Monitor for embedding model drift and LLM behavioral drift on a weekly basis using a held-out evaluation set of fintech-specific queries with known correct answers. If accuracy drops more than 5% from baseline, freeze the pipeline and initiate a root cause analysis before resuming production traffic.",
+            "priority": "high"
+          },
+          {
+            "label": "SEC Examination Response Package Maintenance",
+            "description": "Maintain a pre-assembled SEC examination response package that includes: system architecture diagrams, data flow maps showing all PII touchpoints, model cards for all LLMs and embedding models in use, sample audit log exports, and a summary of all compliance controls. Update this package quarterly.",
+            "priority": "high"
+          },
+          {
+            "label": "Vendor and Third-Party Model Risk Assessment",
+            "description": "For any third-party LLM API (e.g., OpenAI, Anthropic, Google) used in the synthesis layer, conduct and document a Model Risk Management (MRM) assessment per OCC guidance SR 11-7. Assess data residency, training data provenance, output consistency, and contractual data processing agreements. Reassess annually or upon model version changes.",
+            "priority": "high"
+          }
+        ]
+      }
+    ],
+    "regulatoryNotes": {
+      "heading": "Regulatory Considerations",
+      "notes": [
+        {
+          "regulation": "SOX Section 802 & 404",
+          "note": "All RAG pipeline audit logs, document change records, and model decision trails must be retained for a minimum of 7 years and must be accessible to external auditors. Internal controls over the AI system must be documented and tested annually as part of SOX 404 management assessment, including controls over data integrity of the vector store and accuracy of LLM outputs used in financial reporting contexts."
+        },
+        {
+          "regulation": "PCI DSS v4.0 Requirements 3, 4, and 10",
+          "note": "The RAG pipeline must be scoped within your PCI DSS Cardholder Data Environment (CDE) assessment if it processes, stores, or transmits cardholder data. Requirement 3.5 mandates encryption of stored data with documented key management; Requirement 4.2.1 mandates TLS 1.2+ for all data in transit; Requirement 10.3 mandates tamper-evident audit logs. Quarterly ASV scans and annual penetration tests must include the RAG pipeline infrastructure."
+        },
+        {
+          "regulation": "GDPR Articles 22, 30, and 35",
+          "note": "If the RAG pipeline produces outputs that constitute automated decision-making with legal or significant effects on EU data subjects (e.g., credit decisions, fraud flags), Article 22 requires either explicit consent, contractual necessity, or EU/member state law authorization, plus the right to human review. A Data Protection Impact Assessment (DPIA) under Article 35 is mandatory given the high-risk processing profile. Article 30 records of processing activities must document the RAG pipeline as a processing activity with full data flow mapping."
+        },
+        {
+          "regulation": "SEC Regulation Best Interest (Reg BI) & Investment Advisers Act",
+          "note": "Any RAG output that could be construed as a recommendation to a retail customer regarding a securities transaction must comply with Reg BI's best interest standard, including disclosure of material conflicts of interest. If the system provides personalized investment advice, the deploying firm may trigger registration requirements under the Investment Advisers Act of 1940. All financial advice outputs must carry clear disclaimers and the system must not be positioned as a substitute for a registered investment adviser."
+        }
+      ]
+    },
+    "cta": {
+      "heading": "Automate Your Fintech Agent Compliance",
+      "description": "Use Vex to continuously monitor your RAG pipeline against SOX, PCI DSS, GDPR, and SEC requirements — catching hallucinations, citation failures, and compliance drift before they become enforcement actions."
+    }
+  }
+}

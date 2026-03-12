@@ -1,0 +1,217 @@
+{
+  "meta": {
+    "industry": "education",
+    "useCase": "rag-pipeline",
+    "generatedAt": "2026-03-12"
+  },
+  "seo": {
+    "title": "Education RAG Pipeline AI Agent Checklist",
+    "description": "Production readiness checklist for rag pipeline AI agents in education. Covers FERPA, COPPA, State education data privacy laws.",
+    "keywords": [
+      "Education AI checklist",
+      "RAG Pipeline agent checklist",
+      "Education AI compliance",
+      "AI agent production readiness",
+      "AI guardrails checklist"
+    ]
+  },
+  "content": {
+    "intro": "Deploying a RAG pipeline in educational settings introduces compounded risk: the system retrieves and synthesizes content that directly shapes student learning, while handling some of the most legally protected personal data categories under FERPA and COPPA. A single misconfiguration—whether a hallucinated citation, an unfiltered document in the retrieval corpus, or an improperly stored student query log—can trigger federal violations, institutional liability, and irreversible harm to minors. This checklist provides concrete, education-specific controls across data governance, retrieval integrity, content safety, and compliance verification.",
+    "sections": [
+      {
+        "heading": "Student Data Governance & Privacy Compliance",
+        "description": "Establish strict controls over how student data enters, flows through, and is retained within the RAG pipeline, ensuring FERPA and COPPA requirements are met at every layer.",
+        "items": [
+          {
+            "label": "Obtain and document verifiable parental consent for users under 13",
+            "description": "Before any student under 13 interacts with the RAG system, collect COPPA-compliant parental consent using a two-step verification process. Store consent records with timestamps, parent identity verification method, and scope of data use in an auditable log.",
+            "priority": "critical"
+          },
+          {
+            "label": "Classify and tag all student-originated data before ingestion",
+            "description": "Apply data classification labels (e.g., PII, education record, directory information) to every student query, interaction log, and uploaded document before it enters the vector store or LLM context window. Use automated tagging with human review for edge cases.",
+            "priority": "critical"
+          },
+          {
+            "label": "Enforce role-based access controls on the vector database",
+            "description": "Restrict vector store access so that student-specific embeddings and documents are only retrievable by authorized roles (e.g., the student themselves, their assigned teacher, system admins). Implement row-level security in the vector database and audit access logs weekly.",
+            "priority": "critical"
+          },
+          {
+            "label": "Define and enforce a data retention schedule for query logs and embeddings",
+            "description": "Set maximum retention periods for student query logs (recommend 90 days or aligned with institutional policy), conversation histories, and generated embeddings. Implement automated deletion pipelines and verify deletion with cryptographic confirmation logs.",
+            "priority": "high"
+          },
+          {
+            "label": "Prohibit use of student interaction data for LLM model training or fine-tuning",
+            "description": "Include contractual prohibitions in vendor agreements (LLM API providers, vector DB vendors) explicitly barring use of student queries or retrieved content for training purposes. Verify compliance via annual vendor audits and data processing agreements.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement data residency controls to comply with state education privacy laws",
+            "description": "Identify the applicable state student data privacy laws (e.g., NY Education Law 2-d, California SOPIPA) for your institution and configure cloud infrastructure to store and process student data only within compliant geographic boundaries. Document residency configurations in your data map.",
+            "priority": "high"
+          },
+          {
+            "label": "Provide students and parents a mechanism to inspect and delete their data",
+            "description": "Build a self-service portal or documented request process allowing students (and parents of minors) to view all stored data associated with their account, including query history and any documents they uploaded. Fulfill deletion requests within 30 days and confirm completion in writing.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "RAG Retrieval Integrity & Hallucination Controls",
+        "description": "Ensure the retrieval pipeline surfaces only accurate, relevant, and age-appropriate content, and that the LLM synthesis layer does not fabricate citations or misrepresent source material.",
+        "items": [
+          {
+            "label": "Curate and version-control the document corpus before indexing",
+            "description": "Maintain a reviewed, approved document registry for all materials ingested into the vector store. Each document must have a review date, approving educator or administrator, grade-level tag, and subject classification. Reject unapproved documents at the ingestion pipeline boundary.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement a source faithfulness scoring step before response delivery",
+            "description": "After LLM synthesis, run an automated faithfulness check (e.g., using an NLI model or a secondary LLM judge) that scores whether each claim in the response is grounded in the retrieved context. Block or flag responses scoring below a defined threshold (e.g., 0.85) for human review.",
+            "priority": "critical"
+          },
+          {
+            "label": "Validate citation accuracy by cross-referencing generated citations against retrieved chunks",
+            "description": "For every citation the LLM generates (page number, document title, author), programmatically verify the citation exists in the retrieved context chunks before including it in the student-facing response. Return a 'citation not verified' warning if the match fails.",
+            "priority": "critical"
+          },
+          {
+            "label": "Set a minimum relevance score threshold for retrieved chunks entering the context window",
+            "description": "Configure the vector search to only pass chunks with a cosine similarity or relevance score above a calibrated threshold (e.g., 0.75) into the LLM context. Log and discard low-relevance chunks, and alert curriculum administrators when retrieval quality drops below baseline.",
+            "priority": "high"
+          },
+          {
+            "label": "Implement a fallback response when retrieval confidence is insufficient",
+            "description": "When the retrieval pipeline cannot find sufficiently relevant documents, instruct the LLM to respond with a defined fallback message (e.g., 'I don't have enough information to answer this accurately—please consult your teacher') rather than generating an unsupported answer.",
+            "priority": "high"
+          },
+          {
+            "label": "Log all retrieved chunks and LLM prompts for post-hoc auditability",
+            "description": "Store the full retrieval context (top-k chunks, similarity scores, document IDs) and the assembled LLM prompt for every student interaction in an immutable audit log. Retain these logs for a minimum of one academic year to support incident investigation and compliance audits.",
+            "priority": "high"
+          },
+          {
+            "label": "Run periodic corpus drift audits to detect outdated or contradictory documents",
+            "description": "Schedule quarterly reviews of the indexed document corpus to identify materials that have been superseded by curriculum updates, contain factual errors, or conflict with newer sources. Remove or update stale documents and re-index affected embeddings within 5 business days of identification.",
+            "priority": "medium"
+          }
+        ]
+      },
+      {
+        "heading": "Age-Appropriate Content Safety & Bias Prevention",
+        "description": "Apply multi-layer content filtering and bias detection to ensure all RAG-generated responses are safe, inclusive, and appropriate for the target student age group.",
+        "items": [
+          {
+            "label": "Apply grade-level content filters to both the retrieval corpus and LLM output",
+            "description": "Tag every document in the corpus with a grade-level range (e.g., K-2, 3-5, 6-8, 9-12) and configure retrieval to only surface documents matching the authenticated student's grade level. Apply a secondary output filter that checks generated text for vocabulary complexity and topic appropriateness.",
+            "priority": "critical"
+          },
+          {
+            "label": "Integrate a real-time harmful content classifier on all LLM-generated responses",
+            "description": "Deploy a content moderation model (e.g., a fine-tuned classifier or API-based moderation service) that screens every response for violence, sexual content, hate speech, self-harm references, and profanity before delivery. Block and log any response that triggers a violation, and route it to a human reviewer.",
+            "priority": "critical"
+          },
+          {
+            "label": "Conduct bias audits on the document corpus across demographic dimensions",
+            "description": "Before initial deployment and annually thereafter, audit the indexed document corpus for representation bias across race, gender, disability, and socioeconomic status using a structured rubric. Document findings and remediate identified gaps by adding or replacing source materials within 60 days.",
+            "priority": "high"
+          },
+          {
+            "label": "Test LLM response generation for demographic bias using adversarial prompts",
+            "description": "Create a test suite of at least 200 adversarial prompts that probe for differential treatment of students based on name, gender, ethnicity, or learning ability. Run this suite against the full RAG pipeline quarterly and require a bias score below a defined threshold before each production release.",
+            "priority": "high"
+          },
+          {
+            "label": "Implement a student-accessible content reporting mechanism",
+            "description": "Provide a clearly labeled 'Report this response' button or equivalent mechanism in the student interface. Route reports to a designated educator or content safety reviewer within 24 hours. Track report volume and resolution time as operational KPIs.",
+            "priority": "high"
+          },
+          {
+            "label": "Ensure all student-facing UI and generated content meets WCAG 2.1 AA and Section 508 standards",
+            "description": "Audit the RAG interface for screen reader compatibility, keyboard navigation, color contrast ratios, and alternative text for any visual elements. Verify that LLM-generated responses do not use formatting (e.g., ASCII art, complex tables) that breaks assistive technology parsing.",
+            "priority": "high"
+          },
+          {
+            "label": "Define and enforce topic boundary restrictions to prevent out-of-scope queries",
+            "description": "Configure a topic classifier at the query intake layer that identifies and blocks queries outside the system's defined educational scope (e.g., medical advice, legal advice, political opinions). Return a clear, age-appropriate message explaining the system's purpose and directing students to appropriate resources.",
+            "priority": "medium"
+          }
+        ]
+      },
+      {
+        "heading": "Institutional Oversight, Educator Controls & Incident Response",
+        "description": "Establish governance structures that keep qualified educators in control of the AI tutoring experience, with clear escalation paths and incident response procedures to protect institutional accreditation.",
+        "items": [
+          {
+            "label": "Implement a human-in-the-loop escalation path for complex or sensitive student queries",
+            "description": "Define a classification model or rule set that identifies queries involving mental health, academic integrity concerns, or topics outside the RAG system's competency. Automatically route these to a qualified educator or counselor rather than generating an AI response, and notify the student that a human will follow up.",
+            "priority": "critical"
+          },
+          {
+            "label": "Provide educators with a real-time dashboard to monitor student interactions and flag anomalies",
+            "description": "Build an educator-facing dashboard showing aggregate and individual student interaction metrics, flagged responses, retrieval failure rates, and content moderation events. Include alert thresholds that notify educators when a student's query patterns suggest distress or academic dishonesty.",
+            "priority": "high"
+          },
+          {
+            "label": "Establish a documented AI incident response plan specific to the RAG pipeline",
+            "description": "Create a written incident response plan covering: data breach (student PII exposed via retrieval), harmful content delivery, hallucination causing academic harm, and system unavailability. Define roles, notification timelines (including FERPA breach notification within 72 hours), and remediation steps for each scenario.",
+            "priority": "critical"
+          },
+          {
+            "label": "Conduct a Data Protection Impact Assessment (DPIA) before deployment and after major changes",
+            "description": "Complete a formal DPIA documenting data flows, risk assessments, and mitigation measures for the RAG pipeline. Require sign-off from the institution's Data Protection Officer or legal counsel. Re-run the DPIA whenever the LLM provider, vector database, or data retention policy changes.",
+            "priority": "critical"
+          },
+          {
+            "label": "Train all educators and administrators who interact with the system on AI limitations and FERPA obligations",
+            "description": "Deliver a mandatory training module (minimum 2 hours) covering: how the RAG pipeline works, what it cannot reliably do, how to interpret AI-generated responses critically, and educator obligations under FERPA when using AI tools. Require annual recertification and track completion rates.",
+            "priority": "high"
+          },
+          {
+            "label": "Establish a vendor due diligence process for all third-party components in the RAG stack",
+            "description": "For each vendor (LLM API, vector database, embedding model, content moderation service), obtain and review their SOC 2 Type II report, FERPA-compliant data processing agreement, and subprocessor list annually. Maintain a vendor risk register and escalate any vendor that cannot provide required documentation.",
+            "priority": "high"
+          },
+          {
+            "label": "Define and publish an AI transparency disclosure for students and parents",
+            "description": "Create a plain-language disclosure document explaining that the tutoring system uses AI, what data it collects, how responses are generated, the system's known limitations, and how to opt out. Make this disclosure available at first login and link to it from every AI-generated response.",
+            "priority": "high"
+          },
+          {
+            "label": "Schedule quarterly red-team exercises targeting the RAG pipeline's safety and privacy controls",
+            "description": "Engage an internal or external red team to attempt prompt injection attacks, retrieval poisoning, PII extraction via adversarial queries, and content filter bypass on a quarterly basis. Document findings in a remediation tracker and resolve critical findings within 14 days of identification.",
+            "priority": "medium"
+          }
+        ]
+      }
+    ],
+    "regulatoryNotes": {
+      "heading": "Regulatory Considerations",
+      "notes": [
+        {
+          "regulation": "FERPA (Family Educational Rights and Privacy Act)",
+          "note": "FERPA classifies student query logs, interaction histories, and any documents submitted by students as 'education records' if they are directly linked to an identifiable student. This means your RAG pipeline's audit logs, retrieved context stored per-session, and personalized response histories may all be subject to FERPA access and deletion rights. Ensure your data processing agreements with LLM and vector database vendors include FERPA-compliant 'school official' designations with legitimate educational interest clauses, and that no student education record is disclosed to third parties without explicit consent or a recognized FERPA exception."
+        },
+        {
+          "regulation": "COPPA (Children's Online Privacy Protection Act)",
+          "note": "If your RAG pipeline is accessible to students under 13, COPPA requires verifiable parental consent before collecting any personal information—including IP addresses, device identifiers, and the content of student queries. The FTC's 2013 COPPA Rule update explicitly covers persistent identifiers used for behavioral profiling; ensure your vector store does not create user-linked embeddings for minors without consent. Operators face civil penalties of up to $51,744 per violation per day, making age-gating and consent management at the authentication layer non-negotiable."
+        },
+        {
+          "regulation": "State Education Data Privacy Laws",
+          "note": "Over 45 states have enacted student data privacy laws that impose obligations beyond FERPA and COPPA. Key examples include New York's Education Law 2-d (requires contracts with third-party contractors, prohibits sale of student data, mandates breach notification), California's SOPIPA (prohibits targeted advertising using student data, restricts data use to educational purposes), and Illinois's Student Online Personal Protection Act. Before deployment, map your institution's state(s) of operation to applicable laws, review each law's definition of 'operator' and 'covered information,' and ensure your RAG vendor contracts include state-specific data protection addenda."
+        },
+        {
+          "regulation": "Section 508 & Accessibility Standards",
+          "note": "Section 508 of the Rehabilitation Act requires that electronic and information technology used by federal agencies—and by institutions receiving federal funding—be accessible to people with disabilities. For a RAG pipeline, this means the student-facing interface must conform to WCAG 2.1 Level AA, and AI-generated responses must be structured to work with screen readers (avoid reliance on visual formatting, ensure proper heading hierarchy, provide text alternatives for any non-text content). Failure to meet accessibility standards can result in OCR complaints, loss of federal funding, and litigation under the ADA, in addition to excluding students with disabilities from educational resources."
+        }
+      ]
+    },
+    "cta": {
+      "heading": "Automate Your Education Agent Compliance",
+      "description": "Use Vex to continuously monitor your Education RAG pipeline against FERPA, COPPA, and state privacy requirements—catching hallucinations, content violations, and data governance gaps before they reach students."
+    }
+  }
+}

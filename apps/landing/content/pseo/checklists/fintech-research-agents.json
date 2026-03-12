@@ -1,0 +1,210 @@
+{
+  "meta": {
+    "industry": "fintech",
+    "useCase": "research-agents",
+    "generatedAt": "2026-03-12"
+  },
+  "seo": {
+    "title": "Fintech Research Agents AI Agent Checklist",
+    "description": "Production readiness checklist for research agents AI agents in fintech. Covers SOX, PCI DSS, GDPR.",
+    "keywords": [
+      "Fintech AI checklist",
+      "Research Agents agent checklist",
+      "Fintech AI compliance",
+      "AI agent production readiness",
+      "AI guardrails checklist"
+    ]
+  },
+  "content": {
+    "intro": "Deploying AI research agents in fintech environments introduces compounded risk: autonomous web search and synthesis pipelines can surface unverified financial claims, outdated market data, or biased analysis that directly influences investment decisions, credit assessments, or regulatory filings. Given the overlap of SOX, PCI DSS, GDPR, SEC regulations, and BSA/AML requirements, every layer of the agent pipeline—from data ingestion to output delivery—must be auditable, explainable, and compliant. This checklist provides concrete, actionable controls to ensure your multi-step research agents operate within regulatory boundaries while minimizing exposure to SEC enforcement, customer fund mismanagement, and banking license risk.",
+    "sections": [
+      {
+        "heading": "Data Sourcing & Source Verification",
+        "description": "Research agents that autonomously gather financial data must validate the provenance, authority, and recency of every source before synthesis. Unverified sources can introduce material misstatements into financial research outputs, triggering SEC liability.",
+        "items": [
+          {
+            "label": "Allowlist Approved Financial Data Sources",
+            "description": "Maintain and enforce a curated allowlist of approved sources (e.g., SEC EDGAR, Bloomberg, Reuters, FINRA) that the agent may query. Block or flag any source not on the allowlist before ingestion.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement Domain Authority Scoring",
+            "description": "Assign a domain authority and credibility score to each web source retrieved. Reject or quarantine content from sources scoring below a defined threshold (e.g., unverified blogs, social media, anonymous forums).",
+            "priority": "critical"
+          },
+          {
+            "label": "Enforce Recency Checks on Financial Data",
+            "description": "Automatically tag and reject financial data older than a configurable threshold (e.g., 24 hours for market data, 90 days for regulatory filings) to prevent stale information from influencing outputs.",
+            "priority": "high"
+          },
+          {
+            "label": "Cross-Reference Claims Across Multiple Sources",
+            "description": "Require the agent to corroborate material financial claims (e.g., earnings figures, interest rates, regulatory rulings) across at least two independent, allowlisted sources before including them in a synthesis.",
+            "priority": "high"
+          },
+          {
+            "label": "Log All Source URLs and Retrieval Timestamps",
+            "description": "Persist a tamper-evident audit log of every URL queried, the timestamp of retrieval, and the HTTP response metadata. This log must be retained for a minimum of 7 years to satisfy SOX audit trail requirements.",
+            "priority": "critical"
+          },
+          {
+            "label": "Detect and Flag Conflicting Source Data",
+            "description": "Implement a conflict-detection step that identifies when two or more sources provide materially different values for the same financial metric and escalates to human review before the agent proceeds.",
+            "priority": "high"
+          },
+          {
+            "label": "Validate SEC EDGAR Filing Authenticity",
+            "description": "When ingesting SEC filings, verify document hashes against EDGAR's published checksums to confirm the filing has not been altered or spoofed before the agent processes its contents.",
+            "priority": "critical"
+          }
+        ]
+      },
+      {
+        "heading": "Output Accuracy, Disclaimers & Explainability",
+        "description": "Research agent outputs that influence financial decisions must be accurate, traceable to source evidence, and accompanied by mandatory regulatory disclaimers. SEC regulations and model explainability requirements for credit-affecting decisions demand that every conclusion be auditable.",
+        "items": [
+          {
+            "label": "Append Mandatory Financial Advice Disclaimers",
+            "description": "Automatically append SEC-compliant disclaimers to every research output (e.g., 'This content is for informational purposes only and does not constitute investment advice. Past performance is not indicative of future results.'). Disclaimers must be non-removable by downstream consumers.",
+            "priority": "critical"
+          },
+          {
+            "label": "Generate Source Citation Maps for Every Output",
+            "description": "Produce a structured citation map linking each factual claim in the synthesized output to its originating source URL, retrieval timestamp, and relevant excerpt. This enables human reviewers and regulators to trace every assertion.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement Confidence Scoring on Synthesized Claims",
+            "description": "Assign a confidence score to each synthesized claim based on source agreement, recency, and domain authority. Surface low-confidence claims (below a defined threshold) with explicit uncertainty flags in the output.",
+            "priority": "high"
+          },
+          {
+            "label": "Enforce Explainability for Credit-Affecting Outputs",
+            "description": "For any research output that may influence credit decisions, generate a plain-language explanation of the key factors and sources driving the conclusion, compliant with ECOA and FCRA adverse action notice requirements.",
+            "priority": "critical"
+          },
+          {
+            "label": "Block Speculative or Predictive Language Without Basis",
+            "description": "Implement an output filter that detects and removes or flags speculative financial predictions (e.g., 'Stock X will rise 20%') unless directly attributed to a named, credentialed analyst source with a clear disclaimer.",
+            "priority": "high"
+          },
+          {
+            "label": "Human-in-the-Loop Review Gate for High-Impact Outputs",
+            "description": "Route any research output classified as high-impact (e.g., used in investment memos, credit underwriting, regulatory filings) through a mandatory human review and approval workflow before delivery to end users.",
+            "priority": "critical"
+          },
+          {
+            "label": "Version-Control All Agent Prompts and Synthesis Templates",
+            "description": "Store all system prompts, synthesis instructions, and output templates in a version-controlled repository with change history. SOX requires that material changes to financial reporting processes be documented and approved.",
+            "priority": "high"
+          },
+          {
+            "label": "Validate Numerical Data Against Structured Financial Databases",
+            "description": "Before including any numerical financial metric (revenue, EPS, interest rate) in an output, validate it against a structured, authoritative database (e.g., Refinitiv, FactSet) to catch LLM hallucinations or web scraping errors.",
+            "priority": "critical"
+          }
+        ]
+      },
+      {
+        "heading": "Data Security, Encryption & Privacy Compliance",
+        "description": "Research agents operating in fintech environments process sensitive financial data subject to PCI DSS, GDPR, and BSA/AML controls. All data in transit and at rest must be encrypted, and personal financial data must be handled with strict access controls and retention policies.",
+        "items": [
+          {
+            "label": "Encrypt All Transaction and PII Data at Rest",
+            "description": "Apply AES-256 encryption to all stored data containing transaction records, account identifiers, or personally identifiable information. Encryption keys must be managed via a dedicated KMS (e.g., AWS KMS, HashiCorp Vault) with quarterly rotation.",
+            "priority": "critical"
+          },
+          {
+            "label": "Enforce TLS 1.3 for All Agent API Communications",
+            "description": "Require TLS 1.3 (minimum TLS 1.2) for all HTTP communications between agent components, external data sources, and downstream consumers. Reject connections using deprecated protocols (SSL, TLS 1.0/1.1).",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement PII Detection and Redaction in Agent Inputs/Outputs",
+            "description": "Deploy an automated PII scanner on all agent inputs and outputs to detect and redact personal financial data (SSNs, account numbers, card data) before logging or transmitting, ensuring GDPR Article 25 data minimization compliance.",
+            "priority": "critical"
+          },
+          {
+            "label": "Enforce Role-Based Access Control on Agent Outputs",
+            "description": "Restrict access to research agent outputs based on user roles and data classification levels. Analysts should only access outputs relevant to their authorized scope; privileged outputs (e.g., M&A research) require additional approval.",
+            "priority": "high"
+          },
+          {
+            "label": "Implement Data Residency Controls for GDPR Compliance",
+            "description": "Ensure that any personal data of EU residents processed by the research agent (e.g., in web-scraped content) is stored and processed within approved geographic boundaries. Block cross-border transfers to non-adequate countries without explicit consent mechanisms.",
+            "priority": "high"
+          },
+          {
+            "label": "Establish and Enforce Data Retention and Deletion Policies",
+            "description": "Define retention periods for all agent-generated research outputs and source caches (e.g., 7 years for SOX-relevant records, 30 days for transient web cache). Implement automated deletion workflows and maintain deletion audit logs.",
+            "priority": "high"
+          },
+          {
+            "label": "Conduct PCI DSS Scope Assessment for Agent Infrastructure",
+            "description": "Formally assess whether the agent's infrastructure falls within PCI DSS cardholder data environment (CDE) scope. If in scope, apply all applicable PCI DSS v4.0 controls including network segmentation, logging, and quarterly vulnerability scans.",
+            "priority": "critical"
+          }
+        ]
+      },
+      {
+        "heading": "Bias Detection, BSA/AML Controls & Ongoing Monitoring",
+        "description": "Continuous monitoring of research agent behavior is essential to detect analytical bias, prevent BSA/AML violations through inadvertent facilitation of financial crime research, and maintain SOX-compliant operational controls over automated financial processes.",
+        "items": [
+          {
+            "label": "Implement Automated Bias Detection on Research Outputs",
+            "description": "Run each synthesized research output through a bias detection pipeline that checks for systematic skew toward specific securities, sectors, or entities. Flag outputs where a single source or entity accounts for more than 60% of cited evidence.",
+            "priority": "high"
+          },
+          {
+            "label": "Screen Agent Queries Against BSA/AML Watchlists",
+            "description": "Before the agent retrieves or synthesizes information about any named entity (company, individual, jurisdiction), screen the entity against OFAC SDN, FinCEN, and EU sanctions lists. Block and escalate queries involving sanctioned entities.",
+            "priority": "critical"
+          },
+          {
+            "label": "Monitor for Unusual Research Patterns Indicating Insider Risk",
+            "description": "Deploy behavioral analytics to detect anomalous agent usage patterns (e.g., sudden high-volume queries on a specific ticker before earnings, repeated queries on M&A targets) that may indicate insider trading facilitation. Alert compliance teams in real time.",
+            "priority": "critical"
+          },
+          {
+            "label": "Establish Model Performance Drift Monitoring",
+            "description": "Track key quality metrics (source accuracy rate, claim verification pass rate, disclaimer compliance rate) on a weekly basis. Define drift thresholds that trigger automatic agent suspension and human review when exceeded.",
+            "priority": "high"
+          },
+          {
+            "label": "Conduct Quarterly Red Team Exercises on Agent Pipelines",
+            "description": "Perform structured adversarial testing every quarter to attempt prompt injection, source spoofing, and output manipulation attacks on the research agent. Document findings and remediate critical vulnerabilities within 30 days.",
+            "priority": "high"
+          },
+          {
+            "label": "Maintain a SOX-Compliant Change Management Process for Agent Updates",
+            "description": "Require formal change requests, impact assessments, and compliance sign-off before deploying updates to agent prompts, retrieval logic, or synthesis models. All changes must be logged with approver identity and timestamp.",
+            "priority": "critical"
+          },
+          {
+            "label": "Produce Monthly Compliance Reports for Agent Activity",
+            "description": "Generate automated monthly reports summarizing agent query volumes, source distribution, disclaimer compliance rates, human escalations, and any detected policy violations. Distribute to Chief Compliance Officer and retain for regulatory examination.",
+            "priority": "high"
+          },
+          {
+            "label": "Implement Circuit Breakers for Anomalous Agent Behavior",
+            "description": "Define automated circuit breaker rules that immediately halt agent operations if predefined risk thresholds are breached (e.g., >5% of outputs fail source verification, >10 BSA watchlist hits in one hour). Require manual restart with compliance approval.",
+            "priority": "critical"
+          }
+        ]
+      }
+    ],
+    "regulatoryNotes": {
+      "heading": "Regulatory Considerations",
+      "notes": [
+        "SEC Regulation Best Interest (Reg BI) and Investment Advisers Act: Any AI-generated research output distributed to retail investors or used to inform investment recommendations must comply with Reg BI's care obligation. Ensure all outputs carry clear disclosures that they do not constitute personalized investment advice, and that the agent's role in generating the content is disclosed. Firms registered as investment advisers must assess whether automated research distribution triggers additional Form ADV disclosure obligations.",
+        "BSA/AML and FinCEN Compliance: Research agents that query or synthesize information about financial transactions, entities, or jurisdictions must be integrated into the firm's BSA/AML compliance program. This includes screening all queried entities against FinCEN watchlists, maintaining records of agent-generated research used in suspicious activity report (SAR) investigations for 5 years, and ensuring the agent cannot be used to structure queries that circumvent AML monitoring controls.",
+        "GDPR Articles 13–22 and Right to Explanation: When research agent outputs are used in automated decisions affecting EU data subjects (e.g., credit scoring, KYC assessments), GDPR Article 22 requires that individuals have the right to obtain human review and a meaningful explanation of the decision logic. Ensure the agent's synthesis pipeline produces machine-readable explanation artifacts that can be surfaced in response to data subject access requests within the 30-day statutory deadline.",
+        "SOX Section 302 and 404 – Internal Controls Over Financial Reporting: If research agent outputs are used in the preparation or review of financial statements, disclosures, or audit workpapers, the agent pipeline constitutes an internal control over financial reporting (ICFR) subject to SOX Sections 302 and 404. Management must document the agent as a key control, assess its design and operating effectiveness annually, and ensure external auditors have access to agent logs, configuration, and change history during PCAOB-inspected audits."
+      ]
+    },
+    "cta": {
+      "heading": "Automate Your Fintech Agent Compliance",
+      "description": "Use Vex to continuously monitor your fintech research agents against SOX, PCI DSS, GDPR, and SEC requirements—turning this checklist into automated, real-time compliance enforcement across every agent deployment."
+    }
+  }
+}

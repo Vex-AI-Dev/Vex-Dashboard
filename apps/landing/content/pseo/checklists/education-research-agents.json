@@ -1,0 +1,217 @@
+{
+  "meta": {
+    "industry": "education",
+    "useCase": "research-agents",
+    "generatedAt": "2026-03-12"
+  },
+  "seo": {
+    "title": "Education Research Agents AI Agent Checklist",
+    "description": "Production readiness checklist for research agents AI agents in education. Covers FERPA, COPPA, State education data privacy laws.",
+    "keywords": [
+      "Education AI checklist",
+      "Research Agents agent checklist",
+      "Education AI compliance",
+      "AI agent production readiness",
+      "AI guardrails checklist"
+    ]
+  },
+  "content": {
+    "intro": "Deploying AI research agents in educational settings introduces unique risks around student data privacy, content appropriateness, and academic integrity that demand rigorous compliance controls. Multi-step web search and synthesis agents that interact with or produce content for students must adhere to FERPA, COPPA, and state-level data privacy laws while ensuring outputs are accurate, unbiased, and age-appropriate. Failure to implement proper safeguards can result in FERPA violations, harmful content exposure to minors, and institutional liability that threatens accreditation.",
+    "sections": [
+      {
+        "heading": "Student Data Privacy & Consent Management",
+        "description": "Ensure all student data handling meets FERPA, COPPA, and applicable state education data privacy requirements before the agent processes any personally identifiable information.",
+        "items": [
+          {
+            "label": "Obtain Verifiable Parental Consent for Minors Under 13",
+            "description": "Before any student under 13 interacts with the research agent, collect and log verifiable parental consent as required by COPPA. Use a documented consent workflow that records timestamp, parent identity verification method, and scope of data use.",
+            "priority": "critical"
+          },
+          {
+            "label": "Classify and Restrict PII Ingestion",
+            "description": "Configure the agent pipeline to detect and block ingestion of student PII (names, student IDs, grades, behavioral records) into web search queries or external APIs. Implement a PII scrubbing layer before any data leaves the institutional boundary.",
+            "priority": "critical"
+          },
+          {
+            "label": "Establish a FERPA-Compliant Data Sharing Agreement with All Third-Party APIs",
+            "description": "Audit every external API or LLM provider used in the multi-step research pipeline. Require signed FERPA-compliant data sharing agreements or School Official exceptions before connecting any service that may receive student-related queries.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement Role-Based Access Controls for Agent Outputs",
+            "description": "Restrict access to agent-generated research summaries and logs based on user role (student, teacher, administrator). Ensure students can only access their own research sessions and that session logs are not shared across accounts.",
+            "priority": "high"
+          },
+          {
+            "label": "Define and Enforce Data Retention and Deletion Policies",
+            "description": "Set explicit retention windows for all agent session data, search queries, and synthesized outputs. Provide a documented deletion mechanism that allows parents or eligible students to request erasure of records in compliance with FERPA rights.",
+            "priority": "high"
+          },
+          {
+            "label": "Audit State-Specific Student Privacy Laws Before Deployment",
+            "description": "Review applicable state laws such as California SOPIPA, New York Education Law 2-d, and Texas SCOPE Act. Map each law's requirements to your agent's data flows and document compliance gaps before go-live.",
+            "priority": "high"
+          },
+          {
+            "label": "Log All Data Access Events for FERPA Audit Trails",
+            "description": "Maintain immutable logs of every instance where student data is accessed, processed, or transmitted by the agent. Logs must include user ID, timestamp, data type accessed, and purpose, and must be retained for a minimum of five years.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Content Safety, Age-Appropriateness & Bias Controls",
+        "description": "Research agents synthesizing web content for students must enforce strict content filtering, bias detection, and age-appropriateness checks to prevent exposure to harmful or misleading material.",
+        "items": [
+          {
+            "label": "Deploy Age-Tiered Content Filters on All Synthesized Outputs",
+            "description": "Implement content classification layers that apply different filtering thresholds based on the student's age group (K-5, 6-8, 9-12, higher education). Block or flag outputs containing violence, adult content, hate speech, or self-harm references before delivery.",
+            "priority": "critical"
+          },
+          {
+            "label": "Run Automated Bias Detection on Research Summaries",
+            "description": "Integrate a bias detection module that scans synthesized research outputs for political, racial, gender, or cultural bias before presenting results to students. Flag biased content for human educator review rather than suppressing it silently.",
+            "priority": "high"
+          },
+          {
+            "label": "Restrict Web Search Domains to Vetted Educational Sources",
+            "description": "Maintain an allowlist of approved domains (e.g., .edu, .gov, peer-reviewed journal APIs, vetted encyclopedias) for the agent's web search steps. Block retrieval from unvetted social media, opinion blogs, or sites with known misinformation histories.",
+            "priority": "high"
+          },
+          {
+            "label": "Enforce Claim Accuracy Verification Before Output Delivery",
+            "description": "Require the agent to cross-reference factual claims against at least two independent vetted sources before including them in a research summary. Flag single-source claims with a visible uncertainty indicator in the student-facing output.",
+            "priority": "high"
+          },
+          {
+            "label": "Implement Recency Checks on Time-Sensitive Research Topics",
+            "description": "For topics where currency matters (science, current events, law), configure the agent to filter out sources older than a defined threshold (e.g., 3 years for scientific claims) and surface publication dates prominently in all citations.",
+            "priority": "medium"
+          },
+          {
+            "label": "Provide Educator Override and Content Review Workflow",
+            "description": "Build a teacher-facing dashboard where educators can review flagged outputs, approve or reject content before student delivery, and submit feedback to improve future filtering. Document all override decisions for compliance audits.",
+            "priority": "medium"
+          },
+          {
+            "label": "Test Content Filters Against Adversarial Student Inputs Quarterly",
+            "description": "Conduct quarterly red-team exercises where QA staff submit adversarial prompts mimicking student attempts to bypass content filters. Document results and patch filter gaps within 30 days of discovery.",
+            "priority": "medium"
+          }
+        ]
+      },
+      {
+        "heading": "Academic Integrity & Instructional Boundaries",
+        "description": "AI research agents must be scoped to support and augment qualified instruction, not replace it, and must include safeguards that preserve academic integrity and proper attribution.",
+        "items": [
+          {
+            "label": "Define and Enforce Agent Scope Boundaries in System Prompts",
+            "description": "Explicitly configure the agent's system prompt to limit its role to research assistance (finding, summarizing, and citing sources) and prohibit it from writing complete essays, answering exam questions, or completing graded assignments on behalf of students.",
+            "priority": "critical"
+          },
+          {
+            "label": "Mandate Source Citation in Every Research Output",
+            "description": "Require the agent to include full citations (author, title, publication, date, URL) for every claim in its synthesized outputs. Outputs without citations must be blocked from delivery to students.",
+            "priority": "critical"
+          },
+          {
+            "label": "Display Persistent AI Disclosure Labels on All Agent Outputs",
+            "description": "Attach a visible, non-removable disclosure label to every agent-generated research summary stating that the content was produced with AI assistance. This label must persist if the student copies or exports the content.",
+            "priority": "high"
+          },
+          {
+            "label": "Integrate with Institutional Academic Integrity Policies",
+            "description": "Work with the institution's academic integrity office to define permitted and prohibited uses of the research agent. Publish these policies in the student-facing interface and require students to acknowledge them before first use.",
+            "priority": "high"
+          },
+          {
+            "label": "Prevent Agent from Providing Direct Answers to Assessment Questions",
+            "description": "Implement a classifier that detects when a student query matches the format of a test, quiz, or homework problem. When detected, redirect the agent to provide explanatory guidance and source suggestions rather than a direct answer.",
+            "priority": "high"
+          },
+          {
+            "label": "Require Educator Sign-Off Before Deploying Agent in Graded Contexts",
+            "description": "Establish a formal approval workflow requiring a qualified educator to review and approve the agent's configuration and permitted use cases before it is made available in any course with graded components.",
+            "priority": "high"
+          },
+          {
+            "label": "Log Student Interaction Patterns for Academic Integrity Monitoring",
+            "description": "Capture anonymized usage patterns (query types, frequency, output copy events) and make them available to educators through a privacy-preserving dashboard to help identify potential misuse without exposing individual student PII.",
+            "priority": "medium"
+          }
+        ]
+      },
+      {
+        "heading": "Accessibility, Transparency & Institutional Governance",
+        "description": "Research agents deployed in educational institutions must meet Section 508 accessibility standards, provide transparent operation, and be governed by formal institutional oversight processes.",
+        "items": [
+          {
+            "label": "Conduct Section 508 Accessibility Audit Before Launch",
+            "description": "Engage a certified accessibility auditor to test the agent's user interface and outputs against Section 508 and WCAG 2.1 AA standards. Remediate all critical and high-severity findings before making the agent available to students.",
+            "priority": "critical"
+          },
+          {
+            "label": "Ensure Screen Reader Compatibility for All Agent Outputs",
+            "description": "Test all research summaries, citations, and UI components with major screen readers (JAWS, NVDA, VoiceOver). Ensure dynamic content updates use ARIA live regions and that all images or charts include descriptive alt text.",
+            "priority": "critical"
+          },
+          {
+            "label": "Establish an Institutional AI Governance Committee",
+            "description": "Form a cross-functional committee including IT, legal, academic affairs, and student representatives to review and approve the agent's deployment, monitor ongoing compliance, and adjudicate escalated content or privacy incidents.",
+            "priority": "high"
+          },
+          {
+            "label": "Publish a Student-Facing Transparency Notice for the Research Agent",
+            "description": "Create a plain-language notice explaining what data the agent collects, how it is used, what sources it searches, and how students can request data deletion. Post this notice in the agent interface and the institution's privacy portal.",
+            "priority": "high"
+          },
+          {
+            "label": "Implement a Human Escalation Path for Sensitive Research Topics",
+            "description": "Configure the agent to detect queries involving sensitive topics (mental health, self-harm, abuse, extremism) and immediately route the student to a qualified human counselor or educator rather than generating an AI response.",
+            "priority": "high"
+          },
+          {
+            "label": "Conduct Annual Third-Party Security and Privacy Assessment",
+            "description": "Commission an annual independent security and privacy assessment of the agent's full technology stack, including all third-party APIs and data storage systems. Remediate critical findings within 90 days and share a summary report with the governance committee.",
+            "priority": "high"
+          },
+          {
+            "label": "Provide Multilingual and Reading-Level-Adjusted Output Options",
+            "description": "Offer students the ability to receive research summaries in their preferred language and at an appropriate reading level (e.g., 5th grade, 8th grade, college). Validate translation and simplification quality with qualified educators before enabling each option.",
+            "priority": "medium"
+          },
+          {
+            "label": "Document and Test Incident Response Plan for Data Breach Scenarios",
+            "description": "Create a written incident response plan specific to student data exposure events, including notification timelines required by FERPA (within 72 hours to institution), parent notification procedures, and regulatory reporting steps. Run a tabletop exercise annually.",
+            "priority": "high"
+          }
+        ]
+      }
+    ],
+    "regulatoryNotes": {
+      "heading": "Regulatory Considerations",
+      "notes": [
+        {
+          "regulation": "FERPA (Family Educational Rights and Privacy Act)",
+          "note": "FERPA prohibits disclosure of student education records without consent from parents (or eligible students over 18). Any AI research agent that stores, processes, or transmits student queries, session histories, or personalized outputs may constitute an education record. Institutions must ensure all third-party vendors used in the agent pipeline qualify as School Officials under FERPA and have signed compliant data use agreements with legitimate educational interest limitations."
+        },
+        {
+          "regulation": "COPPA (Children's Online Privacy Protection Act)",
+          "note": "COPPA applies to any online service that collects personal information from children under 13. If the research agent collects any data from K-8 students—including usage logs, search queries, or device identifiers—the institution must obtain verifiable parental consent before collection begins. Operators cannot condition a child's participation on providing more personal information than is reasonably necessary for the educational activity."
+        },
+        {
+          "regulation": "State Education Data Privacy Laws",
+          "note": "Over 40 states have enacted student data privacy laws that impose requirements beyond FERPA, including restrictions on data sale, targeted advertising prohibitions, and mandatory data security standards. Key examples include California's SOPIPA, New York's Education Law 2-d (which requires a Parents' Bill of Rights for Data Privacy and Security), and Illinois's Student Online Personal Protection Act. Institutions must conduct a state-by-state compliance review for every jurisdiction in which students are enrolled."
+        },
+        {
+          "regulation": "Section 508 of the Rehabilitation Act",
+          "note": "Section 508 requires that electronic and information technology developed, procured, or used by federal agencies—and by extension, federally funded educational institutions—be accessible to people with disabilities. AI research agent interfaces and outputs must conform to WCAG 2.1 AA standards, support assistive technologies, and provide equivalent access for students with visual, auditory, motor, and cognitive disabilities. Non-compliance can result in loss of federal funding and OCR complaints."
+        }
+      ]
+    },
+    "cta": {
+      "heading": "Automate Your Education Agent Compliance",
+      "description": "Use Vex to continuously monitor your AI research agents against FERPA, COPPA, and state education privacy requirements—so your institution stays compliant, your students stay protected, and your team stays focused on learning outcomes."
+    }
+  }
+}

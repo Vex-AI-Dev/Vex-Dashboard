@@ -1,0 +1,217 @@
+{
+  "meta": {
+    "industry": "education",
+    "useCase": "content-generation",
+    "generatedAt": "2026-03-12"
+  },
+  "seo": {
+    "title": "Education Content Generation AI Agent Checklist",
+    "description": "Production readiness checklist for content generation AI agents in education. Covers FERPA, COPPA, State education data privacy laws.",
+    "keywords": [
+      "Education AI checklist",
+      "Content Generation agent checklist",
+      "Education AI compliance",
+      "AI agent production readiness",
+      "AI guardrails checklist"
+    ]
+  },
+  "content": {
+    "intro": "Deploying AI content generation in education environments carries unique legal and ethical obligations, from FERPA-protected student data to COPPA requirements for minors under 13. Failures in this space can expose institutions to federal violations, loss of accreditation, and irreversible harm to vulnerable student populations. This checklist ensures your LLM-powered content pipeline meets regulatory standards while delivering safe, accurate, and age-appropriate educational material.",
+    "sections": [
+      {
+        "heading": "Data Privacy & Consent Compliance",
+        "description": "Ensure all student data handling meets FERPA, COPPA, and state-level education privacy laws before any AI content generation system processes or references student information.",
+        "items": [
+          {
+            "label": "Obtain verifiable parental consent for COPPA compliance",
+            "description": "Implement a documented parental consent workflow before any AI system collects, processes, or stores data from students under 13, including usage logs, prompts, and generated outputs tied to student identifiers.",
+            "priority": "critical"
+          },
+          {
+            "label": "Classify all student data under FERPA education records definition",
+            "description": "Audit every data field passed to the LLM (names, grades, IEP details, behavioral records) and confirm none are transmitted to third-party AI providers without a valid FERPA exception or signed data processing agreement.",
+            "priority": "critical"
+          },
+          {
+            "label": "Execute Data Processing Agreements (DPAs) with all AI vendors",
+            "description": "Require signed DPAs from LLM providers (e.g., OpenAI, Anthropic) that explicitly prohibit training on student data, define data retention limits, and specify breach notification timelines under FERPA.",
+            "priority": "critical"
+          },
+          {
+            "label": "Map state-specific education data privacy laws to your deployment region",
+            "description": "Cross-reference applicable state laws (e.g., NY Education Law 2-d, California SOPIPA, Colorado Student Data Transparency Act) and implement controls beyond federal minimums where required.",
+            "priority": "high"
+          },
+          {
+            "label": "Implement data minimization in LLM prompt construction",
+            "description": "Enforce a prompt sanitization layer that strips or pseudonymizes student PII before sending content generation requests to the LLM, retaining only the minimum context needed for the task.",
+            "priority": "high"
+          },
+          {
+            "label": "Establish a student data deletion and opt-out mechanism",
+            "description": "Build a self-service portal allowing parents or eligible students to request deletion of AI-generated content tied to their records and confirm deletion within 30 days per applicable state law.",
+            "priority": "high"
+          },
+          {
+            "label": "Log and audit all AI interactions involving student context",
+            "description": "Maintain tamper-evident logs of every LLM call that includes student-contextual data, including timestamps, prompt hashes, and output summaries, retained for a minimum of 3 years for FERPA audit readiness.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Content Safety & Age-Appropriateness",
+        "description": "Establish guardrails ensuring all AI-generated educational content is safe, developmentally appropriate, and free from harmful, biased, or misleading material before it reaches students.",
+        "items": [
+          {
+            "label": "Configure age-band content filters for each student grade tier",
+            "description": "Define separate content policy profiles for K-2, 3-5, 6-8, and 9-12 grade bands, restricting vocabulary complexity, topic sensitivity, and content themes (e.g., violence, sexuality, political ideology) appropriate to each tier.",
+            "priority": "critical"
+          },
+          {
+            "label": "Deploy a bias detection layer on all generated educational content",
+            "description": "Run every LLM output through an automated bias screening tool (e.g., Perspective API or a fine-tuned classifier) to flag gender, racial, cultural, or socioeconomic bias before content is published or delivered to students.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement a human editorial review gate for curriculum-aligned content",
+            "description": "Require a qualified educator or instructional designer to review and approve AI-generated lesson plans, assessments, and explanatory content before deployment, with a documented sign-off trail.",
+            "priority": "critical"
+          },
+          {
+            "label": "Enforce factual accuracy verification against authoritative sources",
+            "description": "Integrate a retrieval-augmented generation (RAG) pipeline or post-generation fact-checking step that cross-references claims in AI content against vetted educational databases (e.g., Khan Academy, Britannica, ERIC) and flags unverified assertions.",
+            "priority": "high"
+          },
+          {
+            "label": "Block AI content generation for high-stakes assessment items without review",
+            "description": "Prevent LLM-generated content from being used directly in graded assessments, standardized test prep, or IEP-related materials without mandatory human validation and institutional approval.",
+            "priority": "high"
+          },
+          {
+            "label": "Test content outputs against diverse student demographic profiles",
+            "description": "Conduct quarterly red-team evaluations using student personas representing diverse racial, linguistic, disability, and socioeconomic backgrounds to identify differential harm or exclusionary language in generated content.",
+            "priority": "high"
+          },
+          {
+            "label": "Establish a student and educator content feedback reporting channel",
+            "description": "Deploy an in-product flagging mechanism allowing students and teachers to report harmful, inaccurate, or inappropriate AI-generated content, with a defined SLA of 24 hours for critical flags and 5 business days for standard reviews.",
+            "priority": "medium"
+          }
+        ]
+      },
+      {
+        "heading": "Brand Voice, Accuracy & Editorial Integrity",
+        "description": "Ensure AI-generated content consistently reflects institutional brand standards, maintains factual integrity, and adheres to editorial guidelines across all content types and delivery channels.",
+        "items": [
+          {
+            "label": "Encode institutional brand voice guidelines into system prompts",
+            "description": "Translate your institution's style guide (tone, reading level targets, preferred terminology, inclusive language standards) into explicit LLM system prompt instructions and validate adherence on a sample of 50+ outputs before production launch.",
+            "priority": "high"
+          },
+          {
+            "label": "Implement automated tone adherence scoring on all outputs",
+            "description": "Use a secondary LLM or fine-tuned classifier to score each generated content piece against defined tone dimensions (e.g., encouraging, neutral, formal) and reject or flag outputs falling below an 80% adherence threshold.",
+            "priority": "high"
+          },
+          {
+            "label": "Run originality checks to prevent plagiarism in student-facing content",
+            "description": "Pass all AI-generated educational content through a plagiarism detection tool (e.g., Turnitin, Copyleaks) before publication to ensure originality scores above 85% and avoid reproducing copyrighted source material.",
+            "priority": "high"
+          },
+          {
+            "label": "Validate SEO metadata and keyword compliance for published content",
+            "description": "After generation, run an automated SEO audit confirming title tags, meta descriptions, heading hierarchy, and keyword density meet institutional SEO standards without keyword stuffing or misleading search signals.",
+            "priority": "medium"
+          },
+          {
+            "label": "Establish a content versioning and rollback system",
+            "description": "Store every version of AI-generated content with timestamps and editor attribution so that any published piece can be rolled back within 15 minutes if factual errors or policy violations are discovered post-publication.",
+            "priority": "high"
+          },
+          {
+            "label": "Define and enforce citation and sourcing standards for AI content",
+            "description": "Require the LLM pipeline to append source citations for all factual claims using a standardized format (APA or MLA), and validate that cited sources are accessible, authoritative, and not behind paywalls inaccessible to students.",
+            "priority": "medium"
+          },
+          {
+            "label": "Conduct monthly brand consistency audits across content corpus",
+            "description": "Sample 100 AI-generated content pieces monthly and score them against brand voice rubrics, escalating to editorial leadership if consistency scores drop below 75% across any single content category.",
+            "priority": "medium"
+          }
+        ]
+      },
+      {
+        "heading": "Accessibility, Transparency & Governance",
+        "description": "Ensure AI-generated educational content meets Section 508 and WCAG 2.1 AA accessibility standards, and establish institutional governance structures for ongoing AI oversight and accountability.",
+        "items": [
+          {
+            "label": "Audit all AI-generated content for Section 508 and WCAG 2.1 AA compliance",
+            "description": "Run automated accessibility scans (e.g., axe, WAVE) on every published AI-generated content page, ensuring proper heading structure, alt text for images, sufficient color contrast, and keyboard navigability before student access.",
+            "priority": "critical"
+          },
+          {
+            "label": "Generate accessible alternative formats for all AI-produced materials",
+            "description": "Configure the content pipeline to automatically produce screen-reader-compatible HTML, large-print PDF, and audio transcript versions of every AI-generated lesson or article to serve students with disabilities.",
+            "priority": "critical"
+          },
+          {
+            "label": "Disclose AI involvement in content creation to students and parents",
+            "description": "Add a visible, plain-language disclosure label to all AI-generated or AI-assisted content (e.g., 'This content was created with AI assistance and reviewed by a certified educator') in compliance with emerging state AI transparency laws.",
+            "priority": "high"
+          },
+          {
+            "label": "Establish an AI Content Governance Committee with defined roles",
+            "description": "Form a standing committee including a data privacy officer, instructional technology lead, legal counsel, and student representative to review AI content policies quarterly and approve any changes to LLM models or prompt frameworks.",
+            "priority": "high"
+          },
+          {
+            "label": "Document AI system limitations and communicate them to educators",
+            "description": "Publish an internal technical limitations brief for all educators using the AI content system, explicitly stating known hallucination rates, subject-area weaknesses, and prohibited use cases (e.g., generating IEP goals, legal notices).",
+            "priority": "high"
+          },
+          {
+            "label": "Conduct annual third-party AI safety and compliance audits",
+            "description": "Engage an independent auditor annually to review AI content generation logs, data handling practices, bias testing results, and FERPA/COPPA compliance documentation, with findings reported to institutional leadership.",
+            "priority": "high"
+          },
+          {
+            "label": "Define an incident response plan specific to AI content failures",
+            "description": "Create a documented playbook covering detection, containment, notification, and remediation steps for AI content incidents including student data leakage, harmful content delivery, and factual misinformation, with response timelines under 4 hours for critical incidents.",
+            "priority": "high"
+          },
+          {
+            "label": "Train all educators and content staff on responsible AI use policies",
+            "description": "Require annual completion of an AI literacy training module covering FERPA obligations, prompt hygiene, content review responsibilities, and how to escalate AI-related concerns, with completion tracked in the institution's LMS.",
+            "priority": "medium"
+          }
+        ]
+      }
+    ],
+    "regulatoryNotes": {
+      "heading": "Regulatory Considerations",
+      "notes": [
+        {
+          "regulation": "FERPA (20 U.S.C. § 1232g)",
+          "note": "Any AI vendor receiving student education records must be designated as a 'school official' with a legitimate educational interest under FERPA, or a signed data processing agreement must establish equivalent protections. Transmitting student PII to LLM APIs without this designation constitutes an unauthorized disclosure and can trigger federal funding loss."
+        },
+        {
+          "regulation": "COPPA (15 U.S.C. §§ 6501–6506)",
+          "note": "AI content generation tools used by or for children under 13 must obtain verifiable parental consent before collecting any personal information, including behavioral data, usage logs, or content interaction history. Operators must also provide parents the ability to review and delete their child's data on demand, with no exceptions for educational context."
+        },
+        {
+          "regulation": "Section 508 of the Rehabilitation Act (29 U.S.C. § 794d)",
+          "note": "All AI-generated content published on federally funded educational platforms must conform to Section 508 technical standards and WCAG 2.1 Level AA. This includes dynamic content generated at runtime by LLMs, which must be tested for accessibility in its rendered form, not just at the template level."
+        },
+        {
+          "regulation": "State Education Data Privacy Laws",
+          "note": "Over 45 states have enacted student data privacy laws that impose requirements beyond FERPA, including prohibitions on behavioral advertising, mandatory data inventory disclosures, and stricter breach notification timelines (some as short as 30 days). Institutions must conduct a state-by-state regulatory mapping for every jurisdiction in which students are enrolled and update vendor contracts accordingly."
+        }
+      ]
+    },
+    "cta": {
+      "heading": "Automate Your Education Agent Compliance",
+      "description": "Use Vex to continuously monitor your AI content generation pipeline against FERPA, COPPA, and accessibility standards—so your team can focus on learning outcomes, not compliance gaps."
+    }
+  }
+}

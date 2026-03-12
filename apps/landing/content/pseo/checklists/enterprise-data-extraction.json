@@ -1,0 +1,222 @@
+{
+  "meta": {
+    "industry": "enterprise",
+    "useCase": "data-extraction",
+    "generatedAt": "2026-03-12"
+  },
+  "seo": {
+    "title": "Enterprise SaaS Data Extraction AI Agent Checklist",
+    "description": "Production readiness checklist for data extraction AI agents in enterprise saas. Covers SOC 2 Type II, ISO 27001, GDPR.",
+    "keywords": [
+      "Enterprise SaaS AI checklist",
+      "Data Extraction agent checklist",
+      "Enterprise SaaS AI compliance",
+      "AI agent production readiness",
+      "AI guardrails checklist"
+    ]
+  },
+  "content": {
+    "intro": "Deploying AI agents for structured data extraction in Enterprise SaaS environments introduces compounded risk across data privacy, tenant isolation, and contractual obligations. Schema-guided LLM extraction pipelines must satisfy SOC 2 Type II audit requirements, GDPR/CCPA data handling mandates, and per-customer data residency contracts simultaneously. Failures in this context carry severe consequences including enterprise contract termination, regulatory fines, and irreversible reputational damage.",
+    "sections": [
+      {
+        "heading": "Data Isolation & Tenant Security",
+        "description": "Ensure strict multi-tenant boundaries so that extracted data, intermediate LLM context, and output schemas never cross tenant boundaries during processing or storage.",
+        "items": [
+          {
+            "label": "Enforce tenant-scoped data partitioning at the extraction pipeline level",
+            "description": "Each LLM extraction job must be initialized with a tenant ID that gates all document reads, schema lookups, and output writes to that tenant's isolated data store. Validate this at the API gateway and again at the processing layer.",
+            "priority": "critical"
+          },
+          {
+            "label": "Prohibit cross-tenant context sharing in LLM prompt construction",
+            "description": "Audit prompt templates and retrieval-augmented generation (RAG) pipelines to confirm that no document chunks, examples, or schema fragments from one tenant can appear in another tenant's LLM context window.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement separate encryption keys per tenant for extracted output storage",
+            "description": "Use customer-managed encryption keys (CMEK) or per-tenant KMS keys so that extracted structured data at rest is cryptographically isolated. Document key rotation schedules in your SOC 2 controls.",
+            "priority": "critical"
+          },
+          {
+            "label": "Validate data residency compliance before routing extraction jobs",
+            "description": "Before dispatching a document to an LLM endpoint, check the tenant's contractual data residency requirements against the endpoint's geographic region. Block and alert if there is a mismatch.",
+            "priority": "critical"
+          },
+          {
+            "label": "Conduct quarterly tenant isolation penetration tests",
+            "description": "Engage a third-party security firm to attempt cross-tenant data leakage through the extraction API, prompt injection, and storage layer. Document findings and remediation timelines for SOC 2 evidence.",
+            "priority": "high"
+          },
+          {
+            "label": "Sanitize LLM-generated outputs before writing to tenant data stores",
+            "description": "Run extracted structured outputs through a sanitization layer that strips any injected metadata, unexpected fields, or content that references other tenants before persisting to the database.",
+            "priority": "high"
+          },
+          {
+            "label": "Maintain a tenant data flow diagram updated with each pipeline change",
+            "description": "Keep a living architecture diagram showing exactly where each tenant's documents enter, are processed, and exit the extraction pipeline. This is required evidence for ISO 27001 Annex A.8 asset management.",
+            "priority": "medium"
+          }
+        ]
+      },
+      {
+        "heading": "Schema Validation & Extraction Accuracy",
+        "description": "Structured output extraction must produce verifiably correct, complete, and type-consistent results. Implement multi-layer validation to catch LLM hallucinations, missing fields, and type coercions before data reaches downstream systems.",
+        "items": [
+          {
+            "label": "Enforce strict JSON Schema validation on every LLM extraction response",
+            "description": "Use a schema validation library (e.g., jsonschema, Zod, Pydantic) to validate every LLM output against the target schema before acceptance. Reject and retry or escalate any response that fails validation rather than passing partial data downstream.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement field-level confidence scoring for extracted values",
+            "description": "Where the LLM supports logprobs or confidence signals, attach a confidence score to each extracted field. Define per-field thresholds below which the record is flagged for human review rather than auto-accepted.",
+            "priority": "high"
+          },
+          {
+            "label": "Define and enforce completeness rules per document type",
+            "description": "For each document schema (e.g., invoice, contract, medical record), specify which fields are mandatory versus optional. Reject extractions where mandatory fields are null or absent and log the failure with document metadata for audit.",
+            "priority": "high"
+          },
+          {
+            "label": "Run type consistency checks beyond schema validation",
+            "description": "After schema validation, apply business-logic type checks such as date range plausibility, numeric value bounds, and enum membership. For example, reject an invoice where extracted_date is in the future or total_amount is negative.",
+            "priority": "high"
+          },
+          {
+            "label": "Maintain a golden dataset of labeled documents per tenant for regression testing",
+            "description": "Build a curated set of documents with verified ground-truth extractions for each major document type. Run extraction accuracy benchmarks against this dataset on every model or prompt change and gate deployments on accuracy thresholds.",
+            "priority": "high"
+          },
+          {
+            "label": "Implement retry logic with prompt variation for failed or low-confidence extractions",
+            "description": "On validation failure or low confidence, automatically retry with a modified prompt (e.g., chain-of-thought, few-shot examples) up to a configurable limit before escalating to human review. Log all retry attempts for audit.",
+            "priority": "medium"
+          },
+          {
+            "label": "Version-control all extraction schemas and track schema changes per tenant",
+            "description": "Store schemas in a versioned repository and record which schema version was used for each extraction job. This enables accurate re-extraction if a schema error is discovered and supports audit trail requirements.",
+            "priority": "medium"
+          },
+          {
+            "label": "Alert on extraction accuracy degradation detected via statistical process control",
+            "description": "Monitor rolling accuracy metrics per document type and trigger alerts when accuracy drops below a defined control limit. Investigate model drift, prompt regression, or document distribution shift as root causes.",
+            "priority": "medium"
+          }
+        ]
+      },
+      {
+        "heading": "Audit Logging & Compliance Traceability",
+        "description": "Every AI-assisted extraction action must be fully auditable to satisfy SOC 2 Type II, ISO 27001, GDPR Article 30, and enterprise SLA reporting requirements. Logs must be tamper-evident, queryable, and retained per contractual obligations.",
+        "items": [
+          {
+            "label": "Log every extraction job with a complete audit record including inputs, outputs, and model metadata",
+            "description": "For each extraction, persist: tenant ID, document hash, schema version, LLM model and version, prompt template ID, raw LLM response, validation result, final extracted output, timestamp, and initiating user or service identity. Store in an append-only audit log.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement tamper-evident audit log storage using cryptographic chaining or WORM storage",
+            "description": "Write audit logs to a WORM (Write Once Read Many) storage bucket or use hash-chaining so that any modification or deletion of log records is detectable. This is required for SOC 2 CC7.2 and ISO 27001 A.12.4.",
+            "priority": "critical"
+          },
+          {
+            "label": "Enforce role-based access control on audit log access with separation of duties",
+            "description": "Restrict audit log read access to compliance and security roles only. Ensure that the engineering team running the extraction pipeline cannot modify or delete their own audit records. Document this control for SOC 2 evidence.",
+            "priority": "critical"
+          },
+          {
+            "label": "Provide tenant-scoped audit log export APIs for enterprise customer compliance teams",
+            "description": "Build an authenticated API endpoint that allows enterprise customers to export their own audit logs in a standard format (e.g., JSON, CSV) for their internal compliance reviews. Scope exports strictly to the requesting tenant's data.",
+            "priority": "high"
+          },
+          {
+            "label": "Define and enforce log retention periods per customer contract and regulation",
+            "description": "Map each customer's contractual log retention requirement and applicable regulation (e.g., GDPR minimum, SOC 2 one-year minimum) to automated retention policies. Alert compliance teams 30 days before any retention period expires.",
+            "priority": "high"
+          },
+          {
+            "label": "Log all human review interventions and override decisions in the audit trail",
+            "description": "When a human reviewer accepts, rejects, or modifies an AI-extracted field, record the reviewer's identity, timestamp, original AI output, and final accepted value in the audit log. This creates a complete provenance chain.",
+            "priority": "high"
+          },
+          {
+            "label": "Generate automated SLA compliance reports from audit log data",
+            "description": "Build reporting pipelines that aggregate audit log data to produce per-tenant SLA metrics including extraction latency, accuracy rates, error rates, and uptime. Deliver these reports on the cadence specified in each enterprise contract.",
+            "priority": "medium"
+          }
+        ]
+      },
+      {
+        "heading": "GDPR, CCPA & Data Lifecycle Governance",
+        "description": "Documents processed for extraction frequently contain personal data subject to GDPR and CCPA. Establish clear data lifecycle controls covering lawful basis, data minimization, subject rights fulfillment, and secure deletion across the extraction pipeline.",
+        "items": [
+          {
+            "label": "Classify all document types for personal data content before onboarding to the extraction pipeline",
+            "description": "Before enabling extraction for a new document type, conduct a data classification review to identify whether it contains PII, sensitive personal data (GDPR Article 9), or California personal information. Document the classification and required handling controls.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement automated PII detection and redaction for fields not required by the extraction schema",
+            "description": "Before sending documents to the LLM, run a PII detection pass and redact any personal data fields that are not part of the target extraction schema. This enforces GDPR data minimization and reduces LLM exposure to unnecessary sensitive data.",
+            "priority": "critical"
+          },
+          {
+            "label": "Establish and enforce data retention and deletion schedules for raw documents and extracted outputs",
+            "description": "Define maximum retention periods for raw input documents, intermediate LLM prompts/responses, and final extracted outputs. Implement automated deletion jobs and verify deletion with cryptographic proof of erasure to support GDPR Article 17 right to erasure requests.",
+            "priority": "critical"
+          },
+          {
+            "label": "Build a data subject access request (DSAR) fulfillment workflow covering extracted data",
+            "description": "Ensure that DSAR workflows can locate and export all extracted data fields containing a specific data subject's information across all document types and tenants. Test fulfillment end-to-end and document the process for GDPR Article 15 compliance.",
+            "priority": "high"
+          },
+          {
+            "label": "Maintain a GDPR Article 30 Record of Processing Activities (RoPA) entry for the extraction pipeline",
+            "description": "Create and maintain a RoPA entry that documents the purpose of extraction, categories of personal data processed, data recipients (including LLM API providers), retention periods, and cross-border transfer mechanisms.",
+            "priority": "high"
+          },
+          {
+            "label": "Conduct a Data Protection Impact Assessment (DPIA) for high-risk extraction use cases",
+            "description": "For document types involving special category data (health, financial, legal), complete a DPIA per GDPR Article 35 before deployment. Document risk mitigations and obtain DPO sign-off. Review the DPIA annually or on significant pipeline changes.",
+            "priority": "high"
+          },
+          {
+            "label": "Verify LLM API provider data processing agreements (DPAs) cover your extraction use case",
+            "description": "Confirm that your LLM provider's DPA explicitly covers the document types and data categories you are processing, prohibits training on your data, and specifies data deletion timelines. Obtain updated DPAs when switching providers or models.",
+            "priority": "high"
+          },
+          {
+            "label": "Implement CCPA opt-out signal propagation through the extraction pipeline",
+            "description": "If a California consumer exercises their opt-out of sale or sharing rights, ensure that signal propagates to suppress their data from any extraction jobs that feed downstream analytics or third-party integrations. Log the suppression event in the audit trail.",
+            "priority": "medium"
+          }
+        ]
+      }
+    ],
+    "regulatoryNotes": {
+      "heading": "Regulatory Considerations",
+      "notes": [
+        {
+          "regulation": "SOC 2 Type II + ISO 27001",
+          "note": "Your extraction pipeline's audit logs, access controls, and change management processes will be directly examined during SOC 2 Type II and ISO 27001 audits. Ensure that every LLM model version change, schema update, and prompt template modification is captured in a change management log with approver identity and rollback plan. Auditors will test whether controls operated continuously over the audit period, so gaps in logging or access reviews will result in exceptions."
+        },
+        {
+          "regulation": "GDPR Cross-Border Transfers",
+          "note": "If your LLM API provider processes data outside the EU/EEA, you must have a valid transfer mechanism in place such as Standard Contractual Clauses (SCCs) or Binding Corporate Rules. For enterprise customers with EU data residency requirements, validate that the LLM inference endpoint, any fine-tuning infrastructure, and log storage are all within the contractually specified region. A single misconfigured routing rule that sends an EU customer's document to a US endpoint constitutes a GDPR violation."
+        },
+        {
+          "regulation": "CCPA / CPRA",
+          "note": "Under CPRA, sensitive personal information (SPI) categories including financial data, health data, and precise geolocation extracted from documents carry heightened obligations including the right to limit use. If your extraction pipeline surfaces SPI fields to downstream systems or third-party integrations, you must provide a 'Limit the Use of My Sensitive Personal Information' opt-out mechanism and honor it within 15 business days. Ensure your data inventory maps which extracted fields qualify as SPI."
+        },
+        {
+          "regulation": "Enterprise SLA & Contractual Obligations",
+          "note": "Enterprise contracts typically specify extraction accuracy SLAs, uptime guarantees, incident notification windows (often 24-72 hours for data incidents), and audit rights that allow customers to inspect your AI pipeline controls. Before deploying a new LLM model or changing extraction schemas, review whether the change requires customer notification under change management clauses. SLA breaches triggered by AI extraction failures—such as incorrect data populating a customer's ERP system—may carry financial penalties and termination rights."
+        }
+      ]
+    },
+    "cta": {
+      "heading": "Automate Your Enterprise SaaS Agent Compliance",
+      "description": "Use Vex to continuously monitor your AI extraction pipeline against SOC 2, GDPR, and enterprise SLA requirements—catching compliance gaps before your next audit or customer review."
+    }
+  }
+}

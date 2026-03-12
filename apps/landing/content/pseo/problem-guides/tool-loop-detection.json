@@ -1,0 +1,123 @@
+{
+  "meta": {
+    "slug": "tool-loop-detection",
+    "generatedAt": "2026-03-12"
+  },
+  "seo": {
+    "title": "Tool Loop Detection in AI Agents",
+    "description": "Complete guide to tool loop detection in ai agents. Learn detection methods, fixes, and best practices for production AI agents.",
+    "keywords": [
+      "tool-loop-detection-in-ai-agents",
+      "AI agent reliability",
+      "agent monitoring"
+    ]
+  },
+  "content": {
+    "intro": "Tool loops occur when an AI agent repeatedly invokes the same tool or sequence of tools without making meaningful progress toward its goal, consuming resources and potentially causing downstream failures. Unlike infinite loops in traditional software, tool loops in AI agents are often subtle — the agent believes it is making progress because each call returns a result, but the overall task never converges. Detecting and breaking these loops is critical for building reliable, cost-efficient agentic systems.",
+    "whatIsIt": {
+      "heading": "What Is Tool Loop Detection in AI Agents?",
+      "explanation": "A tool loop happens when an AI agent's reasoning cycle causes it to call the same tool — or a fixed sequence of tools — repeatedly without the state of the task advancing toward completion. This is distinct from legitimate retry logic; in a tool loop, the agent is not recovering from a transient error but is instead stuck in a reasoning pattern that keeps regenerating the same action. The loop may be tight (calling one tool over and over) or wide (cycling through several tools in a fixed order), and it can persist indefinitely unless an external circuit breaker intervenes.\n\nThe root cause is usually a mismatch between what the tool returns and what the agent's planner expects. For example, a search tool might return results that the LLM interprets as 'not yet sufficient,' causing it to search again with a nearly identical query. Because the LLM has no persistent memory of its own call history beyond the context window, it may not recognize that it has already executed this exact action multiple times. As context windows fill up with repeated tool outputs, the cost per step rises sharply and the quality of reasoning often degrades.\n\nTool loops are especially dangerous in autonomous, long-horizon agents where human oversight is minimal. A loop that runs for hundreds of iterations can exhaust API rate limits, incur significant financial cost, corrupt stateful resources (such as a database being written to repeatedly), or trigger downstream systems in unintended ways. Robust agent frameworks must therefore include explicit loop detection as a first-class reliability primitive, not an afterthought.",
+      "examples": [
+        {
+          "scenario": "A research agent is asked to summarize a topic. It calls a web search tool, decides the results are incomplete, refines the query slightly, calls the search tool again, and repeats this cycle 40+ times because the LLM never judges the results as 'sufficient.'",
+          "consequence": "The agent exhausts its token budget and API rate limits without producing any output, and the user receives a timeout error after several minutes of wasted compute."
+        },
+        {
+          "scenario": "A coding agent attempts to fix a failing unit test. It reads the file, writes a patch, runs the test, sees it still fails, reads the same file again, writes a nearly identical patch, and loops indefinitely because the underlying bug requires a different approach the agent cannot discover.",
+          "consequence": "The file is written to dozens of times with minor variations, leaving it in a corrupted intermediate state, and the CI pipeline is blocked until a human intervenes."
+        },
+        {
+          "scenario": "A customer support agent tries to look up an order by calling a database query tool. The query returns an empty result due to a schema mismatch. The agent retries the same query in a loop, interpreting each empty result as a transient failure rather than a structural problem.",
+          "consequence": "The database receives hundreds of redundant queries, degrading performance for other users, and the support ticket is never resolved."
+        },
+        {
+          "scenario": "A multi-tool agent cycles between a 'get_current_weather' tool and a 'plan_route' tool because the route planner requires a destination the agent has not yet confirmed, and the weather tool output keeps prompting it to re-plan before confirming the destination.",
+          "consequence": "The agent oscillates between two tools indefinitely, never completing either subtask, and the session terminates due to a wall-clock timeout with no useful result returned to the user."
+        }
+      ]
+    },
+    "howToDetect": {
+      "heading": "How to Detect It",
+      "methods": [
+        {
+          "name": "Call Frequency Fingerprinting",
+          "description": "Track a rolling hash or signature of each tool call (tool name + normalized arguments). Maintain a counter per unique signature within a session. If any signature exceeds a configurable threshold (e.g., 3 identical calls), flag the session as looping. This catches tight loops where the exact same invocation repeats and is cheap to compute at runtime.",
+          "effectiveness": "high"
+        },
+        {
+          "name": "State Progress Monitoring",
+          "description": "After each tool call, evaluate whether the agent's task state has meaningfully changed — for example, by comparing a hash of the agent's working memory or the set of facts it has accumulated. If N consecutive tool calls produce no measurable change in state, declare a loop. This catches wide loops where different tools are called but the net effect on progress is zero.",
+          "effectiveness": "high"
+        },
+        {
+          "name": "Step Budget Enforcement",
+          "description": "Impose a hard maximum on the total number of tool calls per task or per planning cycle. When the budget is exhausted, interrupt the agent and return a partial result or escalate to a human. While this does not distinguish loops from legitimate long-running tasks, it provides a reliable safety net that prevents runaway resource consumption in all cases.",
+          "effectiveness": "medium"
+        },
+        {
+          "name": "Semantic Similarity Clustering of Tool Inputs",
+          "description": "Embed the arguments passed to each tool call and cluster them over the session. If a cluster of semantically similar calls grows beyond a threshold without a corresponding change in task completion status, treat it as a soft loop signal. This is more computationally expensive but catches cases where the agent varies its phrasing slightly while repeating the same logical action, evading exact-match fingerprinting.",
+          "effectiveness": "medium"
+        }
+      ]
+    },
+    "howToFix": {
+      "heading": "How to Fix It",
+      "strategies": [
+        {
+          "name": "Stateful Loop Guard Middleware",
+          "description": "Wrap the agent's tool execution layer with a middleware class that tracks call history and raises an exception or returns a synthetic error message when a loop is detected. Injecting this at the framework level means every tool call passes through the guard without requiring changes to individual tool implementations.",
+          "code": "import hashlib\nimport json\nfrom collections import defaultdict\nfrom typing import Any, Callable\n\nclass ToolLoopGuard:\n    def __init__(self, max_identical_calls: int = 3, max_total_calls: int = 50):\n        self.max_identical_calls = max_identical_calls\n        self.max_total_calls = max_total_calls\n        self._call_counts: dict[str, int] = defaultdict(int)\n        self._total_calls: int = 0\n\n    def _fingerprint(self, tool_name: str, args: dict) -> str:\n        payload = json.dumps({\"tool\": tool_name, \"args\": args}, sort_keys=True)\n        return hashlib.sha256(payload.encode()).hexdigest()\n\n    def check(self, tool_name: str, args: dict) -> None:\n        self._total_calls += 1\n        if self._total_calls > self.max_total_calls:\n            raise RuntimeError(\n                f\"Tool call budget exceeded ({self.max_total_calls} calls). \"\n                \"Task may be stuck in a loop. Aborting.\"\n            )\n        fp = self._fingerprint(tool_name, args)\n        self._call_counts[fp] += 1\n        if self._call_counts[fp] > self.max_identical_calls:\n            raise RuntimeError(\n                f\"Tool loop detected: '{tool_name}' called with identical \"\n                f\"arguments {self._call_counts[fp]} times. \"\n                \"Breaking loop to prevent runaway execution.\"\n            )\n\n    def wrap(self, tool_fn: Callable) -> Callable:\n        def guarded(*args, **kwargs):\n            tool_name = tool_fn.__name__\n            self.check(tool_name, kwargs)\n            return tool_fn(*args, **kwargs)\n        return guarded\n\n# Usage\nguard = ToolLoopGuard(max_identical_calls=3, max_total_calls=50)\n\n@guard.wrap\ndef search_web(query: str) -> str:\n    # ... real implementation\n    return f\"Results for: {query}\"",
+          "language": "python"
+        },
+        {
+          "name": "Loop-Aware System Prompt Injection",
+          "description": "Dynamically inject a summary of recent tool calls into the agent's system prompt or context before each LLM inference step. This gives the model explicit visibility into its own call history, enabling it to self-correct by recognizing repetition and trying a different approach. Combine with an instruction like 'If you have already called this tool with similar arguments, try a different strategy instead of repeating the call.'",
+          "code": "from collections import deque\nfrom dataclasses import dataclass, field\nfrom typing import Optional\n\n@dataclass\nclass ToolCallRecord:\n    tool_name: str\n    args_summary: str\n    result_summary: str\n\nclass LoopAwareContextBuilder:\n    def __init__(self, history_window: int = 10):\n        self.history: deque[ToolCallRecord] = deque(maxlen=history_window)\n\n    def record(self, tool_name: str, args: dict, result: str) -> None:\n        self.history.append(ToolCallRecord(\n            tool_name=tool_name,\n            args_summary=str(args)[:120],\n            result_summary=result[:200]\n        ))\n\n    def build_history_prompt(self) -> str:\n        if not self.history:\n            return \"\"\n        lines = [\"## Recent Tool Call History (avoid repeating these):\\n\"]\n        for i, record in enumerate(self.history, 1):\n            lines.append(\n                f\"{i}. Tool: {record.tool_name} | \"\n                f\"Args: {record.args_summary} | \"\n                f\"Result: {record.result_summary}\"\n            )\n        lines.append(\n            \"\\nIf your next action is identical or semantically similar to \"\n            \"a recent call above, choose a different approach instead.\\n\"\n        )\n        return \"\\n\".join(lines)\n\n    def augment_messages(self, messages: list[dict]) -> list[dict]:\n        history_prompt = self.build_history_prompt()\n        if not history_prompt:\n            return messages\n        # Inject as a system message before the last user message\n        augmented = list(messages)\n        augmented.insert(-1, {\"role\": \"system\", \"content\": history_prompt})\n        return augmented\n\n# Usage in agent loop\nctx = LoopAwareContextBuilder(history_window=8)\n# After each tool call:\nctx.record(\"search_web\", {\"query\": \"climate change 2024\"}, \"10 results returned\")\nmessages = ctx.augment_messages(current_messages)",
+          "language": "python"
+        },
+        {
+          "name": "Exponential Backoff with Forced Strategy Rotation",
+          "description": "When a repeated tool call is detected, instead of immediately aborting, force the agent to pause and reconsider by injecting a structured feedback message into the conversation. Escalate the intervention on each repeated offense: first warn, then suggest alternatives, then hard-stop. This gives the agent a chance to self-correct before the session is terminated.",
+          "code": "from enum import Enum\nfrom typing import Optional\n\nclass LoopSeverity(Enum):\n    WARNING = 1\n    INTERVENTION = 2\n    ABORT = 3\n\nclass GradualLoopIntervenor:\n    MESSAGES = {\n        LoopSeverity.WARNING: (\n            \"[SYSTEM NOTICE] You have called '{tool}' with similar arguments \"\n            \"{count} time(s). Consider whether this approach is working.\"\n        ),\n        LoopSeverity.INTERVENTION: (\n            \"[SYSTEM INTERVENTION] You have called '{tool}' {count} time(s) \"\n            \"without progress. You MUST try a fundamentally different approach. \"\n            \"Do not call '{tool}' again until you have attempted at least one \"\n            \"other strategy.\"\n        ),\n        LoopSeverity.ABORT: (\n            \"[SYSTEM ABORT] Repeated tool loop detected for '{tool}' ({count} calls). \"\n            \"Task cannot be completed with the current strategy. \"\n            \"Returning partial results and escalating to human review.\"\n        ),\n    }\n\n    def __init__(self, warn_at: int = 2, intervene_at: int = 4, abort_at: int = 6):\n        self.thresholds = {\n            LoopSeverity.WARNING: warn_at,\n            LoopSeverity.INTERVENTION: intervene_at,\n            LoopSeverity.ABORT: abort_at,\n        }\n        self._counts: dict[str, int] = {}\n\n    def evaluate(self, tool_name: str) -> Optional[tuple[LoopSeverity, str]]:\n        self._counts[tool_name] = self._counts.get(tool_name, 0) + 1\n        count = self._counts[tool_name]\n        for severity in reversed(list(LoopSeverity)):\n            if count >= self.thresholds[severity]:\n                msg = self.MESSAGES[severity].format(tool=tool_name, count=count)\n                return severity, msg\n        return None\n\n    def should_abort(self, tool_name: str) -> bool:\n        count = self._counts.get(tool_name, 0)\n        return count >= self.thresholds[LoopSeverity.ABORT]\n\n# Usage\nintervenor = GradualLoopIntervenor()\nresult = intervenor.evaluate(\"search_web\")\nif result:\n    severity, message = result\n    if severity == LoopSeverity.ABORT:\n        raise RuntimeError(message)\n    else:\n        # Inject message into agent context\n        agent_messages.append({\"role\": \"system\", \"content\": message})",
+          "language": "python"
+        },
+        {
+          "name": "Task Completion Validator with Dead-End Detection",
+          "description": "Implement a separate validator that runs after each tool call to assess whether the agent's accumulated outputs constitute meaningful progress toward the defined goal. If the validator determines the agent is in a dead end — where no combination of available tools can advance the task given the current state — it triggers an early exit with a structured explanation rather than allowing the agent to loop until budget exhaustion.",
+          "code": "from dataclasses import dataclass\nfrom typing import Callable, Any\nimport time\n\n@dataclass\nclass ProgressSnapshot:\n    step: int\n    timestamp: float\n    state_hash: str\n    tool_called: str\n\nclass TaskProgressValidator:\n    def __init__(\n        self,\n        state_extractor: Callable[[], Any],\n        stagnation_window: int = 5,\n        hash_fn: Callable[[Any], str] = lambda s: str(hash(str(s)))\n    ):\n        self.state_extractor = state_extractor\n        self.stagnation_window = stagnation_window\n        self.hash_fn = hash_fn\n        self.snapshots: list[ProgressSnapshot] = []\n        self.step = 0\n\n    def record_step(self, tool_called: str) -> None:\n        state = self.state_extractor()\n        self.snapshots.append(ProgressSnapshot(\n            step=self.step,\n            timestamp=time.time(),\n            state_hash=self.hash_fn(state),\n            tool_called=tool_called\n        ))\n        self.step += 1\n\n    def is_stagnant(self) -> bool:\n        if len(self.snapshots) < self.stagnation_window:\n            return False\n        recent = self.snapshots[-self.stagnation_window:]\n        unique_hashes = {s.state_hash for s in recent}\n        # If all recent states are identical, we're stagnant\n        return len(unique_hashes) == 1\n\n    def get_stagnation_report(self) -> str:\n        if not self.is_stagnant():\n            return \"\"\n        recent = self.snapshots[-self.stagnation_window:]\n        tools_tried = [s.tool_called for s in recent]\n        return (\n            f\"Dead-end detected: task state has not changed over the last \"\n            f\"{self.stagnation_window} steps. \"\n            f\"Tools attempted: {tools_tried}. \"\n            \"Recommend escalating to human review or returning partial results.\"\n        )\n\n# Usage\ndef get_agent_state():\n    # Return a hashable representation of the agent's working memory\n    return frozenset(agent.memory.items())\n\nvalidator = TaskProgressValidator(state_extractor=get_agent_state, stagnation_window=5)\n\n# In agent loop:\nvalidator.record_step(\"search_web\")\nif validator.is_stagnant():\n    print(validator.get_stagnation_report())\n    raise RuntimeError(\"Task stagnation detected. Aborting loop.\")",
+          "language": "python"
+        }
+      ]
+    },
+    "bestPractices": {
+      "heading": "Best Practices",
+      "tips": [
+        {
+          "title": "Set Explicit Step Budgets at Task Creation Time",
+          "description": "Every agent task should be initialized with a maximum step count appropriate to its complexity — not a single global default. A simple lookup task might warrant 10 steps; a complex research task might allow 100. Encoding this budget at task creation time forces you to reason about expected complexity upfront and provides a hard safety net that prevents any task from running indefinitely regardless of loop detection accuracy."
+        },
+        {
+          "title": "Make Tool Call History Visible to the LLM",
+          "description": "LLMs cannot avoid repeating actions they cannot see. Always include a structured summary of recent tool calls in the agent's context window, especially as the session grows long. This is the single most effective prompt-level intervention for self-correcting loops, because it leverages the model's own reasoning ability to recognize and break repetitive patterns before they require external intervention."
+        },
+        {
+          "title": "Distinguish Retries from Loops in Your Instrumentation",
+          "description": "Not all repeated tool calls are loops — legitimate retry logic for transient failures is healthy behavior. Your monitoring and alerting should distinguish between calls that are retrying due to explicit error codes (which should be rate-limited but allowed) and calls that are repeating despite receiving successful responses (which indicate a reasoning loop). Conflating the two leads to either false positives that break valid retries or false negatives that miss real loops."
+        },
+        {
+          "title": "Log Every Tool Call with Full Arguments for Post-Mortem Analysis",
+          "description": "When a loop does occur, the ability to replay the exact sequence of tool calls and their arguments is invaluable for diagnosing the root cause. Instrument your agent framework to emit structured logs for every tool invocation, including timestamps, arguments, response summaries, and the agent's stated reasoning. These logs are the foundation for both real-time loop detection and offline analysis that improves future agent behavior."
+        },
+        {
+          "title": "Design Tools to Return Progress Signals, Not Just Results",
+          "description": "Where possible, design tool interfaces to return metadata that helps the agent assess whether it is making progress — for example, a search tool that returns a 'novelty score' indicating how different the results are from previous queries, or a code execution tool that returns a structured diff of what changed. Richer tool outputs give the LLM planner more signal to work with and reduce the likelihood that it will re-invoke a tool because it cannot tell whether the previous call was useful."
+        }
+      ]
+    },
+    "cta": {
+      "heading": "Detect and Fix This Automatically with Vex",
+      "description": "Vex monitors your AI agents in real time, automatically detecting tool loops, step budget violations, and task stagnation — and providing the diagnostics you need to fix them before they impact your users."
+    }
+  }
+}

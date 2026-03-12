@@ -1,0 +1,123 @@
+{
+  "meta": {
+    "slug": "hallucination-detection",
+    "generatedAt": "2026-03-12"
+  },
+  "seo": {
+    "title": "AI Agent Hallucination Detection Guide",
+    "description": "Complete guide to ai agent hallucination detection guide. Learn detection methods, fixes, and best practices for production AI agents.",
+    "keywords": [
+      "ai-agent-hallucination-detection-guide",
+      "AI agent reliability",
+      "agent monitoring"
+    ]
+  },
+  "content": {
+    "intro": "AI agent hallucination occurs when a language model generates confident, plausible-sounding outputs that are factually incorrect, fabricated, or unsupported by the provided context. Unlike simple errors, hallucinations are particularly dangerous because they often appear authoritative and well-reasoned, making them difficult for end-users to identify. In agentic systems where AI drives multi-step workflows, a single hallucination can cascade into compounding failures across downstream tasks.",
+    "whatIsIt": {
+      "heading": "What Is AI Agent Hallucination Detection?",
+      "explanation": "AI agent hallucination detection is the systematic process of identifying when an AI model produces outputs that deviate from verifiable facts, contradict source documents, or fabricate information entirely. In the context of AI agents, this problem is amplified because agents often operate autonomously over extended task chains — a hallucinated API endpoint, a fabricated database record, or an invented regulatory requirement can silently corrupt an entire workflow before any human reviews the output.\n\nHallucinations broadly fall into two categories: intrinsic hallucinations, where the model contradicts information explicitly present in the source context, and extrinsic hallucinations, where the model introduces information that cannot be verified or refuted from the provided context. Both types are problematic in production systems, but extrinsic hallucinations are especially insidious in agentic pipelines because they may never be caught by simple consistency checks against a known ground truth.\n\nDetection strategies range from lightweight heuristic checks to sophisticated cross-validation pipelines involving secondary models, retrieval-augmented grounding, and structured output verification. The right approach depends on the latency tolerance, cost constraints, and risk profile of the application — a medical diagnosis agent demands far more rigorous hallucination controls than a creative writing assistant.",
+      "examples": [
+        {
+          "scenario": "A customer support agent is asked about a product's return policy. The model confidently states a 60-day return window when the actual policy is 30 days, fabricating a detail not present in the retrieved knowledge base.",
+          "consequence": "Customers act on incorrect information, leading to disputes, refund denials, and erosion of brand trust. Support teams must manually remediate hundreds of cases, and the company faces potential legal exposure."
+        },
+        {
+          "scenario": "A code-generation agent tasked with integrating a third-party API invents a non-existent endpoint path and fabricates response schema fields that do not exist in the actual API documentation.",
+          "consequence": "Engineers spend hours debugging integration failures before discovering the root cause. In automated CI/CD pipelines, this can block deployments and introduce subtle runtime errors that only surface in production."
+        },
+        {
+          "scenario": "A research summarization agent cites a specific academic paper with a plausible-sounding title, author list, and DOI to support a claim, but the paper does not actually exist.",
+          "consequence": "The fabricated citation propagates into reports, presentations, and downstream decisions. If published or shared externally, the organization's credibility is severely damaged and the underlying analysis is invalidated."
+        },
+        {
+          "scenario": "A financial analysis agent generates a quarterly earnings summary and invents specific revenue figures and growth percentages that were never present in the source financial documents provided.",
+          "consequence": "Investment decisions or internal strategy pivots are made based on fabricated data. Regulatory filings or investor communications containing hallucinated figures can result in compliance violations and significant financial penalties."
+        }
+      ]
+    },
+    "howToDetect": {
+      "heading": "How to Detect It",
+      "methods": [
+        {
+          "name": "Retrieval-Grounded Consistency Checking",
+          "description": "After the agent generates a response, a secondary verification step retrieves the source documents or knowledge base chunks that were used as context and programmatically checks whether every factual claim in the output can be traced back to a specific passage. Claims with no supporting source are flagged as potential hallucinations. This method works well in RAG-based architectures where the retrieval corpus is well-defined.",
+          "effectiveness": "high"
+        },
+        {
+          "name": "Self-Consistency Sampling",
+          "description": "The same prompt is submitted to the model multiple times with non-zero temperature, generating a set of diverse responses. The outputs are then compared for factual consistency — claims that appear in only one or two responses out of many are flagged as low-confidence and potentially hallucinated. High variance across samples on specific facts is a strong signal of unreliable generation.",
+          "effectiveness": "medium"
+        },
+        {
+          "name": "Entailment-Based NLI Verification",
+          "description": "A Natural Language Inference (NLI) model is used to evaluate whether each claim in the agent's output is entailed by, neutral to, or contradicted by the source context. Claims scored as 'neutral' or 'contradiction' by the NLI classifier are surfaced for review. This approach is computationally efficient and can be run inline as a post-generation filter without requiring additional LLM calls.",
+          "effectiveness": "high"
+        },
+        {
+          "name": "Structured Output Schema Validation",
+          "description": "By constraining agent outputs to a strict JSON or Pydantic schema and cross-referencing field values against known-good data sources (e.g., a product database, an API spec, a regulatory document), you can catch hallucinated values that violate expected ranges, formats, or enumerated options. This is a lightweight first-pass filter that catches a large class of factual errors before more expensive verification steps.",
+          "effectiveness": "medium"
+        }
+      ]
+    },
+    "howToFix": {
+      "heading": "How to Fix It",
+      "strategies": [
+        {
+          "name": "Implement a Hallucination Scoring Pipeline",
+          "description": "Build a post-generation scoring layer that uses an NLI model to evaluate each sentence in the agent's output against the retrieved context. Flag responses with a hallucination score above a defined threshold for human review or automatic regeneration with a more constrained prompt.",
+          "code": "from transformers import pipeline\nfrom typing import List, Dict\n\n# Load a pre-trained NLI model for entailment checking\nnli_pipeline = pipeline(\n    \"text-classification\",\n    model=\"cross-encoder/nli-deberta-v3-base\"\n)\n\ndef score_hallucination(\n    agent_output: str,\n    source_context: str,\n    threshold: float = 0.7\n) -> Dict:\n    \"\"\"\n    Score each sentence in agent_output for hallucination\n    against the provided source_context using NLI.\n    Returns a dict with per-sentence scores and an overall flag.\n    \"\"\"\n    sentences = [s.strip() for s in agent_output.split(\".\") if s.strip()]\n    results = []\n    hallucination_detected = False\n\n    for sentence in sentences:\n        # NLI: premise = source context, hypothesis = agent claim\n        nli_input = f\"{source_context} [SEP] {sentence}\"\n        prediction = nli_pipeline(nli_input)[0]\n        label = prediction[\"label\"]\n        score = prediction[\"score\"]\n\n        is_hallucination = label in [\"contradiction\", \"neutral\"] and score > threshold\n        if is_hallucination:\n            hallucination_detected = True\n\n        results.append({\n            \"sentence\": sentence,\n            \"label\": label,\n            \"score\": score,\n            \"flagged\": is_hallucination\n        })\n\n    return {\n        \"hallucination_detected\": hallucination_detected,\n        \"sentence_scores\": results\n    }\n\n# Example usage\ncontext = \"Our return policy allows returns within 30 days of purchase.\"\noutput = \"You can return items within 60 days. Refunds are processed in 5 business days.\"\n\nresult = score_hallucination(output, context)\nif result[\"hallucination_detected\"]:\n    print(\"WARNING: Potential hallucination detected in agent output.\")\n    for item in result[\"sentence_scores\"]:\n        if item[\"flagged\"]:\n            print(f\"  Flagged: '{item['sentence']}' ({item['label']}: {item['score']:.2f})\")",
+          "language": "python"
+        },
+        {
+          "name": "Enforce Structured Outputs with Pydantic Validation",
+          "description": "Force the agent to return structured, schema-validated outputs instead of free-form text. By defining strict Pydantic models and cross-referencing field values against authoritative data sources, you eliminate entire classes of hallucinated values before they propagate downstream.",
+          "code": "from pydantic import BaseModel, field_validator, ValidationError\nfrom typing import Optional\nimport re\n\n# Define the authoritative product catalog as ground truth\nPRODUCT_CATALOG = {\n    \"SKU-001\": {\"name\": \"Widget Pro\", \"price\": 49.99, \"return_days\": 30},\n    \"SKU-002\": {\"name\": \"Gadget Lite\", \"price\": 19.99, \"return_days\": 14},\n}\n\nclass ProductResponse(BaseModel):\n    sku: str\n    product_name: str\n    price_usd: float\n    return_window_days: int\n    summary: str\n\n    @field_validator(\"sku\")\n    @classmethod\n    def sku_must_exist(cls, v):\n        if v not in PRODUCT_CATALOG:\n            raise ValueError(f\"Hallucinated SKU '{v}' not found in product catalog.\")\n        return v\n\n    @field_validator(\"price_usd\")\n    @classmethod\n    def price_must_match_catalog(cls, v, info):\n        sku = info.data.get(\"sku\")\n        if sku and sku in PRODUCT_CATALOG:\n            expected = PRODUCT_CATALOG[sku][\"price\"]\n            if abs(v - expected) > 0.01:\n                raise ValueError(\n                    f\"Hallucinated price ${v} does not match catalog price ${expected} for {sku}.\"\n                )\n        return v\n\n    @field_validator(\"return_window_days\")\n    @classmethod\n    def return_days_must_match_catalog(cls, v, info):\n        sku = info.data.get(\"sku\")\n        if sku and sku in PRODUCT_CATALOG:\n            expected = PRODUCT_CATALOG[sku][\"return_days\"]\n            if v != expected:\n                raise ValueError(\n                    f\"Hallucinated return window {v} days does not match catalog value {expected} days.\"\n                )\n        return v\n\ndef validate_agent_response(raw_response: dict) -> Optional[ProductResponse]:\n    try:\n        validated = ProductResponse(**raw_response)\n        print(\"Response validated successfully.\")\n        return validated\n    except ValidationError as e:\n        print(f\"Hallucination detected in agent response:\\n{e}\")\n        return None\n\n# Simulated agent output with hallucinated price and return window\nagent_output = {\n    \"sku\": \"SKU-001\",\n    \"product_name\": \"Widget Pro\",\n    \"price_usd\": 79.99,        # Hallucinated — should be 49.99\n    \"return_window_days\": 60,  # Hallucinated — should be 30\n    \"summary\": \"The Widget Pro is our flagship product.\"\n}\n\nvalidate_agent_response(agent_output)",
+          "language": "python"
+        },
+        {
+          "name": "Use Self-Consistency Sampling with Majority Voting",
+          "description": "Generate multiple independent completions for the same query and use majority voting to identify the most consistent answer. Claims that appear in fewer than a configurable fraction of responses are treated as low-confidence and either discarded or escalated for human review.",
+          "code": "import openai\nfrom collections import Counter\nfrom typing import List\nimport json\n\nclient = openai.OpenAI()\n\ndef sample_responses(\n    prompt: str,\n    n_samples: int = 5,\n    temperature: float = 0.7\n) -> List[str]:\n    \"\"\"Generate multiple independent completions for the same prompt.\"\"\"\n    responses = []\n    for _ in range(n_samples):\n        response = client.chat.completions.create(\n            model=\"gpt-4o\",\n            messages=[{\"role\": \"user\", \"content\": prompt}],\n            temperature=temperature,\n            max_tokens=200\n        )\n        responses.append(response.choices[0].message.content.strip())\n    return responses\n\ndef extract_key_claim(response: str, claim_key: str) -> str:\n    \"\"\"\n    Extract a specific factual claim from a response.\n    In production, use a structured extraction prompt or JSON mode.\n    \"\"\"\n    # Simplified extraction — replace with structured output in production\n    lines = response.lower().split()\n    for i, word in enumerate(lines):\n        if claim_key.lower() in word and i + 1 < len(lines):\n            return lines[i + 1].strip(\".,;\")\n    return \"unknown\"\n\ndef majority_vote_check(\n    prompt: str,\n    claim_key: str,\n    n_samples: int = 5,\n    consensus_threshold: float = 0.6\n) -> dict:\n    \"\"\"\n    Run self-consistency sampling and check if a specific claim\n    reaches consensus across samples.\n    \"\"\"\n    responses = sample_responses(prompt, n_samples)\n    extracted_claims = [extract_key_claim(r, claim_key) for r in responses]\n    claim_counts = Counter(extracted_claims)\n    most_common_claim, most_common_count = claim_counts.most_common(1)[0]\n    consensus_ratio = most_common_count / n_samples\n    is_consistent = consensus_ratio >= consensus_threshold\n\n    return {\n        \"claim_key\": claim_key,\n        \"most_common_value\": most_common_claim,\n        \"consensus_ratio\": consensus_ratio,\n        \"is_consistent\": is_consistent,\n        \"all_values\": dict(claim_counts),\n        \"hallucination_risk\": \"low\" if is_consistent else \"high\"\n    }\n\n# Example: Check consistency of a factual claim across samples\nprompt = \"What is the standard return window for most US e-commerce retailers?\"\nresult = majority_vote_check(prompt, claim_key=\"days\", n_samples=5)\nprint(json.dumps(result, indent=2))\n\nif result[\"hallucination_risk\"] == \"high\":\n    print(f\"\\nWARNING: Low consensus ({result['consensus_ratio']:.0%}) on claim '{result['claim_key']}'. \"\n          f\"Values seen: {result['all_values']}. Escalating for human review.\")",
+          "language": "python"
+        },
+        {
+          "name": "Implement Citation-Enforced Prompting with Source Tracing",
+          "description": "Redesign agent prompts to require explicit citation of source passages for every factual claim. After generation, programmatically verify that each cited passage actually exists in the retrieved context and that the claim is semantically consistent with the cited text.",
+          "code": "import openai\nfrom typing import List, Dict, Optional\nimport json\n\nclient = openai.OpenAI()\n\nCITATION_ENFORCED_SYSTEM_PROMPT = \"\"\"\nYou are a precise research assistant. When answering questions:\n1. Base EVERY factual claim ONLY on the provided source documents.\n2. For each factual claim, include a citation in the format [SOURCE: <exact_quote_from_document>].\n3. If the source documents do not contain information to answer the question, say \"I cannot find this information in the provided sources.\"\n4. NEVER introduce facts not present in the source documents.\n\nReturn your response as JSON with this structure:\n{\n  \"answer\": \"your full answer with inline citations\",\n  \"claims\": [\n    {\n      \"claim\": \"the specific factual claim\",\n      \"citation\": \"exact quote from source document supporting this claim\"\n    }\n  ]\n}\n\"\"\"\n\ndef generate_cited_response(\n    question: str,\n    source_documents: List[str]\n) -> dict:\n    \"\"\"Generate a response that requires explicit citations for all claims.\"\"\"\n    context = \"\\n\\n\".join([f\"[Document {i+1}]: {doc}\" for i, doc in enumerate(source_documents)])\n    user_message = f\"Source Documents:\\n{context}\\n\\nQuestion: {question}\"\n\n    response = client.chat.completions.create(\n        model=\"gpt-4o\",\n        messages=[\n            {\"role\": \"system\", \"content\": CITATION_ENFORCED_SYSTEM_PROMPT},\n            {\"role\": \"user\", \"content\": user_message}\n        ],\n        response_format={\"type\": \"json_object\"},\n        temperature=0\n    )\n    return json.loads(response.choices[0].message.content)\n\ndef verify_citations(\n    cited_response: dict,\n    source_documents: List[str]\n) -> Dict:\n    \"\"\"Verify that each citation actually exists in the source documents.\"\"\"\n    all_source_text = \" \".join(source_documents).lower()\n    verification_results = []\n    hallucination_detected = False\n\n    for claim_obj in cited_response.get(\"claims\", []):\n        claim = claim_obj.get(\"claim\", \"\")\n        citation = claim_obj.get(\"citation\", \"\")\n\n        # Check if the cited text actually appears in the source documents\n        # In production, use semantic similarity for fuzzy matching\n        citation_found = citation.lower().strip() in all_source_text\n\n        if not citation_found:\n            hallucination_detected = True\n\n        verification_results.append({\n            \"claim\": claim,\n            \"citation\": citation,\n            \"citation_verified\": citation_found,\n            \"status\": \"verified\" if citation_found else \"HALLUCINATED_CITATION\"\n        })\n\n    return {\n        \"hallucination_detected\": hallucination_detected,\n        \"verification_results\": verification_results\n    }\n\n# Example usage\nsource_docs = [\n    \"Our return policy allows customers to return unused items within 30 days of purchase for a full refund.\",\n    \"Refunds are processed within 3-5 business days after the returned item is received at our warehouse.\"\n]\n\nquestion = \"What is the return policy and how long do refunds take?\"\n\ncited_response = generate_cited_response(question, source_docs)\nverification = verify_citations(cited_response, source_docs)\n\nprint(\"Agent Answer:\", cited_response.get(\"answer\"))\nprint(\"\\nCitation Verification:\")\nfor result in verification[\"verification_results\"]:\n    status_icon = \"✓\" if result[\"citation_verified\"] else \"✗\"\n    print(f\"  {status_icon} [{result['status']}] Claim: '{result['claim']}'\")\n    print(f\"     Citation: '{result['citation']}'\")\n\nif verification[\"hallucination_detected\"]:\n    print(\"\\nWARNING: Unverified citations detected. Response should not be served to end users.\")",
+          "language": "python"
+        }
+      ]
+    },
+    "bestPractices": {
+      "heading": "Best Practices",
+      "tips": [
+        {
+          "title": "Layer Multiple Detection Methods",
+          "description": "No single hallucination detection technique is sufficient on its own. Combine lightweight schema validation as a first-pass filter with NLI-based entailment checking for semantic verification, and reserve expensive self-consistency sampling for high-stakes outputs. A layered approach balances latency, cost, and detection coverage across different hallucination types."
+        },
+        {
+          "title": "Set Temperature to Zero for Factual Tasks",
+          "description": "For agent tasks that require factual accuracy — data extraction, document summarization, API call construction — always set the model temperature to 0. Higher temperatures increase creative variance, which directly increases hallucination rates. Reserve non-zero temperatures only for explicitly creative or generative tasks where factual grounding is less critical."
+        },
+        {
+          "title": "Design Prompts That Constrain Rather Than Invite",
+          "description": "Prompt engineering is your first line of defense. Explicitly instruct the model to only use information from the provided context, to say 'I don't know' when information is unavailable, and to avoid extrapolation. Negative constraints ('Do not invent information not present in the documents') are often more effective than positive instructions alone at reducing hallucination rates."
+        },
+        {
+          "title": "Log and Analyze Hallucination Patterns Over Time",
+          "description": "Treat hallucination events as first-class observability signals. Log every flagged output with its full context, the specific claims that failed verification, and the detection method that caught it. Aggregate these logs to identify systematic hallucination patterns — specific query types, knowledge domains, or prompt structures that consistently trigger unreliable generation — and use this data to drive targeted improvements."
+        },
+        {
+          "title": "Implement Human-in-the-Loop Escalation for High-Risk Domains",
+          "description": "For agent outputs in high-stakes domains such as medical, legal, financial, or safety-critical contexts, define a confidence threshold below which outputs are automatically escalated to human reviewers rather than served directly. Hallucination detection scores, citation verification results, and self-consistency ratios should all feed into a composite confidence score that gates whether an output is auto-approved or requires human sign-off."
+        }
+      ]
+    },
+    "cta": {
+      "heading": "Detect and Fix This Automatically with Vex",
+      "description": "Vex continuously monitors your AI agents for hallucinations in real time, automatically flagging low-confidence outputs, tracing fabricated claims back to their source, and triggering remediation workflows before hallucinated content reaches your users or downstream systems."
+    }
+  }
+}

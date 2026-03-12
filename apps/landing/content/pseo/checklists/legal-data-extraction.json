@@ -1,0 +1,213 @@
+{
+  "meta": {
+    "industry": "legal",
+    "useCase": "data-extraction",
+    "generatedAt": "2026-03-12"
+  },
+  "seo": {
+    "title": "Legal Data Extraction AI Agent Checklist",
+    "description": "Production readiness checklist for data extraction AI agents in legal. Covers Attorney-client privilege protections, Bar association ethics rules, Court filing standards.",
+    "keywords": [
+      "Legal AI checklist",
+      "Data Extraction agent checklist",
+      "Legal AI compliance",
+      "AI agent production readiness",
+      "AI guardrails checklist"
+    ]
+  },
+  "content": {
+    "intro": "Deploying AI agents for legal data extraction carries critical risk exposure — from hallucinated case citations triggering sanctions (as established in Mata v. Avianca) to inadvertent waiver of attorney-client privilege through improper data handling. This checklist operationalizes compliance requirements specific to schema-guided LLM extraction in legal workflows, ensuring every extracted field meets evidentiary standards and every process respects bar ethics rules. Failure to follow these controls can result in malpractice liability, bar sanctions, case dismissal, and irreversible client harm.",
+    "sections": [
+      {
+        "heading": "Data Ingestion & Privilege Protection",
+        "description": "Controls to ensure privileged and confidential client documents are handled lawfully before any LLM processing begins.",
+        "items": [
+          {
+            "label": "Privilege Classification Gate",
+            "description": "Implement an automated pre-processing classifier that flags documents as privileged, work-product protected, or non-privileged before routing to the extraction pipeline. No privileged document should enter an LLM call without explicit attorney authorization.",
+            "priority": "critical"
+          },
+          {
+            "label": "Client Data Isolation per Matter",
+            "description": "Enforce strict matter-level data segregation so that documents from one client matter are never co-mingled in the same extraction context window or vector store as another client's documents.",
+            "priority": "critical"
+          },
+          {
+            "label": "Model Training Opt-Out Enforcement",
+            "description": "Verify via API contract and technical controls that the LLM provider cannot use any submitted legal documents for model training or fine-tuning. Obtain written confirmation and audit this annually.",
+            "priority": "critical"
+          },
+          {
+            "label": "Document Provenance Logging",
+            "description": "Log the source file hash, upload timestamp, matter ID, and submitting user for every document entering the extraction pipeline to maintain a defensible chain of custody.",
+            "priority": "high"
+          },
+          {
+            "label": "PII and Confidential Field Masking",
+            "description": "Apply pre-extraction redaction or masking for Social Security numbers, financial account numbers, and medical identifiers in documents where those fields are not part of the extraction schema.",
+            "priority": "high"
+          },
+          {
+            "label": "Third-Party Vendor Data Processing Agreement",
+            "description": "Ensure a signed Data Processing Agreement (DPA) with the LLM API provider explicitly covers legal confidentiality obligations, data retention limits, and breach notification timelines.",
+            "priority": "high"
+          },
+          {
+            "label": "Access Control Audit for Document Store",
+            "description": "Restrict access to the raw document store to only the attorneys and paralegals assigned to the matter, enforced via role-based access control (RBAC) with quarterly access reviews.",
+            "priority": "medium"
+          }
+        ]
+      },
+      {
+        "heading": "Schema-Guided Extraction Accuracy & Validation",
+        "description": "Technical controls to ensure extracted structured outputs conform to defined schemas and meet the accuracy standards required for legal use.",
+        "items": [
+          {
+            "label": "Strict Schema Enforcement with JSON Schema Validation",
+            "description": "Define a versioned JSON Schema for every extraction target (e.g., contract clauses, case citations, party names) and run all LLM outputs through a schema validator before downstream use. Reject and flag any output that fails validation.",
+            "priority": "critical"
+          },
+          {
+            "label": "Citation Existence Verification",
+            "description": "For every case citation extracted, run an automated lookup against Westlaw, LexisNexis, or CourtListener API to confirm the citation resolves to a real, published opinion before the output is used or presented. Never pass unverified citations to attorneys or filings.",
+            "priority": "critical"
+          },
+          {
+            "label": "Field-Level Confidence Scoring",
+            "description": "Require the extraction pipeline to return a confidence score for each extracted field. Fields below a defined threshold (e.g., 0.85) must be routed to human review rather than auto-populated into downstream systems.",
+            "priority": "high"
+          },
+          {
+            "label": "Completeness Validation Against Document Type",
+            "description": "Maintain a required-fields manifest per document type (e.g., a contract must yield party names, effective date, governing law, and termination clause). Flag any extraction result missing required fields as incomplete rather than silently omitting them.",
+            "priority": "high"
+          },
+          {
+            "label": "Type Consistency Checks",
+            "description": "Enforce data type validation post-extraction: dates must parse as valid ISO 8601 dates, monetary values must be numeric with currency codes, and enumerated fields (e.g., jurisdiction) must match a controlled vocabulary list.",
+            "priority": "high"
+          },
+          {
+            "label": "Extraction Diff Auditing on Re-runs",
+            "description": "When the same document is re-processed (e.g., after a model update), automatically diff the new extraction output against the prior version and surface any field-level changes for attorney review before overwriting stored data.",
+            "priority": "medium"
+          },
+          {
+            "label": "Hallucination Detection for Quoted Text Fields",
+            "description": "For fields that extract verbatim quoted text (e.g., contract clause language), implement a string-match verification step that confirms the extracted quote exists verbatim in the source document. Reject any quote that cannot be located.",
+            "priority": "critical"
+          },
+          {
+            "label": "Schema Version Pinning per Matter",
+            "description": "Pin the extraction schema version used for each matter so that schema updates do not retroactively alter previously extracted data, preserving consistency for eDiscovery and litigation hold purposes.",
+            "priority": "medium"
+          }
+        ]
+      },
+      {
+        "heading": "Attorney Review & Ethics Compliance",
+        "description": "Workflow controls ensuring licensed attorney oversight of all AI-generated legal content in compliance with bar association ethics rules.",
+        "items": [
+          {
+            "label": "Mandatory Attorney Sign-Off Workflow",
+            "description": "Build a required human-in-the-loop approval step into the extraction pipeline so that no AI-extracted legal content (summaries, clause interpretations, citation lists) is delivered to clients or filed with courts without a licensed attorney reviewing and approving the output.",
+            "priority": "critical"
+          },
+          {
+            "label": "AI Disclosure Tagging on All Outputs",
+            "description": "Automatically append a disclosure label to every document or dataset produced by the extraction agent indicating it was AI-assisted, the model version used, and the date of attorney review, in compliance with emerging bar association AI disclosure guidance.",
+            "priority": "critical"
+          },
+          {
+            "label": "Competence Verification for Supervising Attorney",
+            "description": "Require that the supervising attorney has completed AI competency training (per ABA Model Rule 1.1 Comment 8) before being designated as the reviewer for AI-extracted outputs. Maintain training completion records.",
+            "priority": "high"
+          },
+          {
+            "label": "Conflict of Interest Check Before Processing",
+            "description": "Before ingesting any new matter's documents into the extraction pipeline, run an automated conflict check against the firm's matter management system to ensure no adverse party data is processed in the same environment.",
+            "priority": "high"
+          },
+          {
+            "label": "Audit Trail for Attorney Review Actions",
+            "description": "Log every attorney review action (approved, rejected, modified) with timestamp, reviewer bar number, and specific fields changed. This log must be retained for the duration of the matter plus the applicable malpractice statute of limitations.",
+            "priority": "high"
+          },
+          {
+            "label": "Prohibition on Autonomous Court Filing",
+            "description": "Technically block the AI agent from directly submitting any extracted or generated content to court e-filing systems. All court filings must pass through a human-initiated submission step with attorney credentials.",
+            "priority": "critical"
+          },
+          {
+            "label": "Client Consent Documentation for AI Use",
+            "description": "Obtain and store written client consent acknowledging that AI tools are used in document processing for their matter, specifying data handling practices, before any client documents are processed.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "eDiscovery, Retention & Incident Response",
+        "description": "Controls for litigation hold compliance, data retention, and responding to extraction failures or data breaches in legal contexts.",
+        "items": [
+          {
+            "label": "Litigation Hold Integration",
+            "description": "Integrate the extraction pipeline with the firm's litigation hold management system so that when a hold is placed on a matter, all associated extracted data and source documents are automatically preserved and excluded from any deletion or archival policies.",
+            "priority": "critical"
+          },
+          {
+            "label": "Extraction Output Immutability for Held Matters",
+            "description": "Once a litigation hold is active, write-protect all extraction outputs for that matter using immutable storage (e.g., WORM storage or cryptographic hash locking) to prevent spoliation claims.",
+            "priority": "critical"
+          },
+          {
+            "label": "Defined Retention Schedule per Document Type",
+            "description": "Implement automated retention policies aligned with jurisdiction-specific requirements (e.g., 7 years for transactional matters, duration of representation plus 6 years for litigation files) and ensure extracted data follows the same schedule as source documents.",
+            "priority": "high"
+          },
+          {
+            "label": "Breach Response Playbook for Confidential Data Exposure",
+            "description": "Maintain a documented incident response playbook specifically for scenarios where client confidential data is exposed through the AI pipeline (e.g., cross-matter data leakage, API data breach). The playbook must include attorney notification, bar reporting assessment, and client notification steps with defined SLAs.",
+            "priority": "critical"
+          },
+          {
+            "label": "eDiscovery Export in Legally Defensible Format",
+            "description": "Ensure the extraction pipeline can produce outputs in EDRM-compliant formats (e.g., EDRM XML, load files with metadata) so that extracted structured data can be produced in discovery without requiring re-processing.",
+            "priority": "high"
+          },
+          {
+            "label": "Regular Extraction Accuracy Audits",
+            "description": "Conduct quarterly audits where a sample of extraction outputs are manually verified by a paralegal or attorney against source documents. Track accuracy rates by document type and field, and trigger a pipeline review if accuracy drops below 95% for any critical field.",
+            "priority": "high"
+          },
+          {
+            "label": "Model Deprecation and Re-Extraction Protocol",
+            "description": "Define a formal protocol for when the underlying LLM is updated or deprecated: identify all matters with stored extractions, assess re-extraction necessity, and document the decision with attorney sign-off before archiving old outputs.",
+            "priority": "medium"
+          }
+        ]
+      }
+    ],
+    "regulatoryNotes": {
+      "heading": "Regulatory Considerations",
+      "notes": [
+        {
+          "note": "Mata v. Avianca Precedent — Citation Hallucination Liability: The 2023 Mata v. Avianca ruling established that attorneys are personally sanctionable for submitting AI-generated briefs containing fabricated case citations. Any extraction pipeline that surfaces case citations must verify each citation against a live legal database (Westlaw, LexisNexis, CourtListener) before attorney review. Implement a hard block preventing unverified citations from appearing in any attorney-facing output."
+        },
+        {
+          "note": "ABA Model Rule 1.6 & Client Confidentiality in AI Systems: ABA Model Rule 1.6 prohibits disclosure of client information without informed consent. Using client documents to train or fine-tune AI models constitutes a disclosure violation. Firms must obtain contractual guarantees from LLM providers that submitted data is not used for training, and must disclose AI tool usage to clients in the engagement letter."
+        },
+        {
+          "note": "ABA Model Rule 1.1 — Competence and AI Supervision: Comment 8 to ABA Model Rule 1.1 requires attorneys to maintain competence with relevant technology. Attorneys supervising AI extraction outputs must demonstrate understanding of the tool's limitations, including hallucination risks and schema extraction failure modes. Firms should maintain records of AI competency training for all attorneys who approve extraction outputs."
+        },
+        {
+          "note": "Federal Rules of Civil Procedure Rule 26(g) & eDiscovery Obligations: FRCP Rule 26(g) requires that discovery responses be complete and accurate to the best of the attorney's knowledge. AI-extracted data used in discovery responses must be validated for completeness and accuracy before production. Extraction pipelines must support EDRM-compliant export formats and maintain metadata integrity (custodian, date, source file) to satisfy proportionality and defensibility standards in eDiscovery."
+        }
+      ]
+    },
+    "cta": {
+      "heading": "Automate Your Legal Agent Compliance",
+      "description": "Use Vex to continuously monitor your legal AI extraction pipeline against these controls — catching privilege violations, citation hallucinations, and schema failures before they become malpractice exposure."
+    }
+  }
+}

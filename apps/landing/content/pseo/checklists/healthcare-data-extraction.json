@@ -1,0 +1,217 @@
+{
+  "meta": {
+    "industry": "healthcare",
+    "useCase": "data-extraction",
+    "generatedAt": "2026-03-12"
+  },
+  "seo": {
+    "title": "Healthcare Data Extraction AI Agent Checklist",
+    "description": "Production readiness checklist for data extraction AI agents in healthcare. Covers HIPAA, FDA 21 CFR Part 11, HITECH Act.",
+    "keywords": [
+      "Healthcare AI checklist",
+      "Data Extraction agent checklist",
+      "Healthcare AI compliance",
+      "AI agent production readiness",
+      "AI guardrails checklist"
+    ]
+  },
+  "content": {
+    "intro": "Deploying AI agents for data extraction in healthcare environments carries critical compliance obligations under HIPAA, HITECH, and FDA 21 CFR Part 11, where a single misconfiguration can expose Protected Health Information (PHI) and trigger fines up to $1.5M per violation. Structured output extraction from clinical documents—such as discharge summaries, lab reports, and referral letters—requires rigorous controls at every layer, from ingestion to schema validation to audit logging. This checklist ensures your AI extraction pipeline meets regulatory requirements while maintaining the accuracy and auditability demanded in clinical settings.",
+    "sections": [
+      {
+        "heading": "PHI Handling & De-identification Before LLM Processing",
+        "description": "Before any unstructured clinical document reaches an LLM, PHI must be stripped or tokenized to comply with HIPAA Safe Harbor or Expert Determination standards. Failure to de-identify data before LLM processing is a direct HIPAA violation.",
+        "items": [
+          {
+            "label": "Implement HIPAA Safe Harbor De-identification",
+            "description": "Remove all 18 HIPAA Safe Harbor identifiers (name, DOB, SSN, MRN, etc.) from documents before passing to the LLM. Use a validated NER-based de-identification pipeline (e.g., AWS Comprehend Medical, Microsoft Presidio) and log every transformation.",
+            "priority": "critical"
+          },
+          {
+            "label": "Tokenize PHI with Reversible Vault Mapping",
+            "description": "Replace PHI fields with non-identifying tokens stored in a secure vault. Ensure the vault is isolated from the LLM processing environment so re-identification is impossible during extraction.",
+            "priority": "critical"
+          },
+          {
+            "label": "Validate De-identification Output Before LLM Submission",
+            "description": "Run a secondary PHI detection scan on de-identified documents using a separate model or regex ruleset. Reject and quarantine any document where residual PHI confidence score exceeds 0.05.",
+            "priority": "critical"
+          },
+          {
+            "label": "Enforce Data Residency — No PHI Leaves the Processing Environment",
+            "description": "Configure LLM API calls to use on-premises or VPC-isolated deployments (e.g., Azure OpenAI with private endpoints, AWS Bedrock in a VPC). Explicitly block outbound traffic to public LLM endpoints from PHI-adjacent systems.",
+            "priority": "critical"
+          },
+          {
+            "label": "Document De-identification Method for Regulatory Defense",
+            "description": "Maintain a written record of the de-identification methodology (Safe Harbor vs. Expert Determination), the tools used, version numbers, and validation test results. This documentation is required for HIPAA compliance defense.",
+            "priority": "high"
+          },
+          {
+            "label": "Restrict Document Ingestion to Authorized Source Systems",
+            "description": "Only accept documents from pre-approved EHR systems, SFTP endpoints, or HL7 FHIR APIs with mutual TLS authentication. Reject documents from unverified sources before de-identification even begins.",
+            "priority": "high"
+          },
+          {
+            "label": "Apply Minimum Necessary Standard to Document Scope",
+            "description": "Limit the sections of clinical documents sent to the LLM to only those required for the extraction schema (e.g., send only the 'Medications' section for a drug extraction task, not the full note).",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Schema Compliance & Structured Output Validation",
+        "description": "AI-driven data extraction must produce outputs that conform to a predefined clinical schema. Schema violations—wrong types, missing required fields, or out-of-range values—can corrupt downstream clinical workflows and EHR records.",
+        "items": [
+          {
+            "label": "Define and Version-Control the Extraction Schema",
+            "description": "Maintain a versioned JSON Schema or Pydantic model for every extraction target (e.g., medication name: string, dosage: float, unit: enum[mg, mcg, g]). Store schemas in a Git repository with change approval workflows.",
+            "priority": "critical"
+          },
+          {
+            "label": "Enforce Strict Type Consistency on All Extracted Fields",
+            "description": "Validate every LLM output field against the schema's declared type before downstream use. Reject outputs where numeric fields contain strings, dates are in non-ISO 8601 format, or enum fields contain unlisted values.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement Completeness Validation for Required Fields",
+            "description": "Define which schema fields are required vs. optional. Flag any extraction result where a required field is null or absent, and route it to human review rather than allowing silent omission.",
+            "priority": "critical"
+          },
+          {
+            "label": "Use Constrained Decoding or Function Calling for Schema Adherence",
+            "description": "Configure LLM calls using structured output modes (e.g., OpenAI function calling, Instructor library, or grammar-constrained generation) to enforce schema shape at the token level, not just post-hoc.",
+            "priority": "high"
+          },
+          {
+            "label": "Validate Clinical Value Ranges for Numeric Fields",
+            "description": "Apply domain-specific range checks beyond type validation (e.g., heart rate 20–300 bpm, HbA1c 2–20%). Flag extractions outside plausible clinical ranges as potential hallucinations requiring human review.",
+            "priority": "high"
+          },
+          {
+            "label": "Cross-Validate Extracted Fields for Internal Consistency",
+            "description": "Implement cross-field consistency rules (e.g., medication start date must precede end date, ICD-10 code must match the described diagnosis category). Reject outputs that fail consistency checks.",
+            "priority": "high"
+          },
+          {
+            "label": "Track Schema Version in Every Extraction Record",
+            "description": "Embed the schema version identifier in every extraction output record so downstream consumers and auditors can trace which validation rules applied to a given result.",
+            "priority": "medium"
+          },
+          {
+            "label": "Test Schema Validation Against a Labeled Ground-Truth Dataset",
+            "description": "Before production deployment, run the extraction pipeline against a de-identified labeled dataset and measure field-level precision, recall, and F1. Establish minimum acceptable thresholds (e.g., F1 ≥ 0.92 per required field).",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Audit Logging, Traceability & FDA 21 CFR Part 11 Compliance",
+        "description": "All AI-assisted data extraction decisions must be fully auditable under HIPAA, HITECH, and FDA 21 CFR Part 11. Every extraction event must be traceable from source document to final structured output, with tamper-evident logs.",
+        "items": [
+          {
+            "label": "Log Every Extraction Event with Immutable Timestamps",
+            "description": "Record each extraction job with: document ID, de-identification pipeline version, LLM model version, schema version, extracted output hash, processing timestamp (UTC), and operator ID. Write logs to a WORM (Write Once Read Many) storage system.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement Electronic Signature Controls per 21 CFR Part 11",
+            "description": "For any extraction output used in regulated workflows (e.g., clinical trial data, FDA submissions), require electronic signature by a qualified reviewer before the record is finalized. Log signature events with user ID, timestamp, and meaning.",
+            "priority": "critical"
+          },
+          {
+            "label": "Maintain Audit Trail for All Human Review Overrides",
+            "description": "When a human reviewer modifies an AI-extracted field, log the original AI value, the corrected value, the reviewer's credentials, and the reason code. This trail is required for HIPAA and 21 CFR Part 11 compliance.",
+            "priority": "critical"
+          },
+          {
+            "label": "Enable Audit Log Integrity Verification",
+            "description": "Apply cryptographic hashing (SHA-256) to audit log entries and store hash chains in a separate system. Provide a log integrity verification tool so auditors can confirm logs have not been altered.",
+            "priority": "high"
+          },
+          {
+            "label": "Retain Audit Logs for Minimum 6 Years per HIPAA Requirements",
+            "description": "Configure log retention policies to retain all extraction audit logs for at least 6 years from the date of creation or last effective date, as required by HIPAA. Automate retention enforcement to prevent premature deletion.",
+            "priority": "high"
+          },
+          {
+            "label": "Log LLM Prompt Templates and Model Version for Reproducibility",
+            "description": "Store the exact prompt template, system message, and model version (including temperature and other inference parameters) used for each extraction job. This enables reproduction of results during regulatory audits.",
+            "priority": "high"
+          },
+          {
+            "label": "Implement Role-Based Access Control on Audit Logs",
+            "description": "Restrict audit log access to authorized compliance and security personnel only. Log all access to audit logs themselves, creating a meta-audit trail. Use MFA for all audit log access.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Human-in-the-Loop Controls & Error Escalation",
+        "description": "Given the critical sensitivity of healthcare data extraction, AI outputs must not flow directly into clinical systems without appropriate human oversight gates. Define clear confidence thresholds, escalation paths, and review workflows.",
+        "items": [
+          {
+            "label": "Define Confidence Thresholds for Automatic vs. Human-Reviewed Outputs",
+            "description": "Configure the extraction pipeline to route outputs to human review when LLM confidence scores fall below defined thresholds (e.g., <0.85 for medication names, <0.90 for dosage values). Document threshold rationale for regulatory review.",
+            "priority": "critical"
+          },
+          {
+            "label": "Block AI Extraction Outputs from Direct EHR Write Without Human Approval",
+            "description": "Implement a mandatory human approval gate before any AI-extracted structured data is written to an EHR, clinical data warehouse, or regulatory submission system. No automated direct-write paths should exist for critical fields.",
+            "priority": "critical"
+          },
+          {
+            "label": "Establish a Defined Escalation Path for Extraction Failures",
+            "description": "Define and document what happens when extraction fails schema validation, PHI is detected post-de-identification, or confidence is below threshold: who is notified, within what SLA, and what the fallback manual process is.",
+            "priority": "high"
+          },
+          {
+            "label": "Track and Report Human Override Rates as a Quality Metric",
+            "description": "Monitor the percentage of AI extractions that are modified or rejected by human reviewers per document type and field. A rising override rate signals model drift or document distribution shift requiring retraining.",
+            "priority": "high"
+          },
+          {
+            "label": "Provide Reviewers with Source Document Context for Verification",
+            "description": "In the human review interface, display the extracted field alongside the highlighted source sentence or passage from the original document. Reviewers must be able to verify extraction accuracy against the source without switching systems.",
+            "priority": "high"
+          },
+          {
+            "label": "Implement a Feedback Loop from Human Corrections to Model Improvement",
+            "description": "Capture all human corrections as labeled training examples in a de-identified feedback dataset. Establish a quarterly review cycle to evaluate whether corrections warrant fine-tuning or prompt revision.",
+            "priority": "medium"
+          },
+          {
+            "label": "Define and Test Disaster Recovery for Extraction Pipeline Failures",
+            "description": "Document and test a manual fallback extraction process that can be activated within 4 hours if the AI pipeline fails. Ensure clinical operations are not blocked by AI system downtime.",
+            "priority": "medium"
+          }
+        ]
+      }
+    ],
+    "regulatoryNotes": {
+      "heading": "Regulatory Considerations",
+      "notes": [
+        {
+          "regulation": "HIPAA / HITECH Act",
+          "note": "Under 45 CFR §164.514, PHI must be de-identified using either the Safe Harbor method (removing all 18 identifiers) or Expert Determination (statistical verification) before processing with any external or shared LLM. HITECH extends HIPAA breach notification requirements to Business Associates — ensure any LLM vendor or cloud provider processing de-identified data has a signed BAA, and verify their SOC 2 Type II report covers AI/ML workloads. Penalties under HITECH reach $1.5M per violation category per year."
+        },
+        {
+          "regulation": "FDA 21 CFR Part 11",
+          "note": "If extracted data is used in FDA-regulated activities (clinical trials, drug submissions, medical device records), 21 CFR Part 11 requires that electronic records be attributable, legible, contemporaneous, original, and accurate (ALCOA). AI extraction systems must implement electronic signature controls, audit trails that cannot be modified without detection, and system validation documentation (IQ/OQ/PQ). The LLM model version and prompt must be treated as part of the validated system — any change requires re-validation."
+        },
+        {
+          "regulation": "SOC 2 Type II",
+          "note": "SOC 2 Type II certification for your AI extraction infrastructure requires demonstrating operational effectiveness of controls over a minimum 6-month period across the Trust Services Criteria: Security, Availability, Processing Integrity, Confidentiality, and Privacy. For healthcare AI, Processing Integrity is especially critical — you must demonstrate that extraction outputs are complete, valid, accurate, timely, and authorized. Ensure your LLM inference infrastructure, de-identification pipeline, and audit logging systems are all within the SOC 2 audit scope."
+        },
+        {
+          "regulation": "State-Level Privacy Laws (CCPA, NY SHIELD, Texas HB 300)",
+          "note": "Beyond federal HIPAA requirements, several states impose additional obligations on health data processors. Texas HB 300 applies stricter consent requirements than HIPAA for covered entities operating in Texas. California's CMIA (Confidentiality of Medical Information Act) imposes civil penalties for unauthorized disclosure of medical information. Conduct a state-by-state regulatory mapping for all jurisdictions where source documents originate or where extracted data will be used, and incorporate state-specific requirements into your data handling policies."
+        }
+      ]
+    },
+    "cta": {
+      "heading": "Automate Your Healthcare Agent Compliance",
+      "description": "Use Vex to continuously monitor your healthcare AI extraction pipeline against HIPAA, FDA 21 CFR Part 11, and SOC 2 controls — catching compliance gaps before they become $1.5M violations."
+    }
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "slug": "single-agent-vs-multi-agent-safety",
+    "generatedAt": "2026-03-12"
+  },
+  "seo": {
+    "title": "Single-Agent vs Multi-Agent Safety Patterns",
+    "description": "Compare Single-Agent Architecture and Multi-Agent Architecture for AI agent reliability. Understand trade-offs and when to use each approach.",
+    "keywords": [
+      "single-agent architecture",
+      "multi-agent architecture",
+      "AI agent reliability",
+      "agent safety comparison"
+    ]
+  },
+  "content": {
+    "intro": "Choosing between single-agent and multi-agent architectures is one of the most consequential decisions in AI system design. Each approach carries distinct tradeoffs in complexity, reliability, and scalability. Understanding these differences helps teams build systems that are both capable and trustworthy.",
+    "approachA": {
+      "name": "Single-Agent Architecture",
+      "description": "A single-agent architecture relies on one AI model or agent to handle an entire task or workflow end-to-end. This approach keeps the system simple and centralized, with a single point of control and a unified context window. It is often the right starting point for well-scoped, lower-complexity tasks.",
+      "strengths": [
+        "Simpler to build, debug, and reason about with fewer moving parts",
+        "Lower latency since there is no inter-agent communication overhead",
+        "Easier to maintain a consistent context and memory across a task",
+        "Reduced surface area for failures, making errors easier to trace"
+      ],
+      "weaknesses": [
+        "Context window limits constrain how much information the agent can hold at once",
+        "A single point of failure means one bad output can derail the entire workflow",
+        "Difficult to parallelize work, leading to bottlenecks on complex tasks",
+        "Hard to specialize behavior for distinct subtasks within the same workflow"
+      ]
+    },
+    "approachB": {
+      "name": "Multi-Agent Architecture",
+      "description": "A multi-agent architecture distributes work across several specialized AI agents that collaborate, delegate, and verify each other's outputs. This approach enables parallelism, specialization, and redundancy at the cost of increased coordination complexity. It is well-suited for large-scale, multi-step workflows that benefit from division of labor.",
+      "strengths": [
+        "Enables parallel execution of subtasks, dramatically reducing end-to-end latency",
+        "Specialized agents can be optimized independently for their specific roles",
+        "Redundancy and cross-checking between agents can catch errors before they propagate",
+        "Scales more naturally to complex, long-horizon tasks that exceed single-context limits"
+      ],
+      "weaknesses": [
+        "Significantly more complex to design, orchestrate, and debug",
+        "Inter-agent communication introduces new failure modes and latency",
+        "Errors can cascade across agents before being detected, amplifying their impact",
+        "Harder to maintain consistent state and shared context across the agent network"
+      ]
+    },
+    "comparison": [
+      {
+        "dimension": "Complexity",
+        "approachA": "Low — one agent, one context, straightforward control flow",
+        "approachB": "High — requires orchestration, routing logic, and inter-agent protocols"
+      },
+      {
+        "dimension": "Scalability",
+        "approachA": "Limited by context window and sequential processing constraints",
+        "approachB": "Scales horizontally by adding specialized agents for new subtasks"
+      },
+      {
+        "dimension": "Failure Surface",
+        "approachA": "Narrow but total — one failure point affects the entire task",
+        "approachB": "Wider but potentially contained — failures can be isolated per agent"
+      },
+      {
+        "dimension": "Observability",
+        "approachA": "Easier to observe and trace since all behavior flows through one agent",
+        "approachB": "Harder to observe without dedicated runtime monitoring across all agents"
+      },
+      {
+        "dimension": "Runtime Verification",
+        "approachA": "Straightforward to apply guardrails at a single agent boundary",
+        "approachB": "Critical — each agent handoff is a verification opportunity that must be instrumented"
+      }
+    ],
+    "recommendation": {
+      "heading": "Which Should You Choose?",
+      "summary": "Start with a single-agent architecture when your task is well-scoped and complexity is manageable — it will be faster to ship and easier to trust. Adopt a multi-agent architecture when your workflow genuinely requires parallelism, specialization, or exceeds the limits of a single context window. In either case, runtime verification becomes essential as your system grows: the more agents you add, the more critical it is to validate outputs at every boundary before errors compound."
+    },
+    "cta": {
+      "heading": "Try Runtime Verification with Vex",
+      "description": "Whether you are running one agent or many, Vex gives you real-time visibility and guardrails at every step so you can ship AI systems you can actually trust."
+    }
+  }
+}

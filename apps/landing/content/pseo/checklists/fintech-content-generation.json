@@ -1,0 +1,212 @@
+{
+  "meta": {
+    "industry": "fintech",
+    "useCase": "content-generation",
+    "generatedAt": "2026-03-12"
+  },
+  "seo": {
+    "title": "Fintech Content Generation AI Agent Checklist",
+    "description": "Production readiness checklist for content generation AI agents in fintech. Covers SOX, PCI DSS, GDPR.",
+    "keywords": [
+      "Fintech AI checklist",
+      "Content Generation agent checklist",
+      "Fintech AI compliance",
+      "AI agent production readiness",
+      "AI guardrails checklist"
+    ]
+  },
+  "content": {
+    "intro": "Deploying AI agents for content generation in fintech carries unique risks where a single non-compliant output can trigger SEC enforcement actions, GDPR fines, or customer harm from unqualified financial advice. This checklist ensures your LLM-powered content pipeline meets SOX, PCI DSS, and BSA/AML requirements while maintaining brand integrity and factual accuracy. Use it as a pre-deployment gate and ongoing operational standard for every content generation workflow.",
+    "sections": [
+      {
+        "heading": "Regulatory Compliance & Disclaimer Enforcement",
+        "description": "Ensure every piece of AI-generated financial content meets mandatory disclosure requirements and cannot be published without legally required disclaimers.",
+        "items": [
+          {
+            "label": "Mandatory Financial Disclaimer Injection",
+            "description": "Configure the content pipeline to automatically append SEC-required disclaimers (e.g., 'This is not financial advice') to any output discussing investment products, returns, or market predictions before it reaches any publishing queue.",
+            "priority": "critical"
+          },
+          {
+            "label": "Regulated Content Classification Gate",
+            "description": "Implement a pre-publish classifier that detects content touching on credit decisions, investment advice, or loan products and routes it to a compliance review queue rather than auto-publishing.",
+            "priority": "critical"
+          },
+          {
+            "label": "BSA/AML Keyword Blocklist",
+            "description": "Maintain and enforce a dynamic blocklist of terms and content patterns that could inadvertently describe or facilitate money laundering schemes, structuring, or sanctions evasion in generated content.",
+            "priority": "critical"
+          },
+          {
+            "label": "SOX-Compliant Content Audit Trail",
+            "description": "Log every AI-generated content artifact with a timestamped record of the prompt, model version, output hash, reviewer identity, and approval status to satisfy SOX Section 302/404 documentation requirements.",
+            "priority": "critical"
+          },
+          {
+            "label": "GDPR Data Minimization in Prompts",
+            "description": "Enforce a technical control that strips or pseudonymizes any personally identifiable customer data before it is included in LLM prompts used for content personalization.",
+            "priority": "high"
+          },
+          {
+            "label": "PCI DSS Scope Exclusion Verification",
+            "description": "Confirm that no cardholder data (PANs, CVVs, expiry dates) can enter the content generation pipeline by implementing input validation and automated scanning on all prompt templates and data connectors.",
+            "priority": "critical"
+          },
+          {
+            "label": "SEC Fair Disclosure (Reg FD) Compliance Check",
+            "description": "Before publishing AI-generated market commentary or earnings-related content, run an automated check against a list of material non-public information (MNPI) topics flagged by your legal team.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Factual Accuracy & Hallucination Prevention",
+        "description": "Establish verification layers that prevent the publication of fabricated financial data, incorrect regulatory citations, or false product claims that could mislead customers or attract regulatory scrutiny.",
+        "items": [
+          {
+            "label": "Grounded Generation with Retrieval-Augmented Architecture",
+            "description": "Require all factual claims in generated content (interest rates, fee schedules, regulatory thresholds) to be sourced from a verified, version-controlled internal knowledge base via RAG, not generated from model weights alone.",
+            "priority": "critical"
+          },
+          {
+            "label": "Numerical Data Verification Step",
+            "description": "Implement a post-generation validation step that extracts all numerical values (APRs, percentages, dollar amounts) from the output and cross-references them against live data sources or approved rate tables before approval.",
+            "priority": "critical"
+          },
+          {
+            "label": "Regulatory Citation Validation",
+            "description": "Run a dedicated check that verifies any cited regulation, statute, or rule number (e.g., 'Regulation Z', '12 CFR Part 1026') exists and that the description of it in the content is accurate against an authoritative legal database.",
+            "priority": "high"
+          },
+          {
+            "label": "Hallucination Confidence Scoring",
+            "description": "Integrate a secondary model or scoring layer that flags outputs with low factual confidence scores for mandatory human review, setting a threshold below which content cannot proceed to publication.",
+            "priority": "high"
+          },
+          {
+            "label": "Third-Party Product Claim Accuracy Review",
+            "description": "Any AI-generated content referencing competitor products, partner offerings, or third-party services must be routed to a human editor for accuracy verification before publication to avoid false advertising liability.",
+            "priority": "high"
+          },
+          {
+            "label": "Stale Data Detection",
+            "description": "Tag all knowledge base sources with expiration dates and configure the pipeline to block content generation that relies on data older than a defined threshold (e.g., 30 days for rate information, 90 days for regulatory guidance).",
+            "priority": "medium"
+          }
+        ]
+      },
+      {
+        "heading": "Brand Voice, Tone & Editorial Governance",
+        "description": "Enforce consistent brand standards and editorial guidelines across all AI-generated content to protect brand reputation and ensure outputs align with approved messaging frameworks.",
+        "items": [
+          {
+            "label": "Brand Voice Style Guide Embedding",
+            "description": "Encode your fintech brand's approved tone, vocabulary, and prohibited phrases directly into system prompts and maintain a versioned style guide document that is updated in the RAG knowledge base whenever brand guidelines change.",
+            "priority": "high"
+          },
+          {
+            "label": "Automated Tone Adherence Scoring",
+            "description": "Deploy a post-generation tone classifier trained on approved brand content that scores each output for tone adherence and automatically rejects content falling below an 80% match threshold.",
+            "priority": "high"
+          },
+          {
+            "label": "Prohibited Language & Sensitivity Filter",
+            "description": "Maintain a fintech-specific prohibited language list covering predatory lending language, discriminatory terms, and overly aggressive sales language, and enforce it as a hard filter on all outputs.",
+            "priority": "critical"
+          },
+          {
+            "label": "Originality & Plagiarism Detection",
+            "description": "Run all AI-generated long-form content through a plagiarism detection tool before publication to identify substantial similarity to competitor content, copyrighted material, or prior published articles.",
+            "priority": "high"
+          },
+          {
+            "label": "SEO Compliance & E-E-A-T Alignment",
+            "description": "Validate that generated content meets Google's E-E-A-T (Experience, Expertise, Authoritativeness, Trustworthiness) standards for YMYL (Your Money or Your Life) pages, including author attribution and source citation requirements.",
+            "priority": "medium"
+          },
+          {
+            "label": "Multi-Tier Editorial Approval Workflow",
+            "description": "Implement a three-stage approval workflow: (1) automated compliance and brand checks, (2) subject matter expert review for financial accuracy, and (3) legal sign-off for any content referencing specific financial products or regulatory topics.",
+            "priority": "critical"
+          },
+          {
+            "label": "Content Versioning & Rollback Capability",
+            "description": "Store every published AI-generated content artifact with full version history so that any piece can be immediately retracted and rolled back to a prior version within 15 minutes of identifying a compliance issue.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Model Security, Data Governance & Operational Controls",
+        "description": "Protect the integrity of the content generation system itself, ensure data used in the pipeline is handled lawfully, and establish operational controls that limit blast radius in the event of a failure.",
+        "items": [
+          {
+            "label": "LLM API Access Control & Least Privilege",
+            "description": "Restrict LLM API credentials to only the services that require them, rotate API keys on a 90-day cycle, and ensure no content generation service has write access to financial transaction systems or customer account data.",
+            "priority": "critical"
+          },
+          {
+            "label": "Prompt Injection Attack Prevention",
+            "description": "Implement input sanitization on all user-supplied or external data entering prompts, and deploy a prompt injection detection layer that blocks attempts to override system instructions or extract training data.",
+            "priority": "critical"
+          },
+          {
+            "label": "Training Data Lineage Documentation",
+            "description": "Maintain documented lineage for any fine-tuning datasets used to adapt the LLM for fintech content, confirming data sources are licensed, free of PII, and do not include non-public financial information.",
+            "priority": "high"
+          },
+          {
+            "label": "Output Encryption & Secure Storage",
+            "description": "Encrypt all AI-generated content drafts at rest (AES-256) and in transit (TLS 1.3) within the editorial pipeline, ensuring unpublished drafts containing sensitive product information are protected to PCI DSS standards.",
+            "priority": "critical"
+          },
+          {
+            "label": "Rate Limiting & Abuse Detection",
+            "description": "Enforce rate limits on content generation endpoints to prevent bulk generation abuse, and set up anomaly detection alerts for generation volumes exceeding 3x the daily baseline.",
+            "priority": "medium"
+          },
+          {
+            "label": "Model Performance & Drift Monitoring",
+            "description": "Establish monthly evaluations of the LLM's output quality against a golden dataset of approved fintech content, and define a drift threshold that triggers mandatory model review and revalidation before continued use.",
+            "priority": "high"
+          },
+          {
+            "label": "Incident Response Playbook for Content Failures",
+            "description": "Document and test a specific incident response playbook for scenarios where non-compliant financial content is published, including steps for immediate takedown, regulatory notification timelines, and customer communication protocols.",
+            "priority": "critical"
+          },
+          {
+            "label": "Third-Party LLM Vendor Risk Assessment",
+            "description": "Complete an annual vendor risk assessment for your LLM provider covering data residency, SOC 2 Type II certification, model update notification procedures, and contractual data processing agreements compliant with GDPR Article 28.",
+            "priority": "high"
+          }
+        ]
+      }
+    ],
+    "regulatoryNotes": {
+      "heading": "Regulatory Considerations",
+      "notes": [
+        {
+          "regulation": "SEC Regulations & Investment Adviser Act",
+          "note": "AI-generated content that recommends specific securities, predicts returns, or describes investment strategies may constitute investment advice under the Investment Advisers Act of 1940. Ensure your content pipeline includes a classifier that identifies such content and either blocks it, adds mandatory disclaimers, or routes it exclusively through a registered investment adviser review before publication."
+        },
+        {
+          "regulation": "GDPR Article 22 & Automated Decision-Making",
+          "note": "If AI-generated content is personalized based on individual customer financial profiles or behavioral data, this may trigger GDPR Article 22 obligations around automated decision-making. Document the legal basis for any such personalization, provide opt-out mechanisms, and ensure your privacy notice discloses the use of AI in content personalization."
+        },
+        {
+          "regulation": "SOX Section 302/404 & Internal Controls",
+          "note": "Content generated by AI that relates to financial reporting, earnings commentary, or investor communications falls within the scope of SOX internal controls over financial reporting. Establish documented controls, assign named accountable officers, and include AI content generation workflows in your annual SOX control testing scope."
+        },
+        {
+          "regulation": "BSA/AML & FinCEN Guidance on AI",
+          "note": "FinCEN's 2023 guidance on AI in financial services requires that institutions using AI in customer-facing communications maintain explainability and human oversight. Ensure your content generation system cannot produce content that inadvertently describes or normalizes transactions that could constitute structuring, and that your BSA Officer reviews AI content policies annually."
+        }
+      ]
+    },
+    "cta": {
+      "heading": "Automate Your Fintech Agent Compliance",
+      "description": "Use Vex to continuously monitor your AI content generation pipeline against SOX, PCI DSS, and SEC requirements—catching compliance gaps before they become enforcement actions."
+    }
+  }
+}

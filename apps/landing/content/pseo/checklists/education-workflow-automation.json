@@ -1,0 +1,205 @@
+{
+  "meta": {
+    "industry": "education",
+    "useCase": "workflow-automation",
+    "generatedAt": "2026-03-12"
+  },
+  "seo": {
+    "title": "Education Workflow Automation AI Agent Checklist",
+    "description": "Production readiness checklist for workflow automation AI agents in education. Covers FERPA, COPPA, State education data privacy laws.",
+    "keywords": [
+      "Education AI checklist",
+      "Workflow Automation agent checklist",
+      "Education AI compliance",
+      "AI agent production readiness",
+      "AI guardrails checklist"
+    ]
+  },
+  "content": {
+    "intro": "Deploying AI workflow automation agents in educational environments requires navigating a complex intersection of federal privacy law, minor protection statutes, and pedagogical accountability standards. Failures in this domain carry severe consequences including FERPA violations, unauthorized exposure of student PII, and potential loss of institutional accreditation. This checklist provides concrete, actionable controls tailored to multi-step AI agents operating within K-12 and higher education workflows.",
+    "sections": [
+      {
+        "heading": "Student Data Privacy & Consent Management",
+        "description": "Ensure all data handling by the AI agent complies with FERPA, COPPA, and applicable state education data privacy laws before any workflow execution touches student records.",
+        "items": [
+          {
+            "label": "Classify all student data fields before agent access",
+            "description": "Audit every data field the agent can read or write and tag each as FERPA-protected education record, COPPA-covered (under-13 PII), or general operational data. Block agent access to unclassified fields by default.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement parental consent verification gate for minors",
+            "description": "Before the agent processes any PII for students under 13, programmatically verify that a valid COPPA-compliant parental consent record exists in your consent management system. Halt the workflow and trigger a human-in-the-loop review if consent is missing or expired.",
+            "priority": "critical"
+          },
+          {
+            "label": "Restrict agent data access to minimum necessary scope",
+            "description": "Configure API integration permissions so the agent can only retrieve the specific student data fields required for the current workflow step. Use attribute-based access control (ABAC) to enforce this at the API gateway level, not just in application logic.",
+            "priority": "critical"
+          },
+          {
+            "label": "Log all student data access events with immutable audit trail",
+            "description": "Record every read, write, and transformation of student records by the agent into an append-only audit log that captures timestamp, agent action ID, data fields accessed, and the triggering workflow step. Retain logs for a minimum of 5 years per FERPA audit requirements.",
+            "priority": "critical"
+          },
+          {
+            "label": "Prohibit agent from sharing student data with third-party APIs without DPA",
+            "description": "Maintain a whitelist of third-party API endpoints the agent is permitted to send student data to. Each endpoint must have a signed Data Processing Agreement (DPA) on file. Block any API call to non-whitelisted endpoints at the network policy layer.",
+            "priority": "high"
+          },
+          {
+            "label": "Implement data residency controls for state-specific privacy laws",
+            "description": "Identify which state education data privacy laws apply (e.g., NY Education Law 2-d, California SOPIPA) based on enrolled student locations. Configure the agent's data pipeline to ensure student records remain within compliant storage regions and are not routed through non-compliant infrastructure.",
+            "priority": "high"
+          },
+          {
+            "label": "Automate annual consent re-verification for recurring workflows",
+            "description": "For workflows that run on a recurring schedule (e.g., automated progress reports), build a pre-execution check that re-validates consent status at the start of each new academic year or consent expiration cycle.",
+            "priority": "medium"
+          }
+        ]
+      },
+      {
+        "heading": "Workflow Action Correctness & Permission Validation",
+        "description": "Multi-step agents executing conditional logic against student information systems must validate permissions and action correctness at each step to prevent unauthorized modifications to academic records.",
+        "items": [
+          {
+            "label": "Validate agent permissions before every state-changing API call",
+            "description": "Before each POST, PUT, PATCH, or DELETE call to the Student Information System (SIS), LMS, or grade book API, the agent must re-check that the executing service account holds the required role for that specific action. Do not rely on session-level permission checks alone.",
+            "priority": "critical"
+          },
+          {
+            "label": "Require human-in-the-loop approval for grade or enrollment modifications",
+            "description": "Any workflow step that would modify a student's grade, enrollment status, or academic standing must pause and route an approval request to a qualified educator or registrar before execution. Define a maximum approval wait time (e.g., 48 hours) after which the action is automatically rejected, not auto-approved.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement idempotency keys on all SIS and LMS write operations",
+            "description": "Assign a unique idempotency key to each write operation generated by the agent. On retry or re-execution, the receiving API must detect the duplicate key and return the original result without re-applying the change, preventing double-posting of grades or duplicate enrollment records.",
+            "priority": "high"
+          },
+          {
+            "label": "Validate conditional logic branches against current enrollment and age data",
+            "description": "Before executing a conditional branch (e.g., 'if student is under 13, apply COPPA workflow'), re-fetch the student's current age and enrollment status from the authoritative SIS rather than relying on cached values from earlier in the workflow.",
+            "priority": "high"
+          },
+          {
+            "label": "Test all workflow branches in a sandboxed environment with synthetic student data",
+            "description": "Before production deployment, execute every conditional logic path in a staging environment using synthetic, non-PII student records that mirror real demographic distributions. Document test results and require sign-off from a qualified educator and compliance officer.",
+            "priority": "high"
+          },
+          {
+            "label": "Enforce step-level timeout and failure handling with explicit fallback actions",
+            "description": "Define a maximum execution time for each workflow step. On timeout or API error, the agent must execute a predefined fallback action (e.g., notify a human administrator) rather than retrying indefinitely or silently failing, which could leave student records in an inconsistent state.",
+            "priority": "medium"
+          },
+          {
+            "label": "Generate a pre-execution diff report for bulk student record operations",
+            "description": "For any workflow step that modifies more than 10 student records in a single batch, generate a human-readable diff report showing before/after values and route it to a supervisor for review before the agent commits the changes.",
+            "priority": "medium"
+          }
+        ]
+      },
+      {
+        "heading": "Content Safety, Bias Prevention & Instructional Boundaries",
+        "description": "AI agents involved in content generation, tutoring support, or communication automation must produce age-appropriate, bias-free output and must not substitute for qualified human instruction.",
+        "items": [
+          {
+            "label": "Apply age-appropriate content filters calibrated to student grade band",
+            "description": "Configure content moderation filters with separate threshold profiles for K-5, 6-8, 9-12, and higher education. Use the student's current grade level from the SIS to dynamically select the correct filter profile before any agent-generated content is delivered.",
+            "priority": "critical"
+          },
+          {
+            "label": "Block agent from issuing final academic judgments or instructional decisions",
+            "description": "Implement a hard rule in the agent's output layer that prevents it from generating statements that constitute final academic assessments, learning disability determinations, or disciplinary recommendations. These outputs must be flagged as 'draft for educator review' and routed to a qualified teacher before delivery.",
+            "priority": "critical"
+          },
+          {
+            "label": "Run bias detection on all agent-generated student-facing content",
+            "description": "Before delivering any generated text, image description, or recommendation to a student, pass the output through a bias detection model trained on educational content. Flag outputs scoring above a defined bias threshold for human review and log all flagged instances for monthly audits.",
+            "priority": "high"
+          },
+          {
+            "label": "Disclose AI involvement to students and parents in all automated communications",
+            "description": "Prepend a standardized disclosure statement to every student-facing communication generated or substantially modified by the agent (e.g., 'This message was prepared with AI assistance and reviewed by [Teacher Name]'). Store disclosure records linked to each communication for audit purposes.",
+            "priority": "high"
+          },
+          {
+            "label": "Validate curriculum alignment before agent delivers instructional content",
+            "description": "Before the agent delivers any learning material, check that the content is tagged with a valid curriculum standard alignment (e.g., Common Core, NGSS) that matches the student's current course. Reject and escalate content that lacks a verified alignment tag.",
+            "priority": "high"
+          },
+          {
+            "label": "Audit agent-generated content quarterly for demographic bias patterns",
+            "description": "Collect all agent-generated student-facing content over each quarter and run a demographic disparity analysis to detect whether content complexity, encouragement language, or resource recommendations differ systematically by student race, gender, or disability status. Report findings to the equity officer.",
+            "priority": "medium"
+          },
+          {
+            "label": "Implement keyword blocklist for harmful or inappropriate topics specific to minors",
+            "description": "Maintain and version-control a keyword and topic blocklist tailored to the enrolled student age range. Update the blocklist at minimum quarterly and after any reported content incident. Apply the blocklist as a post-generation filter before any content reaches a student endpoint.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Rollback Capability, Accessibility & Institutional Accountability",
+        "description": "Workflow automation agents must support full rollback of erroneous actions, meet Section 508 accessibility requirements in all outputs, and maintain clear institutional accountability chains.",
+        "items": [
+          {
+            "label": "Implement transactional rollback for all multi-step record modification workflows",
+            "description": "Design each multi-step workflow as a compensating transaction: for every write operation, define and test a corresponding rollback operation. If any step in the workflow fails after partial execution, the agent must automatically execute the rollback sequence and notify the responsible administrator with a detailed incident report.",
+            "priority": "critical"
+          },
+          {
+            "label": "Validate all agent-generated UI content and documents against Section 508 standards",
+            "description": "Before delivering any document, report, or interface element generated by the agent to students or staff, run an automated Section 508 accessibility check (e.g., verify alt text, color contrast ratios, keyboard navigability). Block delivery of non-compliant content and log the failure for remediation.",
+            "priority": "critical"
+          },
+          {
+            "label": "Assign a named human accountable owner to every automated workflow",
+            "description": "For each deployed workflow, record a named educator or administrator as the accountable owner in the workflow registry. This person receives all escalation alerts, approves workflow changes, and is listed in the institutional AI use disclosure required by state education agencies.",
+            "priority": "high"
+          },
+          {
+            "label": "Conduct rollback drills for high-impact workflows at least twice per academic year",
+            "description": "Schedule and execute full rollback simulations for any workflow that touches grade records, enrollment data, or financial aid information. Document the time-to-rollback metric and require it to meet a defined SLA (e.g., full rollback within 2 hours of incident detection).",
+            "priority": "high"
+          },
+          {
+            "label": "Maintain a versioned workflow change log with educator sign-off requirements",
+            "description": "Store every change to workflow logic, API integrations, or conditional rules in a version-controlled change log. Require digital sign-off from both a technical lead and a qualified educator before any change is promoted to production, and retain the log for accreditation review.",
+            "priority": "high"
+          },
+          {
+            "label": "Provide students and parents with a self-service data access and correction portal",
+            "description": "Deploy a portal where students (or parents of minors) can view all data the agent has accessed or generated about them, submit correction requests, and withdraw consent. Ensure the portal itself meets WCAG 2.1 AA accessibility standards and responds to correction requests within 30 days per FERPA.",
+            "priority": "high"
+          },
+          {
+            "label": "Schedule annual third-party audit of agent workflows for compliance and bias",
+            "description": "Engage an independent auditor with education compliance expertise to review all active agent workflows annually. The audit scope must include FERPA/COPPA compliance, bias in outputs, rollback capability, and Section 508 conformance. Publish a summary of findings to the institution's AI transparency report.",
+            "priority": "medium"
+          },
+          {
+            "label": "Define and test incident response playbook specific to student data exposure events",
+            "description": "Document a step-by-step incident response playbook for scenarios where the agent exposes student PII, generates harmful content, or executes an unauthorized record modification. Test the playbook via tabletop exercise each semester and ensure it includes FERPA breach notification timelines (within 72 hours to affected parties).",
+            "priority": "critical"
+          }
+        ]
+      }
+    ],
+    "regulatoryNotes": {
+      "heading": "Regulatory Considerations",
+      "notes": [
+        "FERPA (20 U.S.C. § 1232g) requires that any AI agent accessing education records must operate under a legitimate educational interest exception or obtain prior written consent. Automated workflows must document the specific legitimate educational interest justification for each data access pattern and make this documentation available for Department of Education review.",
+        "COPPA (15 U.S.C. § 6501) mandates verifiable parental consent before collecting, using, or disclosing personal information from children under 13. AI workflow agents must treat any student whose age cannot be confirmed as under-13 by default, applying the stricter COPPA controls until age verification is completed through an approved method.",
+        "State-level education data privacy laws such as New York Education Law 2-d, California SOPIPA, and Colorado SB 23-077 impose additional restrictions beyond FERPA, including prohibitions on using student data for targeted advertising, requirements for vendor data security agreements, and mandatory breach notification timelines as short as 10 days. The agent's data handling configuration must be validated against the specific laws of every state where enrolled students reside.",
+        "Section 508 of the Rehabilitation Act requires that all electronic content and software used in federally funded educational programs be accessible to individuals with disabilities. This applies to every output generated by the AI agent that is delivered to students or staff, including automated reports, notifications, and instructional content. Non-compliance can trigger Office for Civil Rights complaints and jeopardize federal funding eligibility."
+      ]
+    },
+    "cta": {
+      "heading": "Automate Your Education Agent Compliance",
+      "description": "Use Vex to continuously monitor your education AI workflows against FERPA, COPPA, and state privacy requirements—so your institution stays compliant, your students stay protected, and your accreditation stays intact."
+    }
+  }
+}

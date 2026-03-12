@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "slug": "pre-deploy-evals-vs-runtime-checks",
+    "generatedAt": "2026-03-12"
+  },
+  "seo": {
+    "title": "Pre-Deploy Evals vs Runtime Checks for AI Agents",
+    "description": "Compare Pre-Deploy Evaluations and Runtime Checks for AI agent reliability. Understand trade-offs and when to use each approach.",
+    "keywords": [
+      "pre-deploy evaluations",
+      "runtime checks",
+      "AI agent reliability",
+      "agent safety comparison"
+    ]
+  },
+  "content": {
+    "intro": "Ensuring AI agent reliability requires deliberate strategy around when and how you validate behavior. Pre-deploy evaluations and runtime checks represent two complementary philosophies — one focused on catching issues before they reach users, the other on monitoring and correcting behavior as it happens. Understanding the tradeoffs helps teams build more resilient AI systems.",
+    "approachA": {
+      "name": "Pre-Deploy Evaluations",
+      "description": "Pre-deploy evaluations involve running structured test suites, benchmarks, and red-teaming exercises against an AI agent before it goes live. Teams assess model behavior across curated datasets and edge cases to establish a confidence baseline. This approach is deeply rooted in traditional software QA practices adapted for probabilistic systems.",
+      "strengths": [
+        "Catches systematic failures and regressions before they impact real users",
+        "Provides documented evidence of safety and capability for compliance or stakeholder review",
+        "Enables controlled, repeatable testing across known edge cases and adversarial prompts",
+        "Encourages disciplined thinking about expected agent behavior and acceptance criteria"
+      ],
+      "weaknesses": [
+        "Cannot anticipate the full distribution of real-world inputs users will actually send",
+        "Evaluation datasets quickly become stale as user behavior and context evolve",
+        "Passing benchmarks does not guarantee safe behavior in novel or out-of-distribution scenarios",
+        "Provides no visibility or recourse once the agent is live and encountering unexpected situations"
+      ]
+    },
+    "approachB": {
+      "name": "Runtime Checks",
+      "description": "Runtime checks monitor, validate, and intervene in AI agent behavior continuously during live operation. Rather than relying solely on pre-deployment confidence, this approach treats every interaction as an opportunity to enforce guardrails, detect anomalies, and correct outputs before they reach end users. It shifts reliability from a gate into an ongoing process.",
+      "strengths": [
+        "Catches failures that only emerge from real user inputs and production context",
+        "Enables immediate intervention — blocking, flagging, or correcting problematic outputs in real time",
+        "Provides continuous observability and audit trails across all live agent interactions",
+        "Adapts to evolving threats and misuse patterns without requiring a full redeploy cycle"
+      ],
+      "weaknesses": [
+        "Adds latency to the inference pipeline if checks are not carefully optimized",
+        "Requires ongoing maintenance of rules, policies, and detection logic as the agent evolves",
+        "May generate false positives that degrade user experience if thresholds are poorly calibrated",
+        "Does not replace the need for foundational model quality — it cannot fix deeply flawed base behavior"
+      ]
+    },
+    "comparison": [
+      {
+        "dimension": "When it operates",
+        "approachA": "Before deployment, in a controlled testing environment",
+        "approachB": "Continuously, during every live agent interaction"
+      },
+      {
+        "dimension": "Coverage of real-world inputs",
+        "approachA": "Limited to curated test cases and anticipated scenarios",
+        "approachB": "Covers the full distribution of actual user inputs in production"
+      },
+      {
+        "dimension": "Ability to intervene",
+        "approachA": "Can block deployment but cannot act once the agent is live",
+        "approachB": "Can block, flag, or correct outputs before they reach users in real time"
+      },
+      {
+        "dimension": "Operational overhead",
+        "approachA": "Concentrated effort at release cycles; lighter ongoing burden",
+        "approachB": "Requires continuous monitoring infrastructure and policy maintenance"
+      },
+      {
+        "dimension": "Compliance and auditability",
+        "approachA": "Produces point-in-time reports useful for pre-launch sign-off",
+        "approachB": "Generates continuous audit logs across all interactions for ongoing accountability"
+      }
+    ],
+    "recommendation": {
+      "heading": "Which Should You Choose?",
+      "summary": "The most resilient AI systems use both approaches in tandem — pre-deploy evaluations to establish a quality baseline and catch known failure modes before launch, and runtime checks to handle the unpredictable reality of production. If you must prioritize one, runtime checks offer broader coverage of actual risk since real users will always surface behaviors your test suite never anticipated. Teams serious about reliability treat pre-deploy evaluation as the starting line, not the finish line."
+    },
+    "cta": {
+      "heading": "Try Runtime Verification with Vex",
+      "description": "See how Vex adds a continuous layer of runtime guardrails to your AI agents — catching failures in production that evaluations alone will never find."
+    }
+  }
+}

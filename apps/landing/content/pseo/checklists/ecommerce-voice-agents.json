@@ -1,0 +1,217 @@
+{
+  "meta": {
+    "industry": "ecommerce",
+    "useCase": "voice-agents",
+    "generatedAt": "2026-03-12"
+  },
+  "seo": {
+    "title": "E-Commerce Voice Agents AI Agent Checklist",
+    "description": "Production readiness checklist for voice agents AI agents in e-commerce. Covers FTC advertising guidelines, CCPA/GDPR, PCI DSS for payments.",
+    "keywords": [
+      "E-Commerce AI checklist",
+      "Voice Agents agent checklist",
+      "E-Commerce AI compliance",
+      "AI agent production readiness",
+      "AI guardrails checklist"
+    ]
+  },
+  "content": {
+    "intro": "Voice agents in e-commerce operate at the intersection of real-time customer interaction and high-stakes transactional data, making compliance and safety non-negotiable. Errors in pricing, product claims, or payment handling can trigger FTC enforcement, PCI DSS violations, and immediate customer churn within a single conversation. This checklist ensures your voice agent pipeline meets regulatory requirements, maintains sub-second latency, and delivers accurate, trustworthy shopping experiences at scale.",
+    "sections": [
+      {
+        "heading": "Speech Pipeline & Latency Compliance",
+        "description": "Ensure the real-time STT → LLM → TTS architecture meets performance SLAs and accessibility standards without sacrificing safety filtering or response accuracy.",
+        "items": [
+          {
+            "label": "Define and enforce end-to-end latency budgets",
+            "description": "Set hard latency thresholds for each pipeline stage (STT ≤150ms, LLM reasoning ≤400ms, TTS ≤150ms) and instrument alerts when any stage exceeds budget in production.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement ADA-compliant voice interaction design",
+            "description": "Ensure the voice agent supports slow speech rates, repetition requests, and fallback to text/email confirmation for users with hearing or speech impairments, per ADA Title III requirements.",
+            "priority": "critical"
+          },
+          {
+            "label": "Validate STT accuracy across accents and noise conditions",
+            "description": "Test speech-to-text transcription accuracy with diverse accent profiles and background noise levels above 60dB; set a minimum 95% word error rate threshold before production deployment.",
+            "priority": "high"
+          },
+          {
+            "label": "Configure graceful degradation for latency spikes",
+            "description": "Build fallback logic so that if LLM response time exceeds 800ms, the agent plays a contextual hold phrase ('Let me check that for you') rather than silence or a dropped call.",
+            "priority": "high"
+          },
+          {
+            "label": "Log and audit all STT transcriptions for 90 days",
+            "description": "Retain raw transcription logs with session IDs and timestamps to support dispute resolution, FTC audit trails, and post-incident analysis of misheard product or pricing queries.",
+            "priority": "high"
+          },
+          {
+            "label": "Test TTS pronunciation of prices, SKUs, and brand names",
+            "description": "Run a pronunciation QA suite covering currency formats (e.g., '$1,299.99'), alphanumeric SKUs, and brand names to prevent TTS misquoting prices or product identifiers to customers.",
+            "priority": "high"
+          },
+          {
+            "label": "Implement real-time safety filtering before TTS output",
+            "description": "Insert a synchronous content safety layer between LLM output and TTS synthesis to block hallucinated product claims, offensive language, or unauthorized discount offers before they are spoken.",
+            "priority": "critical"
+          }
+        ]
+      },
+      {
+        "heading": "Product Claims & Pricing Accuracy",
+        "description": "Voice agents must only state product claims and prices that are substantiated, current, and sourced directly from authoritative internal systems to comply with FTC guidelines and avoid refund disputes.",
+        "items": [
+          {
+            "label": "Ground all product claims in a live product catalog API",
+            "description": "Configure the LLM to retrieve product descriptions, features, and availability exclusively from a real-time catalog API call, never from training data or cached static content older than 15 minutes.",
+            "priority": "critical"
+          },
+          {
+            "label": "Enforce real-time pricing lookup before quoting any price",
+            "description": "Require the agent to call the pricing service synchronously before stating any price; never allow the LLM to infer or estimate prices, as stale prices create FTC and refund liability.",
+            "priority": "critical"
+          },
+          {
+            "label": "Restrict superlative and comparative product claims",
+            "description": "Add a prompt-level rule and output classifier that blocks unsubstantiated superlatives ('best,' 'cheapest,' 'guaranteed') unless the claim is explicitly present in the verified product catalog data.",
+            "priority": "critical"
+          },
+          {
+            "label": "Validate promotional and sale pricing against active campaign dates",
+            "description": "Before quoting a sale price, verify the promotion is currently active via the promotions API; if expired, the agent must quote the standard price and not reference the lapsed discount.",
+            "priority": "high"
+          },
+          {
+            "label": "Implement price confirmation step for orders above $100",
+            "description": "For any voice order where the total exceeds $100, require the agent to verbally repeat the itemized price and obtain explicit verbal confirmation before proceeding to payment capture.",
+            "priority": "high"
+          },
+          {
+            "label": "Log every price and product claim spoken with source reference",
+            "description": "Record each spoken price and product claim alongside the API response that sourced it, enabling dispute resolution and demonstrating FTC substantiation compliance.",
+            "priority": "high"
+          },
+          {
+            "label": "Test for LLM hallucination of product features monthly",
+            "description": "Run a monthly red-team evaluation with 50+ product queries designed to elicit hallucinated features or specs; any hallucination rate above 1% triggers a model update or retrieval constraint change.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Payment Handling & PCI DSS Compliance",
+        "description": "Voice-based payment capture introduces unique PCI DSS risks around cardholder data in audio streams, transcription logs, and LLM context windows that must be explicitly addressed.",
+        "items": [
+          {
+            "label": "Route payment capture to a PCI DSS-certified IVR or tokenization service",
+            "description": "Never pass full card numbers through the LLM or STT pipeline; use DTMF tone capture or a PCI-certified voice payment processor so cardholder data never enters the AI pipeline.",
+            "priority": "critical"
+          },
+          {
+            "label": "Suppress STT transcription during payment entry",
+            "description": "Programmatically pause STT transcription and logging when the agent enters payment collection mode, ensuring no card numbers, CVVs, or expiry dates appear in any log or transcript.",
+            "priority": "critical"
+          },
+          {
+            "label": "Purge LLM context window of any inadvertently captured payment data",
+            "description": "Implement a post-payment context sanitization step that scans the conversation history for PAN-like patterns and redacts them before the context is stored or reused.",
+            "priority": "critical"
+          },
+          {
+            "label": "Display and verbally confirm order total before payment authorization",
+            "description": "The agent must state the exact order total, applicable taxes, and shipping cost before requesting payment, creating a clear authorization record for chargeback defense.",
+            "priority": "high"
+          },
+          {
+            "label": "Send post-call payment confirmation via email or SMS",
+            "description": "Immediately after a voice transaction, trigger a written confirmation (email or SMS) with itemized receipt, order number, and return policy link to create a durable transaction record.",
+            "priority": "high"
+          },
+          {
+            "label": "Conduct quarterly PCI DSS scope review of voice pipeline components",
+            "description": "Engage a Qualified Security Assessor (QSA) quarterly to review whether any new pipeline components (new STT provider, LLM vendor, logging service) have expanded PCI DSS scope.",
+            "priority": "high"
+          },
+          {
+            "label": "Implement fraud detection triggers for unusual voice order patterns",
+            "description": "Integrate real-time fraud scoring for voice orders; if a session attempts more than 3 payment methods or orders exceed a configurable threshold, escalate to a human agent before processing.",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "heading": "Privacy, Consent & Return Policy Transparency",
+        "description": "Voice agents must obtain explicit consent for data collection, accurately represent return and refund policies, and comply with CCPA and GDPR data subject rights throughout the conversation lifecycle.",
+        "items": [
+          {
+            "label": "Play a mandatory call recording and AI disclosure at session start",
+            "description": "Within the first 5 seconds of every call, the agent must disclose that the call is AI-powered and may be recorded, satisfying CCPA, GDPR, and state wiretapping law requirements.",
+            "priority": "critical"
+          },
+          {
+            "label": "Obtain explicit opt-in before using voice data for model training",
+            "description": "If voice recordings will be used to improve AI models, present a clear opt-in prompt during or after the call; default must be opt-out, and consent must be logged with timestamp and session ID.",
+            "priority": "critical"
+          },
+          {
+            "label": "Accurately represent return and refund policies verbatim from policy database",
+            "description": "Configure the agent to retrieve return/refund policy text from a versioned policy database rather than paraphrasing; any paraphrase must be reviewed by legal and locked in the prompt system.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement a real-time CCPA/GDPR data deletion request handler",
+            "description": "When a caller requests deletion of their data during a voice session, log the request with session ID and route it to the data governance system within 24 hours, meeting CCPA's 45-day response requirement.",
+            "priority": "high"
+          },
+          {
+            "label": "Restrict cross-selling to products the customer has consented to hear about",
+            "description": "Before the agent makes any upsell or cross-sell offer, verify the customer's marketing consent status in the CRM; suppress offers entirely for customers who have opted out of marketing.",
+            "priority": "high"
+          },
+          {
+            "label": "Provide a clear human escalation path at any point in the conversation",
+            "description": "The agent must offer transfer to a live human agent whenever requested, and proactively offer escalation after two consecutive failed intents, satisfying both ADA and FTC fair dealing expectations.",
+            "priority": "high"
+          },
+          {
+            "label": "Conduct bi-annual privacy impact assessment for the voice pipeline",
+            "description": "Perform a documented Privacy Impact Assessment every 6 months covering new data flows, third-party STT/TTS vendors, and any new LLM providers to maintain GDPR Article 35 compliance.",
+            "priority": "medium"
+          },
+          {
+            "label": "Anonymize voice session data used in QA and testing environments",
+            "description": "Before using production voice session recordings in QA, staging, or model evaluation, apply speaker anonymization and PII redaction to prevent CCPA/GDPR violations in non-production systems.",
+            "priority": "medium"
+          }
+        ]
+      }
+    ],
+    "regulatoryNotes": {
+      "heading": "Regulatory Considerations",
+      "notes": [
+        {
+          "regulation": "FTC Advertising Guidelines & Endorsement Rules",
+          "note": "Voice agents are considered advertising channels under FTC guidelines. Any product claim, testimonial reference, or promotional statement made by the agent must be substantiated with evidence on file. The FTC's 2023 updated endorsement guides explicitly extend to AI-generated content, meaning the agent cannot state 'customers love this product' without documented substantiation. Violations can result in civil penalties up to $50,120 per violation."
+        },
+        {
+          "regulation": "CCPA & GDPR for Voice Data",
+          "note": "Voice recordings constitute biometric and personal data under both CCPA and GDPR, triggering heightened obligations. Under GDPR Article 9, if voice data could be used to infer health or emotional state (e.g., sentiment analysis), explicit consent is required. CCPA requires a 'Do Not Sell My Personal Information' mechanism that must be accessible via the voice channel, typically through a spoken opt-out command or post-call SMS link."
+        },
+        {
+          "regulation": "PCI DSS v4.0 for Voice Commerce",
+          "note": "PCI DSS v4.0 (effective March 2025) introduces Requirement 6.4.3 and 11.6.1 that affect web-based payment pages, but voice channels must also comply with Requirement 4.2.1 (strong cryptography for cardholder data in transit) and Requirement 3.3.1 (no storage of sensitive authentication data post-authorization). Voice pipelines that use cloud STT services must ensure those vendors are PCI DSS compliant or that cardholder data never reaches them."
+        },
+        {
+          "regulation": "ADA Title III & WCAG for Voice Interfaces",
+          "note": "Under ADA Title III, e-commerce businesses must provide equal access to goods and services for customers with disabilities. Voice agents must not be the sole channel for any transaction; customers must always have access to an equivalent non-voice path (web, app, or human agent). Additionally, if the voice agent is paired with a visual interface (smart display), WCAG 2.1 AA standards apply to all on-screen content displayed during the voice interaction."
+        }
+      ]
+    },
+    "cta": {
+      "heading": "Automate Your E-Commerce Agent Compliance",
+      "description": "Use Vex to continuously monitor your voice agent pipeline against this checklist—automatically flagging pricing inaccuracies, policy misrepresentations, and PCI DSS risks before they reach your customers."
+    }
+  }
+}

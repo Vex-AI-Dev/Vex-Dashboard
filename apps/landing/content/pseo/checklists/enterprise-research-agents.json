@@ -1,0 +1,205 @@
+{
+  "meta": {
+    "industry": "enterprise",
+    "useCase": "research-agents",
+    "generatedAt": "2026-03-12"
+  },
+  "seo": {
+    "title": "Enterprise SaaS Research Agents AI Agent Checklist",
+    "description": "Production readiness checklist for research agents AI agents in enterprise saas. Covers SOC 2 Type II, ISO 27001, GDPR.",
+    "keywords": [
+      "Enterprise SaaS AI checklist",
+      "Research Agents agent checklist",
+      "Enterprise SaaS AI compliance",
+      "AI agent production readiness",
+      "AI guardrails checklist"
+    ]
+  },
+  "content": {
+    "intro": "Enterprise SaaS research agents operate across multi-tenant environments where a single compliance failure can trigger SLA breaches, contract terminations, and GDPR/CCPA liability simultaneously. Unlike consumer AI tools, these agents must enforce strict data residency, tenant isolation, and audit trails while delivering accurate, verifiable research outputs at scale. This checklist provides the concrete controls required to deploy research agents that satisfy SOC 2 Type II, ISO 27001, and enterprise contractual obligations.",
+    "sections": [
+      {
+        "heading": "Data Governance & Tenant Isolation",
+        "description": "Ensure research agent pipelines enforce strict boundaries between customer data, comply with per-contract data residency requirements, and maintain audit-ready records of all AI-assisted actions.",
+        "items": [
+          {
+            "label": "Enforce per-tenant data namespace isolation",
+            "description": "Configure agent memory, vector stores, and intermediate research artifacts to use tenant-scoped namespaces (e.g., tenant_id-prefixed S3 buckets or separate Pinecone indexes) so no cross-tenant data bleed is possible during multi-step synthesis.",
+            "priority": "critical"
+          },
+          {
+            "label": "Map and enforce data residency per customer contract",
+            "description": "Maintain a contract-to-region mapping table and configure agent orchestration to route all web search queries, LLM API calls, and storage writes to the contractually required geographic region (e.g., EU-only for GDPR customers).",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement immutable audit logs for all AI-assisted actions",
+            "description": "Log every agent action—web search queries issued, URLs fetched, LLM prompts sent, summaries generated, and outputs delivered—to an append-only audit store (e.g., AWS CloudTrail + S3 Object Lock) with tenant_id, timestamp, and user_id fields.",
+            "priority": "critical"
+          },
+          {
+            "label": "Define and enforce data retention and deletion schedules",
+            "description": "Configure automated TTL policies on research artifacts, cached search results, and agent conversation history to match per-customer data retention agreements, and verify GDPR Article 17 right-to-erasure requests propagate to all agent storage layers within 30 days.",
+            "priority": "high"
+          },
+          {
+            "label": "Classify and tag all data processed by research agents",
+            "description": "Apply automated data classification labels (PII, confidential, public) to inputs and outputs at ingestion time so downstream agent steps apply appropriate handling controls and audit log entries include sensitivity context.",
+            "priority": "high"
+          },
+          {
+            "label": "Restrict agent access to only contracted data sources",
+            "description": "Maintain an allowlist of approved external domains and internal data connectors per tenant, and block agent web search or API calls to non-allowlisted sources via egress filtering at the network layer.",
+            "priority": "high"
+          },
+          {
+            "label": "Encrypt all research artifacts at rest and in transit per tenant key",
+            "description": "Use tenant-managed KMS keys (AWS KMS or Azure Key Vault) for encrypting stored research outputs and intermediate agent state, ensuring one tenant's key compromise cannot expose another tenant's data.",
+            "priority": "critical"
+          }
+        ]
+      },
+      {
+        "heading": "Research Output Verification & Accuracy Controls",
+        "description": "Multi-step research agents are prone to hallucination, source misattribution, and stale data synthesis. These controls ensure outputs meet the accuracy and verifiability standards enterprise customers require before acting on AI-generated research.",
+        "items": [
+          {
+            "label": "Implement source provenance tracking for every claim",
+            "description": "Require the agent to attach a structured citation object (URL, domain authority score, fetch timestamp, HTTP status code) to every factual claim in the synthesized output, and surface these citations in the user-facing report.",
+            "priority": "critical"
+          },
+          {
+            "label": "Enforce recency thresholds on research sources",
+            "description": "Configure agent search steps to reject or flag sources older than a configurable threshold (default: 90 days for market research, 24 hours for news), and include a 'data freshness' metadata field in all research outputs.",
+            "priority": "high"
+          },
+          {
+            "label": "Run automated cross-source claim verification",
+            "description": "After initial synthesis, trigger a secondary agent pass that independently searches for corroborating or contradicting evidence for high-confidence claims, flagging any claim supported by fewer than two independent sources as 'unverified'.",
+            "priority": "high"
+          },
+          {
+            "label": "Integrate bias detection scoring on synthesized outputs",
+            "description": "Apply a bias detection model or prompt-based evaluation step that scores outputs for political, commercial, or geographic bias before delivery, logging the score and flagging outputs above a defined threshold for human review.",
+            "priority": "medium"
+          },
+          {
+            "label": "Validate external URLs before including in research outputs",
+            "description": "Perform live HTTP HEAD requests on all cited URLs at output generation time to confirm they resolve, are not redirected to unrelated content, and are not flagged by a threat intelligence feed as malicious or parked domains.",
+            "priority": "high"
+          },
+          {
+            "label": "Implement confidence scoring with explicit uncertainty disclosure",
+            "description": "Attach a confidence score (0–100) and an uncertainty disclosure statement to each research summary section, derived from source count, source authority, and claim corroboration rate, so enterprise users can calibrate reliance on the output.",
+            "priority": "high"
+          },
+          {
+            "label": "Require human-in-the-loop review for high-stakes research outputs",
+            "description": "Define a 'high-stakes' output category (e.g., M&A due diligence, regulatory filings, competitive intelligence) that automatically routes synthesized research to a designated human reviewer before delivery, with a configurable SLA for review completion.",
+            "priority": "medium"
+          }
+        ]
+      },
+      {
+        "heading": "Security & Access Control",
+        "description": "Research agents with web access and multi-tenant data access represent a significant attack surface. These controls address prompt injection, credential exposure, and unauthorized data access risks required for SOC 2 Type II and ISO 27001 compliance.",
+        "items": [
+          {
+            "label": "Deploy prompt injection detection on all external content ingested by agents",
+            "description": "Before passing web-scraped content or user-supplied documents into the agent's LLM context, run it through a prompt injection classifier and sanitize or reject inputs that contain instruction-override patterns (e.g., 'ignore previous instructions').",
+            "priority": "critical"
+          },
+          {
+            "label": "Enforce least-privilege API credentials per agent task",
+            "description": "Issue short-lived, scoped API tokens for each agent research session (e.g., read-only search API keys, time-limited OAuth tokens) rather than long-lived shared credentials, and rotate them automatically after each session completes.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement role-based access control (RBAC) for agent invocation",
+            "description": "Restrict which enterprise users and service accounts can trigger research agents, configure agent parameters, or access raw agent outputs via RBAC policies enforced at the API gateway layer, with roles mapped to customer contract entitlements.",
+            "priority": "critical"
+          },
+          {
+            "label": "Sandbox agent web browsing in isolated network environments",
+            "description": "Run web fetch and scraping steps inside ephemeral, network-isolated containers (e.g., AWS Fargate with no VPC peering to production) that are destroyed after each research task to prevent lateral movement if a malicious site exploits the browser.",
+            "priority": "high"
+          },
+          {
+            "label": "Scan all downloaded research content for malware before processing",
+            "description": "Pass all files downloaded by the research agent (PDFs, DOCX, HTML) through a malware scanning service (e.g., ClamAV or a cloud AV API) before extracting text for LLM processing to prevent malicious document exploits.",
+            "priority": "high"
+          },
+          {
+            "label": "Log and alert on anomalous agent behavior patterns",
+            "description": "Define behavioral baselines for research agents (e.g., typical query volume, domain diversity, output size) and configure SIEM alerts for deviations exceeding 3 standard deviations, which may indicate prompt injection, data exfiltration, or runaway agent loops.",
+            "priority": "high"
+          },
+          {
+            "label": "Conduct quarterly penetration testing of agent API endpoints",
+            "description": "Include research agent orchestration APIs, webhook endpoints, and LLM proxy layers in the quarterly penetration testing scope required for SOC 2 Type II, with specific test cases for prompt injection, tenant isolation bypass, and credential theft.",
+            "priority": "medium"
+          }
+        ]
+      },
+      {
+        "heading": "SLA Reliability & Operational Continuity",
+        "description": "Enterprise SLAs for research agents typically require 99.9%+ uptime and defined response time guarantees. These controls ensure agent infrastructure meets contractual obligations and failures are detected and remediated before customers are impacted.",
+        "items": [
+          {
+            "label": "Define and instrument SLA metrics for each agent pipeline stage",
+            "description": "Instrument end-to-end latency, per-stage completion time (search, fetch, synthesize, verify), and error rates for each research agent pipeline, publishing these metrics to a dashboard with per-tenant SLA threshold alerting.",
+            "priority": "critical"
+          },
+          {
+            "label": "Implement circuit breakers for all external search and data APIs",
+            "description": "Wrap all third-party search API calls (e.g., Bing Search, SerpAPI, Tavily) in circuit breakers that automatically fall back to cached results or alternative providers when error rates exceed 5% over a 60-second window, preventing cascading failures.",
+            "priority": "critical"
+          },
+          {
+            "label": "Configure multi-region failover for agent orchestration infrastructure",
+            "description": "Deploy agent orchestration services (e.g., LangChain server, Temporal workflows) across at least two geographic regions with automated failover, ensuring a single-region outage does not breach enterprise uptime SLAs.",
+            "priority": "high"
+          },
+          {
+            "label": "Establish and test incident response runbooks for agent failures",
+            "description": "Document step-by-step runbooks for the top 5 agent failure modes (LLM API outage, search quota exhaustion, tenant data isolation breach, prompt injection detection, output accuracy degradation) and conduct tabletop exercises quarterly.",
+            "priority": "high"
+          },
+          {
+            "label": "Implement graceful degradation modes for partial agent failures",
+            "description": "Configure research agents to deliver partial results with explicit completeness indicators (e.g., 'synthesized from 3 of 5 planned sources due to API timeout') rather than failing silently or returning errors, maintaining user trust during degraded operation.",
+            "priority": "high"
+          },
+          {
+            "label": "Maintain per-tenant SLA reporting with automated breach notifications",
+            "description": "Generate automated monthly SLA compliance reports per tenant showing uptime, response time percentiles, and error rates against contracted thresholds, with real-time alerts to both internal on-call and customer-designated contacts when breach thresholds are approached.",
+            "priority": "high"
+          },
+          {
+            "label": "Implement rate limiting and quota management per tenant",
+            "description": "Enforce per-tenant rate limits on research agent invocations, LLM token consumption, and external API calls to prevent a single high-volume tenant from degrading service for others, with configurable burst allowances per contract tier.",
+            "priority": "medium"
+          },
+          {
+            "label": "Conduct monthly chaos engineering exercises on agent infrastructure",
+            "description": "Run controlled failure injection tests (e.g., kill LLM API connections, simulate search API quota exhaustion, inject network latency between agent steps) in a staging environment monthly to validate that failover, circuit breakers, and SLA alerting function as designed.",
+            "priority": "medium"
+          }
+        ]
+      }
+    ],
+    "regulatoryNotes": {
+      "heading": "Regulatory Considerations",
+      "notes": [
+        "GDPR Article 22 requires that enterprise customers be informed when AI research agents make or significantly influence decisions affecting individuals, and you must provide a mechanism for human review of such outputs. Ensure your research agent outputs include metadata indicating AI involvement and that your enterprise contracts include appropriate data processing agreements (DPAs) specifying the legal basis for processing personal data encountered during web research.",
+        "SOC 2 Type II CC6.1 and CC6.6 controls require that logical access to research agent systems and the data they process be restricted to authorized users and that access is reviewed quarterly. Your agent's service account credentials, API keys, and tenant data access permissions must be included in your access review scope and documented in your SOC 2 evidence repository.",
+        "CCPA Section 1798.100 grants California residents the right to know what personal information has been collected about them, including data that research agents may have gathered from public web sources and stored in research outputs. Implement a data subject request (DSR) workflow that can identify and delete personal information about specific individuals across all agent-generated research artifacts within the 45-day CCPA response window.",
+        "ISO 27001 Annex A Control 8.25 (Secure development lifecycle) and A.5.23 (Information security for use of cloud services) require that third-party LLM APIs and search services used by your research agents be assessed as part of your supplier security review process. Maintain a register of all external AI and search APIs used by your agents, document their security certifications, and include them in your annual supplier risk assessment."
+      ]
+    },
+    "cta": {
+      "heading": "Automate Your Enterprise SaaS Agent Compliance",
+      "description": "Use Vex to continuously monitor your research agents against this checklist, automatically generate SOC 2 and ISO 27001 evidence, and receive real-time alerts when tenant isolation, audit logging, or SLA controls drift out of compliance."
+    }
+  }
+}
