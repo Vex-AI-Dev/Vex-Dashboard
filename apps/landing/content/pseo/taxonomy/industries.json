@@ -46,5 +46,37 @@
     "sensitivityLevel": "high",
     "commonRegulations": ["Student data requires parental consent for minors", "AI tutoring must not replace qualified instruction", "Content must be age-appropriate and bias-free"],
     "failureConsequences": "Student data exposure, FERPA violations, harmful content exposure to minors, institutional liability, loss of accreditation"
+  },
+  {
+    "slug": "government",
+    "name": "Government",
+    "complianceRequirements": ["FedRAMP", "FISMA", "NIST 800-53", "Section 508", "Executive Order on AI"],
+    "sensitivityLevel": "critical",
+    "commonRegulations": ["AI systems must undergo algorithmic impact assessments", "Classified data must never be processed by external LLMs", "All AI-assisted decisions affecting citizens must be explainable and appealable"],
+    "failureConsequences": "National security breaches, loss of public trust, congressional investigations, contract debarment, civil liberties violations"
+  },
+  {
+    "slug": "insurance",
+    "name": "Insurance",
+    "complianceRequirements": ["State insurance regulations", "NAIC Model Laws", "GDPR/CCPA", "Fair Credit Reporting Act", "Anti-discrimination laws"],
+    "sensitivityLevel": "high",
+    "commonRegulations": ["Underwriting decisions must not discriminate based on protected classes", "Claims processing AI must provide explainable denial reasons", "Policyholder data must be encrypted and access-audited"],
+    "failureConsequences": "Discriminatory underwriting penalties, wrongful claim denials, state regulatory actions, class-action lawsuits, license revocation"
+  },
+  {
+    "slug": "cybersecurity",
+    "name": "Cybersecurity",
+    "complianceRequirements": ["NIST Cybersecurity Framework", "SOC 2 Type II", "ISO 27001", "CISA directives", "Industry-specific regulations"],
+    "sensitivityLevel": "critical",
+    "commonRegulations": ["Threat intelligence data must not be leaked to adversaries via LLM APIs", "Automated response actions must have human approval for critical systems", "AI-generated security advisories must be verified against CVE databases"],
+    "failureConsequences": "Adversary exploitation of AI-leaked intelligence, false positive incident response causing outages, automated actions escalating security incidents, breach of classified threat data"
+  },
+  {
+    "slug": "recruitment",
+    "name": "Recruitment/HR",
+    "complianceRequirements": ["EEOC guidelines", "NYC Local Law 144", "EU AI Act (high-risk)", "ADA", "State hiring bias laws"],
+    "sensitivityLevel": "high",
+    "commonRegulations": ["AI screening tools must undergo annual bias audits", "Candidates must be notified when AI is used in hiring decisions", "Resume screening must not discriminate based on protected characteristics"],
+    "failureConsequences": "Discriminatory hiring lawsuits, EEOC enforcement actions, reputational damage, loss of diverse talent pipeline, regulatory fines up to $1,500 per violation"
   }
 ]

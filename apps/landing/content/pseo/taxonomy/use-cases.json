@@ -62,5 +62,37 @@
     "riskProfile": "medium",
     "verificationNeeds": ["brand consistency", "factual accuracy", "originality", "tone adherence", "SEO compliance"],
     "commonAgentPattern": "Brief intake → draft generation → review → refinement pipeline"
+  },
+  {
+    "slug": "chatbot",
+    "name": "AI Chatbot",
+    "typicalArchitecture": "Conversational agent with retrieval-augmented generation, intent classification, and multi-turn memory management",
+    "riskProfile": "high",
+    "verificationNeeds": ["response accuracy", "conversation coherence", "safety filtering", "PII protection", "hallucination detection"],
+    "commonAgentPattern": "Intent classifier → retrieval agent → response generator with memory and guardrails"
+  },
+  {
+    "slug": "coding-assistant",
+    "name": "AI Coding Assistant",
+    "typicalArchitecture": "Code-aware LLM agent with repository context, sandbox execution, test validation, and iterative debugging",
+    "riskProfile": "medium",
+    "verificationNeeds": ["code correctness", "security vulnerability scanning", "no credential leakage", "dependency safety", "license compliance"],
+    "commonAgentPattern": "Context retrieval → code generation → sandbox execution → test validation → refinement loop"
+  },
+  {
+    "slug": "email-assistant",
+    "name": "AI Email Assistant",
+    "typicalArchitecture": "Email processing agent with intent detection, draft generation, attachment handling, and send approval workflows",
+    "riskProfile": "high",
+    "verificationNeeds": ["PII filtering", "tone appropriateness", "recipient validation", "content accuracy", "confidentiality enforcement"],
+    "commonAgentPattern": "Email intake → intent classification → draft generation → compliance check → human approval → send"
+  },
+  {
+    "slug": "agentic-rag",
+    "name": "Agentic RAG",
+    "typicalArchitecture": "Multi-step retrieval agent that autonomously plans queries, retrieves from multiple sources, and synthesizes with source attribution",
+    "riskProfile": "high",
+    "verificationNeeds": ["source faithfulness", "hallucination detection", "query planning accuracy", "cross-source consistency", "citation verification"],
+    "commonAgentPattern": "Query planner → multi-source retriever → reranker → synthesizer with iterative refinement and source tracking"
   }
 ]
