@@ -161,7 +161,8 @@ def load_taxonomy():
     frameworks = load_json(TAXONOMY_DIR / "frameworks.json")
     use_cases = load_json(TAXONOMY_DIR / "use-cases.json")
     industries = load_json(TAXONOMY_DIR / "industries.json")
-    return frameworks, use_cases, industries
+    problems = load_json(TAXONOMY_DIR / "problems.json")
+    return frameworks, use_cases, industries, problems
 
 
 # ── LLM call ────────────────────────────────────────────────────────
@@ -214,6 +215,18 @@ def problem_guide_title(problem: dict) -> str:
     return problem["title"]
 
 
+def framework_usecase_title(framework_name: str, usecase_name: str) -> str:
+    return f"Building {usecase_name} with {framework_name} + Vex Guardrails"
+
+
+def framework_industry_title(framework_name: str, industry_name: str) -> str:
+    return f"{framework_name} Guardrails for {industry_name}"
+
+
+def problem_framework_title(problem_title: str, framework_name: str) -> str:
+    return f"{problem_title.replace(' Guide', '')} in {framework_name} Agents"
+
+
 # ── Generators ──────────────────────────────────────────────────────
 
 
@@ -248,15 +261,36 @@ CONCEPT_COMPARISONS = [
         "approachA": "Single-Agent Architecture",
         "approachB": "Multi-Agent Architecture",
     },
-]
-
-PROBLEM_GUIDES = [
-    {"slug": "hallucination-detection", "title": "AI Agent Hallucination Detection Guide"},
-    {"slug": "drift-monitoring", "title": "AI Agent Drift Monitoring Guide"},
-    {"slug": "tool-loop-detection", "title": "Tool Loop Detection in AI Agents"},
-    {"slug": "pii-filtering", "title": "PII Filtering for AI Agents"},
-    {"slug": "prompt-injection-prevention", "title": "Prompt Injection Prevention for AI Agents"},
-    {"slug": "output-consistency", "title": "Ensuring Output Consistency in AI Agents"},
+    {
+        "slug": "observability-vs-monitoring",
+        "title": "Observability vs Monitoring for AI Agents",
+        "approachA": "Observability",
+        "approachB": "Monitoring",
+    },
+    {
+        "slug": "rule-based-vs-llm-guardrails",
+        "title": "Rule-Based vs LLM-Based Guardrails",
+        "approachA": "Rule-Based Guardrails",
+        "approachB": "LLM-Based Guardrails",
+    },
+    {
+        "slug": "frameworks-vs-custom",
+        "title": "Agent Frameworks vs Custom Orchestration",
+        "approachA": "Agent Frameworks",
+        "approachB": "Custom Orchestration",
+    },
+    {
+        "slug": "cloud-vs-on-premise",
+        "title": "Cloud vs On-Premise Agent Deployment",
+        "approachA": "Cloud Deployment",
+        "approachB": "On-Premise Deployment",
+    },
+    {
+        "slug": "sync-vs-async-verification",
+        "title": "Synchronous vs Async Agent Verification",
+        "approachA": "Synchronous Verification",
+        "approachB": "Asynchronous Verification",
+    },
 ]
 
 
@@ -508,6 +542,200 @@ IMPORTANT: Return ONLY the JSON object. Include real code examples where relevan
     }
 
 
+async def generate_framework_usecase(framework: dict, use_case: dict) -> dict:
+    title = framework_usecase_title(framework["name"], use_case["name"])
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+    system_prompt = (
+        "You are a technical writer for Vex, an AI agent reliability platform. "
+        "Generate structured JSON content for a framework × use-case integration guide. "
+        "Be specific to both the framework's API patterns and the use case's architecture. "
+        "Include real, working code examples using the Vex Python or TypeScript SDK."
+    )
+
+    user_prompt = f"""Generate a guide for: {framework['name']} + {use_case['name']}
+
+Framework context:
+- Language: {framework['language']}
+- Common failure modes: {json.dumps(framework['commonFailureModes'])}
+- Integration method: {framework['integrationMethod']}
+- Install: {framework['installSnippet']}
+- Description: {framework['description']}
+
+Use case context:
+- Architecture: {use_case['typicalArchitecture']}
+- Risk profile: {use_case['riskProfile']}
+- Verification needs: {json.dumps(use_case['verificationNeeds'])}
+
+Return JSON with this exact structure:
+{{
+  "content": {{
+    "intro": "2-3 sentences introducing building {use_case['name']} with {framework['name']} and why guardrails matter",
+    "architectureOverview": {{
+      "heading": "{use_case['name']} Architecture with {framework['name']}",
+      "description": "2-3 paragraphs describing the typical architecture",
+      "diagram": "ASCII or text-based architecture diagram"
+    }},
+    "risks": [exactly 4 objects with "name", "description", "severity" (critical|high|medium), "mitigation"],
+    "implementation": [exactly 4 objects with "title", "description", "code" (real working code), "language" (python|typescript)],
+    "vexIntegration": [exactly 3 objects with "title", "description", "code" (real working code), "language" (python|typescript)],
+    "cta": {{
+      "heading": "Secure Your {framework['name']} {use_case['name']}",
+      "description": "one sentence CTA"
+    }}
+  }}
+}}
+
+IMPORTANT: Return ONLY the JSON object. Code examples must be real and specific to {framework['name']} and {use_case['name']}. Use {'python and typescript' if framework['language'] == 'both' else framework['language']} for code examples."""
+
+    data = await generate_json(system_prompt, user_prompt)
+
+    return {
+        "meta": {"framework": framework["slug"], "useCase": use_case["slug"], "generatedAt": now},
+        "seo": {
+            "title": title,
+            "description": f"Learn how to build {use_case['name'].lower()} with {framework['name']} + Vex guardrails. Detect failures, prevent drift, and ensure reliability.",
+            "keywords": [
+                f"{framework['name']} {use_case['name'].lower()}",
+                f"{framework['name']} guardrails",
+                f"{use_case['name'].lower()} reliability",
+                f"Vex {framework['name']}",
+                "AI agent guardrails",
+            ],
+        },
+        "content": data["content"],
+    }
+
+
+async def generate_framework_industry(framework: dict, industry: dict) -> dict:
+    title = framework_industry_title(framework["name"], industry["name"])
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+    system_prompt = (
+        "You are a compliance expert writing for Vex, an AI agent reliability platform. "
+        "Generate structured JSON content for a framework × industry compliance guide. "
+        "Be specific to both the framework's patterns and the industry's regulations. "
+        "Include real, working code examples using the Vex Python or TypeScript SDK."
+    )
+
+    user_prompt = f"""Generate a compliance guide for: {framework['name']} in {industry['name']}
+
+Framework context:
+- Language: {framework['language']}
+- Common failure modes: {json.dumps(framework['commonFailureModes'])}
+- Integration method: {framework['integrationMethod']}
+- Install: {framework['installSnippet']}
+- Description: {framework['description']}
+
+Industry context:
+- Compliance: {json.dumps(industry['complianceRequirements'])}
+- Sensitivity: {industry['sensitivityLevel']}
+- Regulations: {json.dumps(industry['commonRegulations'])}
+- Failure consequences: {industry['failureConsequences']}
+
+Return JSON with this exact structure:
+{{
+  "content": {{
+    "intro": "2-3 sentences about why {industry['name']} teams using {framework['name']} need compliance guardrails",
+    "complianceRequirements": [exactly 4 objects with "regulation", "description", "howVexHelps"],
+    "industryRisks": [exactly 4 objects with "name", "description", "severity" (critical|high|medium), "example"],
+    "implementation": [exactly 3 objects with "title", "description", "code" (real working code), "language" (python|typescript)],
+    "caseStudyScenario": {{
+      "heading": "{framework['name']} in {industry['name']}: A Scenario",
+      "scenario": "2-3 paragraphs describing a realistic deployment scenario",
+      "outcome": "1-2 paragraphs describing the outcome with Vex guardrails"
+    }},
+    "cta": {{
+      "heading": "Comply with {industry['name']} Regulations Using Vex",
+      "description": "one sentence CTA"
+    }}
+  }}
+}}
+
+IMPORTANT: Return ONLY the JSON object. Code examples must be real and specific to {framework['name']} in {industry['name']}. Use {'python and typescript' if framework['language'] == 'both' else framework['language']} for code examples."""
+
+    data = await generate_json(system_prompt, user_prompt)
+
+    return {
+        "meta": {"framework": framework["slug"], "industry": industry["slug"], "generatedAt": now},
+        "seo": {
+            "title": title,
+            "description": f"Compliance guide for {framework['name']} agents in {industry['name'].lower()}. Meet {', '.join(industry['complianceRequirements'][:2])} requirements with Vex guardrails.",
+            "keywords": [
+                f"{framework['name']} {industry['name'].lower()}",
+                f"{industry['name'].lower()} AI compliance",
+                f"{framework['name']} guardrails",
+                f"{industry['name'].lower()} AI agents",
+                "AI compliance guardrails",
+            ],
+        },
+        "content": data["content"],
+    }
+
+
+async def generate_problem_framework(problem: dict, framework: dict) -> dict:
+    title = problem_framework_title(problem["title"], framework["name"])
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+    system_prompt = (
+        "You are a technical writer for Vex, an AI agent reliability platform. "
+        "Generate a deep-dive guide on how a specific problem manifests in a specific framework. "
+        "Be specific to how this problem appears in this framework's patterns and APIs. "
+        "Include concrete detection methods and fixes with real code."
+    )
+
+    user_prompt = f"""Generate a problem × framework deep-dive for: {problem['title']} in {framework['name']}
+
+Problem: {problem['title']}
+
+Framework context:
+- Language: {framework['language']}
+- Common failure modes: {json.dumps(framework['commonFailureModes'])}
+- Integration method: {framework['integrationMethod']}
+- Install: {framework['installSnippet']}
+- Description: {framework['description']}
+
+Return JSON with this exact structure:
+{{
+  "content": {{
+    "intro": "2-3 sentences about how {problem['title'].replace(' Guide', '')} specifically manifests in {framework['name']} agents",
+    "howItManifests": [exactly 4 objects with "scenario", "symptom", "impact"],
+    "detection": [exactly 3 objects with "name", "description", "code" (real working code), "language" (python|typescript)],
+    "fixes": [exactly 3 objects with "name", "description", "code" (real working code), "language" (python|typescript)],
+    "vexAutomation": {{
+      "heading": "Automating {problem['title'].replace(' Guide', '')} Detection with Vex",
+      "description": "2-3 paragraphs on how Vex automates detection and remediation",
+      "code": "real working code showing Vex integration",
+      "language": "{'python' if framework['language'] != 'typescript' else 'typescript'}"
+    }},
+    "cta": {{
+      "heading": "Detect and Fix This Automatically with Vex",
+      "description": "one sentence CTA"
+    }}
+  }}
+}}
+
+IMPORTANT: Return ONLY the JSON object. All code must be specific to {framework['name']}. Use {'python and typescript' if framework['language'] == 'both' else framework['language']} for code examples."""
+
+    data = await generate_json(system_prompt, user_prompt)
+
+    return {
+        "meta": {"problem": problem["slug"], "framework": framework["slug"], "generatedAt": now},
+        "seo": {
+            "title": title,
+            "description": f"How to detect and fix {problem['title'].lower().replace(' guide', '')} in {framework['name']} agents. Framework-specific detection, fixes, and Vex automation.",
+            "keywords": [
+                problem["title"].lower().replace(" ", "-"),
+                f"{framework['name']} {problem['slug']}",
+                f"{framework['name']} reliability",
+                "AI agent monitoring",
+                "Vex guardrails",
+            ],
+        },
+        "content": data["content"],
+    }
+
+
 # ── Write helpers ───────────────────────────────────────────────────
 
 
@@ -580,8 +808,8 @@ async def run_concept_comparisons(slug: str | None = None, dry_run: bool = False
             write_json(CONTENT_DIR / "comparisons" / "concepts" / f"{c['slug']}.json", result)
 
 
-async def run_problem_guides(slug: str | None = None, dry_run: bool = False):
-    targets = [p for p in PROBLEM_GUIDES if slug is None or p["slug"] == slug]
+async def run_problem_guides(problems: list, slug: str | None = None, dry_run: bool = False):
+    targets = [p for p in problems if slug is None or p["slug"] == slug]
     print(f"\n▸ Generating {len(targets)} problem guides...")
     if dry_run:
         for p in targets:
@@ -597,10 +825,99 @@ async def run_problem_guides(slug: str | None = None, dry_run: bool = False):
             write_json(CONTENT_DIR / "problem-guides" / f"{p['slug']}.json", result)
 
 
+async def run_framework_usecase(
+    frameworks: list, use_cases: list, slug: str | None = None, dry_run: bool = False
+):
+    pairs = []
+    for fw in frameworks:
+        for uc in use_cases:
+            s = f"{fw['slug']}-{uc['slug']}"
+            if slug is None or s == slug:
+                pairs.append((fw, uc))
+
+    print(f"\n▸ Generating {len(pairs)} framework × use-case guides...")
+    if dry_run:
+        for fw, uc in pairs:
+            print(f"  [dry-run] {fw['slug']}-{uc['slug']}: {framework_usecase_title(fw['name'], uc['name'])}")
+        return
+
+    tasks = [generate_framework_usecase(fw, uc) for fw, uc in pairs]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    for (fw, uc), result in zip(pairs, results):
+        s = f"{fw['slug']}-{uc['slug']}"
+        if isinstance(result, Exception):
+            print(f"  ✗ {s}: {result}")
+        else:
+            write_json(CONTENT_DIR / "guides" / "cross" / f"{s}.json", result)
+
+
+async def run_framework_industry(
+    frameworks: list, industries: list, slug: str | None = None, dry_run: bool = False
+):
+    pairs = []
+    for fw in frameworks:
+        for ind in industries:
+            s = f"{fw['slug']}-{ind['slug']}"
+            if slug is None or s == slug:
+                pairs.append((fw, ind))
+
+    print(f"\n▸ Generating {len(pairs)} framework × industry guides...")
+    if dry_run:
+        for fw, ind in pairs:
+            print(f"  [dry-run] {fw['slug']}-{ind['slug']}: {framework_industry_title(fw['name'], ind['name'])}")
+        return
+
+    tasks = [generate_framework_industry(fw, ind) for fw, ind in pairs]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    for (fw, ind), result in zip(pairs, results):
+        s = f"{fw['slug']}-{ind['slug']}"
+        if isinstance(result, Exception):
+            print(f"  ✗ {s}: {result}")
+        else:
+            write_json(CONTENT_DIR / "guides" / "industry" / f"{s}.json", result)
+
+
+async def run_problem_framework(
+    problems: list, frameworks: list, slug: str | None = None, dry_run: bool = False
+):
+    pairs = []
+    for prob in problems:
+        for fw in frameworks:
+            s = f"{prob['slug']}-{fw['slug']}"
+            if slug is None or s == slug:
+                pairs.append((prob, fw))
+
+    print(f"\n▸ Generating {len(pairs)} problem × framework guides...")
+    if dry_run:
+        for prob, fw in pairs:
+            print(f"  [dry-run] {prob['slug']}-{fw['slug']}: {problem_framework_title(prob['title'], fw['name'])}")
+        return
+
+    tasks = [generate_problem_framework(prob, fw) for prob, fw in pairs]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    for (prob, fw), result in zip(pairs, results):
+        s = f"{prob['slug']}-{fw['slug']}"
+        if isinstance(result, Exception):
+            print(f"  ✗ {s}: {result}")
+        else:
+            write_json(CONTENT_DIR / "problem-guides" / "cross" / f"{s}.json", result)
+
+
 async def main():
     parser = argparse.ArgumentParser(description="Generate pSEO content for Vex")
     parser.add_argument("--all", action="store_true", help="Generate all categories")
-    parser.add_argument("--category", choices=["guides", "checklists", "comparisons", "problem-guides"])
+    parser.add_argument(
+        "--category",
+        choices=[
+            "guides",
+            "checklists",
+            "comparisons",
+            "problem-guides",
+            "framework-use-case",
+            "framework-industry",
+            "problem-framework",
+        ],
+    )
     parser.add_argument("--slug", help="Generate a single page by slug")
     parser.add_argument("--dry-run", action="store_true", help="Show what would be generated")
     parser.add_argument("--model", default=DEFAULT_MODEL, help=f"LiteLLM model (default: {DEFAULT_MODEL})")
@@ -613,7 +930,7 @@ async def main():
         parser.print_help()
         sys.exit(1)
 
-    frameworks, use_cases, industries = load_taxonomy()
+    frameworks, use_cases, industries, problems = load_taxonomy()
 
     total_start = datetime.now(timezone.utc)
 
@@ -627,7 +944,16 @@ async def main():
         await run_concept_comparisons(args.slug, args.dry_run)
 
     if args.all or args.category == "problem-guides":
-        await run_problem_guides(args.slug, args.dry_run)
+        await run_problem_guides(problems, args.slug, args.dry_run)
+
+    if args.all or args.category == "framework-use-case":
+        await run_framework_usecase(frameworks, use_cases, args.slug, args.dry_run)
+
+    if args.all or args.category == "framework-industry":
+        await run_framework_industry(frameworks, industries, args.slug, args.dry_run)
+
+    if args.all or args.category == "problem-framework":
+        await run_problem_framework(problems, frameworks, args.slug, args.dry_run)
 
     elapsed = (datetime.now(timezone.utc) - total_start).total_seconds()
     print(f"\n✓ Done in {elapsed:.1f}s")
