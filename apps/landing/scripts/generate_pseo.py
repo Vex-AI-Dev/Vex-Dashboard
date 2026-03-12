@@ -180,7 +180,7 @@ async def generate_json(system_prompt: str, user_prompt: str) -> dict:
                 {"role": "user", "content": user_prompt},
             ],
             "temperature": 0.3,
-            "max_tokens": 8192,
+            "max_tokens": 16384,
         }
         if LITELLM_API_URL:
             kwargs["api_base"] = LITELLM_API_URL
