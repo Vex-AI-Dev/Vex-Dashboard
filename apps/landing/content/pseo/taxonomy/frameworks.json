@@ -1,0 +1,242 @@
+[
+  {
+    "slug": "langchain",
+    "name": "LangChain",
+    "language": "both",
+    "sdkPattern": "decorator",
+    "installSnippet": "pip install langchain vex-sdk",
+    "commonFailureModes": [
+      "Hallucination in RAG retrieval chains",
+      "Tool call loops in agent executors",
+      "Context window overflow in long conversations",
+      "Inconsistent output formatting across chain steps"
+    ],
+    "integrationMethod": "Wrap chain.invoke() with vex.verify()",
+    "popularity": "high",
+    "description": "The most popular framework for building LLM-powered applications with chains, agents, and retrieval."
+  },
+  {
+    "slug": "crewai",
+    "name": "CrewAI",
+    "language": "python",
+    "sdkPattern": "callback",
+    "installSnippet": "pip install crewai vex-sdk",
+    "commonFailureModes": [
+      "Agent delegation loops between crew members",
+      "Hallucinated tool outputs passed between agents",
+      "Task drift when agents reinterpret objectives",
+      "Inconsistent output quality across crew roles"
+    ],
+    "integrationMethod": "Add Vex as a step callback on each agent task",
+    "popularity": "high",
+    "description": "Multi-agent orchestration framework where autonomous AI agents collaborate on complex tasks."
+  },
+  {
+    "slug": "autogen",
+    "name": "AutoGen",
+    "language": "python",
+    "sdkPattern": "middleware",
+    "installSnippet": "pip install autogen vex-sdk",
+    "commonFailureModes": [
+      "Infinite conversation loops between agents",
+      "Code execution producing unsafe outputs",
+      "Agents agreeing on incorrect conclusions",
+      "Uncontrolled token spending in multi-turn debates"
+    ],
+    "integrationMethod": "Register Vex as a reply function filter",
+    "popularity": "high",
+    "description": "Microsoft's framework for building multi-agent conversational AI systems with human-in-the-loop."
+  },
+  {
+    "slug": "llamaindex",
+    "name": "LlamaIndex",
+    "language": "both",
+    "sdkPattern": "decorator",
+    "installSnippet": "pip install llama-index vex-sdk",
+    "commonFailureModes": [
+      "Retrieved context irrelevant to query",
+      "Synthesizer hallucinating beyond source documents",
+      "Index staleness causing outdated responses",
+      "Chunk boundary errors losing critical context"
+    ],
+    "integrationMethod": "Wrap query_engine.query() with vex.verify()",
+    "popularity": "high",
+    "description": "Data framework for connecting LLMs with external data sources via indexing and retrieval."
+  },
+  {
+    "slug": "vercel-ai-sdk",
+    "name": "Vercel AI SDK",
+    "language": "typescript",
+    "sdkPattern": "middleware",
+    "installSnippet": "npm install ai @vex_dev/sdk",
+    "commonFailureModes": [
+      "Streaming responses with partial hallucinations",
+      "Tool call results not validated before display",
+      "Inconsistent structured output across providers",
+      "Edge function timeouts on complex agent tasks"
+    ],
+    "integrationMethod": "Add Vex middleware to generateText/streamText",
+    "popularity": "high",
+    "description": "Vercel's TypeScript toolkit for building AI-powered streaming UIs with React Server Components."
+  },
+  {
+    "slug": "openai-agents-sdk",
+    "name": "OpenAI Agents SDK",
+    "language": "python",
+    "sdkPattern": "decorator",
+    "installSnippet": "pip install openai-agents vex-sdk",
+    "commonFailureModes": [
+      "Agent handoff loops between specialized agents",
+      "Guardrail bypasses via prompt injection",
+      "Tool output not validated before agent consumption",
+      "Tracing gaps in multi-agent handoff chains"
+    ],
+    "integrationMethod": "Add Vex as an output guardrail on each agent",
+    "popularity": "high",
+    "description": "OpenAI's official SDK for building production multi-agent systems with handoffs, guardrails, and tracing."
+  },
+  {
+    "slug": "semantic-kernel",
+    "name": "Semantic Kernel",
+    "language": "both",
+    "sdkPattern": "middleware",
+    "installSnippet": "pip install semantic-kernel vex-sdk",
+    "commonFailureModes": [
+      "Plugin chaining producing cascading errors",
+      "Planner generating invalid execution plans",
+      "Memory recall hallucinating past interactions",
+      "Cross-plugin data contamination"
+    ],
+    "integrationMethod": "Add Vex as a kernel filter on function results",
+    "popularity": "medium",
+    "description": "Microsoft's enterprise SDK for integrating LLMs into applications with plugins, planners, and memory."
+  },
+  {
+    "slug": "haystack",
+    "name": "Haystack",
+    "language": "python",
+    "sdkPattern": "decorator",
+    "installSnippet": "pip install haystack-ai vex-sdk",
+    "commonFailureModes": [
+      "Pipeline component output type mismatches",
+      "Retriever returning irrelevant documents",
+      "Generator hallucinating beyond retrieved context",
+      "Custom component errors silently swallowed"
+    ],
+    "integrationMethod": "Add Vex as a custom component in the pipeline",
+    "popularity": "medium",
+    "description": "Deepset's framework for building production-ready LLM applications with composable pipelines."
+  },
+  {
+    "slug": "ag2",
+    "name": "AG2",
+    "language": "python",
+    "sdkPattern": "callback",
+    "installSnippet": "pip install ag2 vex-sdk",
+    "commonFailureModes": [
+      "Agent conversation spiraling off-topic",
+      "Group chat consensus on incorrect facts",
+      "Code execution agents producing harmful outputs",
+      "Speaker selection bias in multi-agent groups"
+    ],
+    "integrationMethod": "Register Vex as a message hook on agents",
+    "popularity": "medium",
+    "description": "Community fork of AutoGen focused on multi-agent conversations with enhanced group chat capabilities."
+  },
+  {
+    "slug": "smolagents",
+    "name": "Smolagents",
+    "language": "python",
+    "sdkPattern": "decorator",
+    "installSnippet": "pip install smolagents vex-sdk",
+    "commonFailureModes": [
+      "Code agent generating unsafe Python execution",
+      "Tool agent misinterpreting tool descriptions",
+      "Multi-step reasoning errors compounding",
+      "Minimal error handling in generated code"
+    ],
+    "integrationMethod": "Wrap agent.run() with vex.verify()",
+    "popularity": "emerging",
+    "description": "Hugging Face's lightweight agent framework emphasizing simplicity and code-based reasoning."
+  },
+  {
+    "slug": "google-adk",
+    "name": "Google ADK",
+    "language": "python",
+    "sdkPattern": "callback",
+    "installSnippet": "pip install google-adk vex-sdk",
+    "commonFailureModes": [
+      "Multi-agent delegation creating circular dependencies",
+      "Gemini model switching causing output inconsistency",
+      "Session state corruption in long conversations",
+      "Tool response format mismatches across agents"
+    ],
+    "integrationMethod": "Add Vex as a before_agent_callback",
+    "popularity": "emerging",
+    "description": "Google's Agent Development Kit for building multi-agent systems powered by Gemini models."
+  },
+  {
+    "slug": "dspy",
+    "name": "DSPy",
+    "language": "python",
+    "sdkPattern": "decorator",
+    "installSnippet": "pip install dspy vex-sdk",
+    "commonFailureModes": [
+      "Optimized prompts overfitting to training examples",
+      "Chain-of-thought reasoning producing plausible but wrong logic",
+      "Assertion violations not caught at inference time",
+      "Module composition creating unexpected output distributions"
+    ],
+    "integrationMethod": "Wrap module forward() calls with vex.verify()",
+    "popularity": "medium",
+    "description": "Stanford's framework for programming (not prompting) LLMs with composable, optimizable modules."
+  },
+  {
+    "slug": "instructor",
+    "name": "Instructor",
+    "language": "both",
+    "sdkPattern": "decorator",
+    "installSnippet": "pip install instructor vex-sdk",
+    "commonFailureModes": [
+      "Structured output validation retries exhausted",
+      "Partial extraction missing required fields",
+      "Model hallucinating enum values outside schema",
+      "Nested object extraction producing inconsistent depth"
+    ],
+    "integrationMethod": "Wrap client.chat.completions.create() with vex.verify()",
+    "popularity": "medium",
+    "description": "Structured output extraction library that patches LLM clients to return validated Pydantic models."
+  },
+  {
+    "slug": "mastra",
+    "name": "Mastra",
+    "language": "typescript",
+    "sdkPattern": "middleware",
+    "installSnippet": "npm install mastra @vex_dev/sdk",
+    "commonFailureModes": [
+      "Workflow step outputs not validated between transitions",
+      "Agent tool calls returning malformed data",
+      "Memory retrieval injecting stale context",
+      "Sync integration data causing agent confusion"
+    ],
+    "integrationMethod": "Add Vex as middleware in the Mastra agent pipeline",
+    "popularity": "emerging",
+    "description": "TypeScript framework for building AI agents with workflows, knowledge, and third-party integrations."
+  },
+  {
+    "slug": "beeai",
+    "name": "BeeAI",
+    "language": "python",
+    "sdkPattern": "callback",
+    "installSnippet": "pip install beeai-framework vex-sdk",
+    "commonFailureModes": [
+      "Agent memory growing unbounded in long sessions",
+      "Tool validation gaps allowing injection",
+      "Serialization errors in agent state persistence",
+      "Granite model output format inconsistencies"
+    ],
+    "integrationMethod": "Register Vex as an event listener on agent events",
+    "popularity": "emerging",
+    "description": "IBM's open-source framework for building production AI agents with memory, tools, and observability."
+  }
+]

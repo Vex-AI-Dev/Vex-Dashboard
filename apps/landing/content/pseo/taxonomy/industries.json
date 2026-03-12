@@ -1,0 +1,50 @@
+[
+  {
+    "slug": "healthcare",
+    "name": "Healthcare",
+    "complianceRequirements": ["HIPAA", "FDA 21 CFR Part 11", "HITECH Act", "SOC 2 Type II"],
+    "sensitivityLevel": "critical",
+    "commonRegulations": ["Patient data cannot leave the processing environment", "All AI-assisted decisions must be auditable", "PHI must be de-identified before LLM processing"],
+    "failureConsequences": "Patient harm, regulatory fines up to $1.5M per violation, loss of medical license, malpractice liability"
+  },
+  {
+    "slug": "fintech",
+    "name": "Fintech",
+    "complianceRequirements": ["SOX", "PCI DSS", "GDPR", "SEC regulations", "BSA/AML"],
+    "sensitivityLevel": "critical",
+    "commonRegulations": ["Financial advice must carry appropriate disclaimers", "Transaction data requires encryption at rest and in transit", "Model decisions affecting credit must be explainable"],
+    "failureConsequences": "Financial losses, regulatory penalties, SEC enforcement actions, customer fund mismanagement, loss of banking license"
+  },
+  {
+    "slug": "legal",
+    "name": "Legal",
+    "complianceRequirements": ["Attorney-client privilege protections", "Bar association ethics rules", "Court filing standards", "eDiscovery protocols"],
+    "sensitivityLevel": "critical",
+    "commonRegulations": ["AI-generated legal content must be reviewed by licensed attorney", "Client confidential information cannot be used for model training", "Citations must reference real, verifiable cases"],
+    "failureConsequences": "Malpractice suits, bar sanctions, case dismissal, hallucinated case citations (Mata v. Avianca precedent), client harm"
+  },
+  {
+    "slug": "ecommerce",
+    "name": "E-Commerce",
+    "complianceRequirements": ["FTC advertising guidelines", "CCPA/GDPR", "PCI DSS for payments", "ADA accessibility"],
+    "sensitivityLevel": "standard",
+    "commonRegulations": ["Product claims must be substantiated", "Pricing information must be accurate", "Return/refund policies must be faithfully represented"],
+    "failureConsequences": "Customer churn, refund disputes, FTC enforcement, brand reputation damage, revenue loss from incorrect pricing"
+  },
+  {
+    "slug": "enterprise",
+    "name": "Enterprise SaaS",
+    "complianceRequirements": ["SOC 2 Type II", "ISO 27001", "GDPR", "CCPA", "Enterprise SLAs"],
+    "sensitivityLevel": "high",
+    "commonRegulations": ["Data residency requirements per customer contract", "Audit logging of all AI-assisted actions", "Data isolation between tenants"],
+    "failureConsequences": "SLA breaches, enterprise contract termination, data breach liability, loss of customer trust, competitive disadvantage"
+  },
+  {
+    "slug": "education",
+    "name": "Education",
+    "complianceRequirements": ["FERPA", "COPPA", "State education data privacy laws", "Accessibility standards (Section 508)"],
+    "sensitivityLevel": "high",
+    "commonRegulations": ["Student data requires parental consent for minors", "AI tutoring must not replace qualified instruction", "Content must be age-appropriate and bias-free"],
+    "failureConsequences": "Student data exposure, FERPA violations, harmful content exposure to minors, institutional liability, loss of accreditation"
+  }
+]

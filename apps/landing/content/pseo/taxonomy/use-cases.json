@@ -1,0 +1,66 @@
+[
+  {
+    "slug": "customer-support",
+    "name": "Customer Support",
+    "typicalArchitecture": "RAG agent with CRM integration, knowledge base retrieval, and tool-calling for ticket creation and order lookup",
+    "riskProfile": "high",
+    "verificationNeeds": ["response accuracy", "PII filtering", "tone consistency", "policy compliance", "escalation triggers"],
+    "commonAgentPattern": "Single agent with retrieval tools, connected to helpdesk API and knowledge base"
+  },
+  {
+    "slug": "rag-pipeline",
+    "name": "RAG Pipeline",
+    "typicalArchitecture": "Document retrieval with vector search, context assembly, and LLM synthesis with source attribution",
+    "riskProfile": "high",
+    "verificationNeeds": ["source faithfulness", "hallucination detection", "context relevance", "citation accuracy"],
+    "commonAgentPattern": "Retriever → reranker → synthesizer pipeline with optional query rewriting"
+  },
+  {
+    "slug": "code-generation",
+    "name": "Code Generation",
+    "typicalArchitecture": "LLM agent generating code with sandbox execution, test validation, and iterative refinement",
+    "riskProfile": "high",
+    "verificationNeeds": ["code safety", "syntax validity", "no credential leakage", "execution sandboxing", "dependency safety"],
+    "commonAgentPattern": "Code generation agent with execution environment and test runner tools"
+  },
+  {
+    "slug": "data-extraction",
+    "name": "Data Extraction",
+    "typicalArchitecture": "Structured output extraction from unstructured documents using schema-guided LLM calls",
+    "riskProfile": "medium",
+    "verificationNeeds": ["schema compliance", "field accuracy", "completeness validation", "type consistency"],
+    "commonAgentPattern": "Document parser → LLM extractor → schema validator pipeline"
+  },
+  {
+    "slug": "research-agents",
+    "name": "Research Agents",
+    "typicalArchitecture": "Multi-step web search and synthesis agents that gather, analyze, and summarize information",
+    "riskProfile": "medium",
+    "verificationNeeds": ["source verification", "claim accuracy", "recency checks", "bias detection"],
+    "commonAgentPattern": "Search → gather → analyze → synthesize multi-agent workflow"
+  },
+  {
+    "slug": "voice-agents",
+    "name": "Voice Agents",
+    "typicalArchitecture": "Real-time speech-to-text → LLM reasoning → text-to-speech pipeline with sub-second latency requirements",
+    "riskProfile": "high",
+    "verificationNeeds": ["response appropriateness", "latency budgets", "conversation coherence", "safety filtering"],
+    "commonAgentPattern": "STT → LLM agent → TTS pipeline with interrupt handling and turn management"
+  },
+  {
+    "slug": "workflow-automation",
+    "name": "Workflow Automation",
+    "typicalArchitecture": "Multi-step task execution agent with API integrations, conditional logic, and human-in-the-loop approvals",
+    "riskProfile": "medium",
+    "verificationNeeds": ["action correctness", "permission validation", "idempotency", "rollback capability"],
+    "commonAgentPattern": "Planner agent → executor agent with tool calls to external APIs and approval gates"
+  },
+  {
+    "slug": "content-generation",
+    "name": "Content Generation",
+    "typicalArchitecture": "LLM-powered content creation with brand voice enforcement, fact-checking, and editorial guidelines",
+    "riskProfile": "medium",
+    "verificationNeeds": ["brand consistency", "factual accuracy", "originality", "tone adherence", "SEO compliance"],
+    "commonAgentPattern": "Brief intake → draft generation → review → refinement pipeline"
+  }
+]
