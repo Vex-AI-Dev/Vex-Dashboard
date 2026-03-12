@@ -238,5 +238,165 @@
     "integrationMethod": "Register Vex as an event listener on agent events",
     "popularity": "emerging",
     "description": "IBM's open-source framework for building production AI agents with memory, tools, and observability."
+  },
+  {
+    "slug": "langgraph",
+    "name": "LangGraph",
+    "language": "python",
+    "sdkPattern": "decorator",
+    "installSnippet": "pip install langgraph vex-sdk",
+    "commonFailureModes": [
+      "Cyclic graph execution causing infinite state transitions",
+      "State corruption when parallel branches merge conflicting data",
+      "Checkpoint deserialization errors after schema changes",
+      "Human-in-the-loop breakpoints bypassed by conditional edges"
+    ],
+    "integrationMethod": "Wrap graph.invoke() with vex.verify() or add Vex as a graph node",
+    "popularity": "high",
+    "description": "LangChain's stateful multi-actor agent framework for building complex, cyclical agent workflows as graphs."
+  },
+  {
+    "slug": "openai-assistants",
+    "name": "OpenAI Assistants API",
+    "language": "both",
+    "sdkPattern": "webhook",
+    "installSnippet": "pip install openai vex-sdk",
+    "commonFailureModes": [
+      "Code interpreter executing unsafe operations in sandbox",
+      "File search retrieving irrelevant or outdated documents",
+      "Thread context growing beyond model limits silently",
+      "Function call arguments hallucinated outside valid schema"
+    ],
+    "integrationMethod": "Add Vex verification as a webhook on run completion events",
+    "popularity": "high",
+    "description": "OpenAI's managed agent runtime with built-in code interpreter, file search, and function calling capabilities."
+  },
+  {
+    "slug": "bedrock-agents",
+    "name": "Amazon Bedrock Agents",
+    "language": "both",
+    "sdkPattern": "wrapper",
+    "installSnippet": "pip install boto3 vex-sdk",
+    "commonFailureModes": [
+      "Action group Lambda functions returning malformed responses",
+      "Knowledge base retrieval missing relevant documents due to chunking",
+      "Agent guardrails not catching domain-specific policy violations",
+      "Session state loss between multi-turn agent invocations"
+    ],
+    "integrationMethod": "Wrap invoke_agent() responses with vex.verify() post-processing",
+    "popularity": "high",
+    "description": "AWS fully managed agent service with knowledge bases, action groups, and guardrails for enterprise deployments."
+  },
+  {
+    "slug": "azure-ai-agents",
+    "name": "Azure AI Agent Service",
+    "language": "both",
+    "sdkPattern": "middleware",
+    "installSnippet": "pip install azure-ai-projects vex-sdk",
+    "commonFailureModes": [
+      "Tool execution results not validated against enterprise policies",
+      "Grounding data from Bing Search containing outdated information",
+      "File search returning Azure-specific metadata instead of content",
+      "Agent thread token limits exceeded without graceful degradation"
+    ],
+    "integrationMethod": "Add Vex as middleware in the Azure AI agent processing pipeline",
+    "popularity": "high",
+    "description": "Microsoft's enterprise agent platform with Azure OpenAI integration, grounding, and enterprise security controls."
+  },
+  {
+    "slug": "agno",
+    "name": "Agno",
+    "language": "python",
+    "sdkPattern": "decorator",
+    "installSnippet": "pip install agno vex-sdk",
+    "commonFailureModes": [
+      "Multi-modal agent misinterpreting image or audio inputs",
+      "Agentic session memory recalling fabricated past interactions",
+      "Structured output failing validation on complex nested schemas",
+      "Team agent coordination producing contradictory sub-results"
+    ],
+    "integrationMethod": "Wrap agent.run() with vex.verify() decorator",
+    "popularity": "emerging",
+    "description": "Lightweight model-agnostic agent framework for building multi-modal AI agents, formerly known as Phidata."
+  },
+  {
+    "slug": "n8n",
+    "name": "n8n AI Agents",
+    "language": "typescript",
+    "sdkPattern": "webhook",
+    "installSnippet": "npm install n8n @vex_dev/sdk",
+    "commonFailureModes": [
+      "Workflow trigger chains causing recursive agent execution",
+      "AI node outputs not validated before passing to action nodes",
+      "Credential exposure through agent tool call parameters",
+      "Memory window nodes injecting stale context into conversations"
+    ],
+    "integrationMethod": "Add Vex as a webhook node after AI agent nodes in the workflow",
+    "popularity": "high",
+    "description": "Open-source workflow automation platform with native AI agent nodes for building complex agentic workflows."
+  },
+  {
+    "slug": "flowise",
+    "name": "Flowise",
+    "language": "typescript",
+    "sdkPattern": "callback",
+    "installSnippet": "npm install flowise @vex_dev/sdk",
+    "commonFailureModes": [
+      "Chatflow chains producing unvalidated intermediate outputs",
+      "Vector store retrieval returning low-relevance documents",
+      "Custom tool nodes failing silently without error propagation",
+      "Multi-agent sequential flow losing context between agent handoffs"
+    ],
+    "integrationMethod": "Add Vex as a callback handler in the Flowise chatflow configuration",
+    "popularity": "medium",
+    "description": "Low-code LLM orchestration platform for building customized AI agents and RAG pipelines via drag-and-drop."
+  },
+  {
+    "slug": "llama-stack",
+    "name": "Llama Stack",
+    "language": "python",
+    "sdkPattern": "wrapper",
+    "installSnippet": "pip install llama-stack-client vex-sdk",
+    "commonFailureModes": [
+      "Safety shield filtering producing false positives on benign content",
+      "Agentic loop turn limits exceeded without meaningful resolution",
+      "Tool runtime responses not conforming to expected schema",
+      "Memory bank retrieval hallucinating document associations"
+    ],
+    "integrationMethod": "Wrap agent turn responses with vex.verify() post-processing",
+    "popularity": "emerging",
+    "description": "Meta's standardized interface for building Llama-powered agents with safety, memory, and tool use capabilities."
+  },
+  {
+    "slug": "pydantic-ai",
+    "name": "Pydantic AI",
+    "language": "python",
+    "sdkPattern": "decorator",
+    "installSnippet": "pip install pydantic-ai vex-sdk",
+    "commonFailureModes": [
+      "Result validator rejecting valid but unexpected model outputs",
+      "Tool retry logic masking persistent underlying errors",
+      "Dependency injection context not available in nested tool calls",
+      "Streaming structured responses failing mid-generation validation"
+    ],
+    "integrationMethod": "Add Vex as a result_validator on agent definitions",
+    "popularity": "emerging",
+    "description": "Type-safe AI agent framework by the Pydantic team, designed for production applications with structured outputs."
+  },
+  {
+    "slug": "claude-tool-use",
+    "name": "Claude Tool Use",
+    "language": "both",
+    "sdkPattern": "wrapper",
+    "installSnippet": "pip install anthropic vex-sdk",
+    "commonFailureModes": [
+      "Tool use chains producing cascading errors from early tool failures",
+      "Parallel tool calls returning conflicting results without resolution",
+      "Extended thinking producing reasoning inconsistent with final output",
+      "Computer use agent performing unintended actions on screen elements"
+    ],
+    "integrationMethod": "Wrap messages.create() tool_use responses with vex.verify()",
+    "popularity": "high",
+    "description": "Anthropic's native tool use and agentic capabilities for building reliable AI agents with Claude models."
   }
 ]
