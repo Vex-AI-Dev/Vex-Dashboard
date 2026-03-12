@@ -756,13 +756,14 @@ async def run_guides(frameworks: list, slug: str | None = None, dry_run: bool = 
             print(f"  [dry-run] {f['slug']}: {guide_title(f['name'])}")
         return
 
-    tasks = [generate_guide(f) for f in targets]
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-    for f, result in zip(targets, results):
-        if isinstance(result, Exception):
-            print(f"  ✗ {f['slug']}: {result}")
-        else:
+    async def _gen(f):
+        try:
+            result = await generate_guide(f)
             write_json(CONTENT_DIR / "guides" / f"{f['slug']}.json", result)
+        except Exception as e:
+            print(f"  ✗ {f['slug']}: {e}")
+
+    await asyncio.gather(*[_gen(f) for f in targets])
 
 
 async def run_checklists(
@@ -781,14 +782,15 @@ async def run_checklists(
             print(f"  [dry-run] {ind['slug']}-{uc['slug']}: {checklist_title(ind['name'], uc['name'])}")
         return
 
-    tasks = [generate_checklist(ind, uc) for ind, uc in pairs]
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-    for (ind, uc), result in zip(pairs, results):
+    async def _gen(ind, uc):
         s = f"{ind['slug']}-{uc['slug']}"
-        if isinstance(result, Exception):
-            print(f"  ✗ {s}: {result}")
-        else:
+        try:
+            result = await generate_checklist(ind, uc)
             write_json(CONTENT_DIR / "checklists" / f"{s}.json", result)
+        except Exception as e:
+            print(f"  ✗ {s}: {e}")
+
+    await asyncio.gather(*[_gen(ind, uc) for ind, uc in pairs])
 
 
 async def run_concept_comparisons(slug: str | None = None, dry_run: bool = False):
@@ -799,13 +801,14 @@ async def run_concept_comparisons(slug: str | None = None, dry_run: bool = False
             print(f"  [dry-run] {c['slug']}: {c['title']}")
         return
 
-    tasks = [generate_concept_comparison(c) for c in targets]
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-    for c, result in zip(targets, results):
-        if isinstance(result, Exception):
-            print(f"  ✗ {c['slug']}: {result}")
-        else:
+    async def _gen(c):
+        try:
+            result = await generate_concept_comparison(c)
             write_json(CONTENT_DIR / "comparisons" / "concepts" / f"{c['slug']}.json", result)
+        except Exception as e:
+            print(f"  ✗ {c['slug']}: {e}")
+
+    await asyncio.gather(*[_gen(c) for c in targets])
 
 
 async def run_problem_guides(problems: list, slug: str | None = None, dry_run: bool = False):
@@ -816,13 +819,14 @@ async def run_problem_guides(problems: list, slug: str | None = None, dry_run: b
             print(f"  [dry-run] {p['slug']}: {p['title']}")
         return
 
-    tasks = [generate_problem_guide(p) for p in targets]
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-    for p, result in zip(targets, results):
-        if isinstance(result, Exception):
-            print(f"  ✗ {p['slug']}: {result}")
-        else:
+    async def _gen(p):
+        try:
+            result = await generate_problem_guide(p)
             write_json(CONTENT_DIR / "problem-guides" / f"{p['slug']}.json", result)
+        except Exception as e:
+            print(f"  ✗ {p['slug']}: {e}")
+
+    await asyncio.gather(*[_gen(p) for p in targets])
 
 
 async def run_framework_usecase(
@@ -841,14 +845,16 @@ async def run_framework_usecase(
             print(f"  [dry-run] {fw['slug']}-{uc['slug']}: {framework_usecase_title(fw['name'], uc['name'])}")
         return
 
-    tasks = [generate_framework_usecase(fw, uc) for fw, uc in pairs]
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-    for (fw, uc), result in zip(pairs, results):
+    async def _gen(fw, uc):
         s = f"{fw['slug']}-{uc['slug']}"
-        if isinstance(result, Exception):
-            print(f"  ✗ {s}: {result}")
-        else:
+        try:
+            result = await generate_framework_usecase(fw, uc)
             write_json(CONTENT_DIR / "guides" / "cross" / f"{s}.json", result)
+        except Exception as e:
+            print(f"  ✗ {s}: {e}")
+
+    tasks = [_gen(fw, uc) for fw, uc in pairs]
+    await asyncio.gather(*tasks)
 
 
 async def run_framework_industry(
@@ -867,14 +873,16 @@ async def run_framework_industry(
             print(f"  [dry-run] {fw['slug']}-{ind['slug']}: {framework_industry_title(fw['name'], ind['name'])}")
         return
 
-    tasks = [generate_framework_industry(fw, ind) for fw, ind in pairs]
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-    for (fw, ind), result in zip(pairs, results):
+    async def _gen(fw, ind):
         s = f"{fw['slug']}-{ind['slug']}"
-        if isinstance(result, Exception):
-            print(f"  ✗ {s}: {result}")
-        else:
+        try:
+            result = await generate_framework_industry(fw, ind)
             write_json(CONTENT_DIR / "guides" / "industry" / f"{s}.json", result)
+        except Exception as e:
+            print(f"  ✗ {s}: {e}")
+
+    tasks = [_gen(fw, ind) for fw, ind in pairs]
+    await asyncio.gather(*tasks)
 
 
 async def run_problem_framework(
@@ -893,14 +901,16 @@ async def run_problem_framework(
             print(f"  [dry-run] {prob['slug']}-{fw['slug']}: {problem_framework_title(prob['title'], fw['name'])}")
         return
 
-    tasks = [generate_problem_framework(prob, fw) for prob, fw in pairs]
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-    for (prob, fw), result in zip(pairs, results):
+    async def _gen(prob, fw):
         s = f"{prob['slug']}-{fw['slug']}"
-        if isinstance(result, Exception):
-            print(f"  ✗ {s}: {result}")
-        else:
+        try:
+            result = await generate_problem_framework(prob, fw)
             write_json(CONTENT_DIR / "problem-guides" / "cross" / f"{s}.json", result)
+        except Exception as e:
+            print(f"  ✗ {s}: {e}")
+
+    tasks = [_gen(prob, fw) for prob, fw in pairs]
+    await asyncio.gather(*tasks)
 
 
 async def main():
